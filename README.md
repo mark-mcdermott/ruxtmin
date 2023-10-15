@@ -299,6 +299,7 @@ export default {
   <main class="container">
     <h1>User</h1>
     <UsersList />
+  </main>
 </template>
 ~
 ```
@@ -307,7 +308,7 @@ export default {
 - `puravida pages/users/_id.vue ~`
 ```
 <template>
-  <div>
+  <main class="container">
     <header><h1>{{ user.name }}</h1></header>
     <section>
       <p>id: {{ user.id }}</p>
@@ -315,7 +316,7 @@ export default {
       <p>avatar:</p>
       <img :src="user.avatar" />
     </section>
-  </div>
+  </main>
 </template>
 
 <script>
@@ -352,9 +353,7 @@ export default {
 <template>
   <div>
     <Nav />
-    <main class="container">
-      <Nuxt />
-    </main>
+    <Nuxt />
   </div>
 </template>
 ~
@@ -364,18 +363,17 @@ export default {
 - `puravida pages/index.vue ~`
 ```
 <template>
-  <header>
-    <div class="container">
-      <h1>Rails 7 Nuxt 2 Admin Boilerplate</h1>
-      <p>Uses local active storage for user avatars</p>
-      <!-- 
-      <p>
-        <a href="docs/" role="button" class="secondary" aria-label="Documentation">Get started</a> 
-        <a href="https://github.com/picocss/pico/archive/refs/tags/v1.5.9.zip" role="button" class="contrast outline" aria-label="Download">Download</a>
-      </p>
-      <p><code><small>Less than 10 kB minified and gzipped</small></code></p>
-      -->
-    </div></header>
+  <main class="container">
+    <h1>Rails 7 Nuxt 2 Admin Boilerplate</h1>
+    <p>Uses local active storage for user avatars</p>
+    <!-- 
+    <p>
+      <a href="docs/" role="button" class="secondary" aria-label="Documentation">Get started</a> 
+      <a href="https://github.com/picocss/pico/archive/refs/tags/v1.5.9.zip" role="button" class="contrast outline" aria-label="Download">Download</a>
+    </p>
+    <p><code><small>Less than 10 kB minified and gzipped</small></code></p>
+    -->
+  </main>
 </template>
 ~
 ```
