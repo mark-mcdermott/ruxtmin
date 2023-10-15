@@ -16,6 +16,29 @@ This uses Nuxt 2 as a frontend and Rails 7 as a backend API and uses very simple
 - `bundle add rack-cors bcrypt`
 - `rails active_storage:install`
 - `rails db:migrate`
+- `puravida config/initializers/cors.rb ~`
+```
+Rails.application.config.middleware.insert_before 0, Rack::Cors do
+  allow do
+    origins "*"
+    resource "*",
+      headers: :any,
+      methods: [:get, :post, :put, :patch, :delete, :options, :head]
+  end
+end
+~
+```
+- make `config/puma.rb` look like this:
+```
+max_threads_count = ENV.fetch("RAILS_MAX_THREADS") { 5 }
+min_threads_count = ENV.fetch("RAILS_MIN_THREADS") { max_threads_count }
+threads min_threads_count, max_threads_count
+worker_timeout 3600 if ENV.fetch("RAILS_ENV", "development") == "development"
+port ENV.fetch("PORT") { 3000 }
+environment ENV.fetch("RAILS_ENV") { "development" }
+pidfile ENV.fetch("PIDFILE") { "tmp/pids/server.pid" }
+plugin :tmp_restart
+```
 
 ### Health Controller
 - `rails g controller health index`
@@ -51,18 +74,6 @@ end
 class User < ApplicationRecord
   has_one_attached :avatar
   has_secure_password
-end
-~
-```
-- `puravida config/initializers/cors.rb ~`
-```
-Rails.application.config.middleware.insert_before 0, Rack::Cors do
-  allow do
-    origins "*"
-    resource "*",
-      headers: :any,
-      methods: [:get, :post, :put, :patch, :delete, :options, :head]
-  end
 end
 ~
 ```
@@ -378,3 +389,36 @@ export default {
 ~
 ```
 - `npm run dev`
+- you can now test the app locally at http://localhost:3001
+
+### DEPLOY TO FLY.IO
+
+### Deploy Backend
+- `cd ~/Desktop/back`
+- `fly launch`
+- `puravida fly.toml ~`
+```
+app = "ruxtmin-back"
+primary_region = "dfw"
+console_command = "/rails/bin/rails console"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+[[statics]]
+  guest_path = "/rails/public"
+  url_prefix = "/"
+~
+```
+- `fly deploy`
+
+### Deploy Frontend
+- `cd ~/Desktop/front`
+- `fly launch`
+- `fly deploy`
+
