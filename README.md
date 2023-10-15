@@ -166,14 +166,10 @@ export default {
     ]
   },
   components: true,
-  buildModules: [
-  ],
-  modules: [
-    '@nuxtjs/axios',
-  ],
-  axios: {
-    baseURL: development ? 'http://localhost:3000' : 'https://back-v001.fly.dev/'
-  },
+  buildModules: [],
+  modules: ['@nuxtjs/axios'],
+  axios: { baseURL: development ? 'http://localhost:3000' : 'https://back-v001.fly.dev/' },
+  server: { port: 3001 }
 }
 ~
 ```
