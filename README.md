@@ -297,7 +297,7 @@ export default {
 ```
 <template>
   <main class="container">
-    <h1>User</h1>
+    <h1>Users</h1>
     <UsersList />
   </main>
 </template>
@@ -309,7 +309,7 @@ export default {
 ```
 <template>
   <main class="container">
-    <header><h1>{{ user.name }}</h1></header>
+    <h1>{{ user.name }}</h1>
     <section>
       <p>id: {{ user.id }}</p>
       <p>email: {{ user.email }}</p>
