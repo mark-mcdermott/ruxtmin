@@ -323,6 +323,7 @@ export default {
   }
 }
 </script>
+~
 ```
 
 ### Nav
@@ -338,6 +339,7 @@ export default {
     </ul>
   </nav>
 </template>
+~
 ```
 
 - `puravida layouts/default.vue ~`
@@ -350,6 +352,7 @@ export default {
     </main>
   </div>
 </template>
+~
 ```
 
 ### Home
