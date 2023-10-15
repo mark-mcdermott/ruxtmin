@@ -197,8 +197,8 @@ export default {
   components: true,
   buildModules: [],
   modules: ['@nuxtjs/axios'],
-  axios: { baseURL: development ? 'http://localhost:3000' : 'https://back-v001.fly.dev/' },
-  server: { port: 3001 }
+  axios: { baseURL: development ? 'http://localhost:3000' : 'https://ruxtmin-back.fly.dev/' },
+  server: { baseURL: development ? port: 3001 }
 }
 ~
 ```
