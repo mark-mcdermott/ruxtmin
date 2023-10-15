@@ -7,13 +7,14 @@ This uses Nuxt 2 as a frontend and Rails 7 as a backend API and uses very simple
 - https://edgeguides.rubyonrails.org/active_storage_overview.html
 
 ## BACKEND
+- `cd ~/Desktop`
 - `rails new back --api --database=postgresql`
 - `cd back`
 - `rails db:create`
-- `bundle add rack-cors`
+- `bundle add rack-cors bcrypt`
 - `rails active_storage:install`
 - `rails db:migrate`
-- `rails g model user name email avatar:attachment`
+- `rails g model user name email avatar:attachment admin:boolean password_digest`
 - `rails db:migrate`
 - `puravida config/initializers/cors.rb ~`
 ```
@@ -33,7 +34,7 @@ class UsersController < ApplicationController
   
   def index
     @users = User.all.map do |u|
-      { :id => u.id, :name => u.name, :email => u.email, :avatar => url_for(u.avatar) }
+      { :id => u.id, :name => u.name, :email => u.email, :avatar => url_for(u.avatar), :admin => u.admin }
     end
     render json: @users
   end
@@ -62,6 +63,8 @@ class UsersController < ApplicationController
     {
       name: admin_params[:name],
       email: admin_params[:email],
+      admin: admin_params[:admin],
+      password: admin_params[:password],
     }
   end
 
@@ -69,7 +72,9 @@ class UsersController < ApplicationController
     params.permit(
       :name,
       :email,
-      :avatar
+      :avatar,
+      :admin,
+      :password
     )
   end
 end
@@ -83,7 +88,24 @@ end
 ~
 ```
 
+### Seeds
+- `puravida db/seeds.rb ~
+```
+user = User.create(name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password")
+user.avatar.attach(io: URI.open("/Users/mmcdermott/Desktop/back/app/assets/office-avatars/michael-scott.png"), filename: "michael-scott.png")
+user.save!
+user = User.create(name: "Jim Halpert", email: "jimhalpert@dundermifflin.com", admin: "false", password: "password")
+user.avatar.attach(io: URI.open("/Users/mmcdermott/Desktop/back/app/assets/office-avatars/jim-halpert.png"), filename: "jim-halpert.png")
+user.save!
+user = User.create(name: "Pam Beesly", email: "pambeesly@dundermifflin.com", admin: "false", password: "password")
+user.avatar.attach(io: URI.open("/Users/mmcdermott/Desktop/back/app/assets/office-avatars/pam-beesly.png"), filename: "jim-halpert.png")
+user.save!
+```
+- `rails db:seed`
+- `rails s`
+
 ## FRONTEND
+- `cd ~/Desktop`
 - `npx create-nuxt-app front`
   - Project name: `front`
   - Programming language: JavaScript
@@ -145,8 +167,9 @@ export default {
         <h2>Add an user</h2>
         <form enctype="multipart/form-data">
           <p>Name: </p><input v-model="inputName">
-          <p>Email :</p><textarea v-model="inputDescription"></textarea>
+          <p>Email :</p><input v-model="inputDescription">
           <p>Avatar :</p><input type="file" ref="inputFile" @change=uploadFile()>
+          <p>Password :</p><input type="password" v-model="inputPassword">
           <button @click.prevent=createUser>Create this User !</button>
         </form>
       </section>
@@ -161,7 +184,8 @@ export default {
     return {
       inputName: "",
       inputDescription: "",
-      inputAvatar: null
+      inputAvatar: null,
+      inputPassword: ""
     }
   },
   methods: {
@@ -172,7 +196,8 @@ export default {
       const params = {
         'name': this.inputName,
         'email': this.inputDescription,
-        'avatar': this.inputAvatar
+        'avatar': this.inputAvatar,
+        'password': this.inputPassword,
       }
       let formData = new FormData()
       Object.entries(params).forEach(
@@ -198,6 +223,7 @@ export default {
           <p>Email: {{ user.email }}</p>
           <p>Avatar:</p>
           <img :src="user.avatar" />
+          <p>Admin: {{ user.admin }}</p>
         </div>
       </section>
     </main>
@@ -236,3 +262,4 @@ export default {
 </script>
 ~
 ```
+- `npm run dev`
