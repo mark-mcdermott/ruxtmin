@@ -16,6 +16,15 @@ This uses Nuxt 2 as a frontend and Rails 7 as a backend API and uses very simple
 - `bundle add rack-cors bcrypt`
 - `rails active_storage:install`
 - `rails db:migrate`
+
+### Health Controller
+- `rails g controller health index`
+- in `app/controllers/health_controller.rb` add:
+```
+render json: { status: 'online', status: 200 }
+```
+
+### Users
 - `rails g model user name email avatar:attachment admin:boolean password_digest`
 - `rails db:migrate`
 - `puravida app/models/user.rb ~`
@@ -94,6 +103,7 @@ end
 ```
 Rails.application.routes.draw do
   resources :users
+  get "health", to: "health#index"
 end
 ~
 ```
@@ -169,7 +179,7 @@ export default {
 ```
 - `rm -rf components/*`
 - `y`
-- `puravida components/FileUpload.vue ~`
+- `puravida components/NewUserForm.vue ~`
 ```
 <template>
   <div>
@@ -178,10 +188,10 @@ export default {
       <section>
         <h2>Add an user</h2>
         <form enctype="multipart/form-data">
-          <p>Name: </p><input v-model="inputName">
-          <p>Email :</p><input v-model="inputDescription">
+          <p>Name: </p><input v-model="name">
+          <p>Email :</p><input v-model="email">
           <p>Avatar :</p><input type="file" ref="inputFile" @change=uploadFile()>
-          <p>Password :</p><input type="password" v-model="inputPassword">
+          <p>Password :</p><input type="password" v-model="password">
           <button @click.prevent=createUser>Create this User !</button>
         </form>
       </section>
@@ -194,10 +204,10 @@ export default {
   name: 'usersForm',
   data () {
     return {
-      inputName: "",
-      inputDescription: "",
+      name: "",
+      email: "",
       inputAvatar: null,
-      inputPassword: ""
+      password: ""
     }
   },
   methods: {
@@ -206,10 +216,10 @@ export default {
     },
     createUser: function() {
       const params = {
-        'name': this.inputName,
-        'email': this.inputDescription,
+        'name': this.name,
+        'email': this.email,
         'avatar': this.inputAvatar,
-        'password': this.inputPassword,
+        'password': this.password,
       }
       let formData = new FormData()
       Object.entries(params).forEach(
@@ -257,7 +267,7 @@ export default {
 - `puravida pages/new.vue ~`
 ```
 <template>
-  <FileUpload />
+  <NewUserForm />
 </template>
 ~
 ```
