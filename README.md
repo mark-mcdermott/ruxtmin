@@ -146,6 +146,8 @@ user.save!
 - `rails s`
 
 ## FRONTEND
+
+### Setup
 - (in a separate terminal tab)
 - `cd ~/Desktop`
 - `npx create-nuxt-app front`
@@ -195,24 +197,23 @@ export default {
 ```
 - `rm -rf components/*`
 - `y`
+
+## New User Page
 - `puravida components/NewUserForm.vue ~`
 ```
 <template>
-  <div>
-    <header>&nbsp;</header>
-    <main class="container">
-      <section>
-        <h2>Add n user</h2>
-        <form enctype="multipart/form-data">
-          <p>Name: </p><input v-model="name">
-          <p>Email :</p><input v-model="email">
-          <p>Avatar :</p><input type="file" ref="inputFile" @change=uploadAvatar()>
-          <p>Password :</p><input type="password" v-model="password">
-          <button @click.prevent=createUser>Create this User !</button>
-        </form>
-      </section>
-    </main>
-  </div>
+  <main class="container">
+    <section>
+      <h2>Add n user</h2>
+      <form enctype="multipart/form-data">
+        <p>Name: </p><input v-model="name">
+        <p>Email :</p><input v-model="email">
+        <p>Avatar :</p><input type="file" ref="inputFile" @change=uploadAvatar()>
+        <p>Password :</p><input type="password" v-model="password">
+        <button @click.prevent=createUser>Create this User !</button>
+      </form>
+    </section>
+  </main>
 </template>
 
 <script>
@@ -247,24 +248,33 @@ export default {
 </script>
 ~
 ```
+- `puravida pages/users/new.vue ~`
+```
+<template>
+  <header><h1>New User</h1></header>
+  <NewUserForm />
+</template>
+~
+```
+
+### Users Page
 - `puravida components/Users.vue ~`
 ```
 <template>
-  <div>
-    <header>&nbsp;</header>
-    <main class="container">
-      <section>
-        <h2>Users</h2>
-        <div v-for="user in users" :key="user.id">
+  <main class="container">
+    <section>
+      <h2>Users</h2>
+      <div v-for="user in users" :key="user.id">
+        <article>
           <p>Name: {{ user.name }}</p>
           <p>Email: {{ user.email }}</p>
           <p>Avatar:</p>
           <img :src="user.avatar" />
           <p>Admin: {{ user.admin }}</p>
-        </div>
-      </section>
-    </main>
-  </div>
+        </article>
+      </div>
+    </section>
+  </main>
 </template>
 
 <script>
@@ -279,17 +289,85 @@ export default {
 </script>
 ~
 ```
-- `puravida pages/new.vue ~`
+- `puravida pages/users/index.vue ~`
 ```
 <template>
-  <NewUserForm />
+  <header><h1>User</h1></header>
+  <Users />
 </template>
 ~
 ```
+
+### User Page
+- `puravida pages/users/_id.vue ~`
+```
+<template>
+  <div>
+    <header><h1>{{ user.name }}</h1></header>
+    <section>
+      <p>id: {{ user.id }}</p>
+      <p>email: {{ user.email }}</p>
+      <p>avatar:</p>
+      <img :src="user.avatar" />
+    </section>
+  </div>
+</template>
+
+<script>
+export default {
+  data: () => ({
+    user: {},
+  }),
+  async fetch() {
+    this.user = await this.$axios.$get(`users/${this.$route.params.id}`)
+  }
+}
+</script>
+```
+
+### Nav
+- `puravida components/Nav.vue ~`
+```
+<template>
+  <nav class="container-fluid">
+    <ul><li><strong><NuxtLink to="/">Ruxtmin</NuxtLink></strong></li></ul>
+    <ul>
+      <li><strong><NuxtLink to="/users">Users</NuxtLink></strong></li>
+      <li><strong><NuxtLink to="/users/new">New User</NuxtLink></strong></li>
+      <!-- <li><a class="seconday" href="#" role="button">Button</a></li> -->
+    </ul>
+  </nav>
+</template>
+```
+
+- `puravida layouts/default.vue ~`
+```
+<template>
+  <div>
+    <Nav />
+    <main class="container">
+      <Nuxt />
+    </main>
+  </div>
+</template>
+```
+
+### Home
 - `puravida pages/index.vue ~`
 ```
 <template>
-  <Users />
+  <header>
+    <div class="container">
+      <h1>Rails 7 Nuxt 2 Admin Boilerplate</h1>
+      <p>Uses local active storage for user avatars</p>
+      <!-- 
+      <p>
+        <a href="docs/" role="button" class="secondary" aria-label="Documentation">Get started</a> 
+        <a href="https://github.com/picocss/pico/archive/refs/tags/v1.5.9.zip" role="button" class="contrast outline" aria-label="Download">Download</a>
+      </p>
+      <p><code><small>Less than 10 kB minified and gzipped</small></code></p>
+      -->
+    </div></header>
 </template>
 ~
 ```
