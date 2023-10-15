@@ -13,7 +13,7 @@ This uses Nuxt 2 as a frontend and Rails 7 as a backend API and uses very simple
 - `bundle add rack-cors`
 - `rails active_storage:install`
 - `rails db:migrate`
-- `rails g model user name email picture:attachment`
+- `rails g model user name email avatar:attachment`
 - `rails db:migrate`
 - make `config/initializers/cors.rb` look like this
 ```
@@ -32,7 +32,7 @@ class UsersController < ApplicationController
   
   def index
     @users = User.all.map do |u|
-      { :id => u.id, :name => u.name, :email => u.email, :picture => url_for(u.picture) }
+      { :id => u.id, :name => u.name, :email => u.email, :avatar => url_for(u.avatar) }
     end
     render json: @users
   end
@@ -43,7 +43,7 @@ class UsersController < ApplicationController
   
   def create
     user = User.create user_params
-    attach_main_pic(user) if admin_params[:picture].present?
+    attach_main_pic(user) if admin_params[:avatar].present?
     if user.save
       render json: user, status: 200
     else
@@ -54,7 +54,7 @@ class UsersController < ApplicationController
   private
 
   def attach_main_pic(user)
-    user.picture.attach(admin_params[:picture])
+    user.avatar.attach(admin_params[:avatar])
   end
 
   def user_params
@@ -68,7 +68,7 @@ class UsersController < ApplicationController
     params.permit(
       :name,
       :email,
-      :picture
+      :avatar
     )
   end
 end
@@ -139,12 +139,12 @@ export default {
     <header>&nbsp;</header>
     <main class="container">
       <section>
-        <h2>Add an item</h2>
+        <h2>Add an user</h2>
         <form enctype="multipart/form-data">
           <p>Name: </p><input v-model="inputName">
           <p>Email :</p><textarea v-model="inputDescription"></textarea>
-          <p>Picture :</p><input type="file" ref="inputFile" @change=uploadFile()>
-          <button @click.prevent=createItem>Create this Item !</button>
+          <p>Avatar :</p><input type="file" ref="inputFile" @change=uploadFile()>
+          <button @click.prevent=createUser>Create this User !</button>
         </form>
       </section>
     </main>
@@ -153,23 +153,23 @@ export default {
 
 <script>
 export default {
-  name: 'itemsForm',
+  name: 'usersForm',
   data () {
     return {
       inputName: "",
       inputDescription: "",
-      inputPicture: null
+      inputAvatar: null
     }
   },
   methods: {
     uploadFile: function() {
-      this.inputPicture = this.$refs.inputFile.files[0];
+      this.inputAvatar = this.$refs.inputFile.files[0];
     },
-    createItem: function() {
+    createUser: function() {
       const params = {
         'name': this.inputName,
         'email': this.inputDescription,
-        'picture': this.inputPicture
+        'avatar': this.inputAvatar
       }
       let formData = new FormData()
       Object.entries(params).forEach(
@@ -189,12 +189,12 @@ export default {
     <header>&nbsp;</header>
     <main class="container">
       <section>
-        <h2>Items</h2>
-        <div v-for="item in items" :key="item.id">
-          <p>Name: {{ item.name }}</p>
-          <p>Email: {{ item.email }}</p>
-          <p>Picture:</p>
-          <img :src="item.picture" />
+        <h2>Users</h2>
+        <div v-for="user in users" :key="user.id">
+          <p>Name: {{ user.name }}</p>
+          <p>Email: {{ user.email }}</p>
+          <p>Avatar:</p>
+          <img :src="user.avatar" />
         </div>
       </section>
     </main>
@@ -204,10 +204,10 @@ export default {
 <script>
 export default {
   data: () => ({
-    items: []
+    users: []
   }),
   async fetch() {
-    this.items = await this.$axios.$get('users')
+    this.users = await this.$axios.$get('users')
   },
 }
 </script>
