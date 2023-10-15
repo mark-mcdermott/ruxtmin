@@ -31,6 +31,20 @@ end
 
 ### Users
 - `rails g model user name email avatar:attachment admin:boolean password_digest`
+- change the migration file (`db/migrate/<timestamp>_create_users.rb`) to:
+```
+class CreateUsers < ActiveRecord::Migration[7.0]
+  def change
+    create_table :users do |t|
+      t.string :name
+      t.string :email, null: false, index: { unique: true }
+      t.boolean :admin, default: false
+      t.string :password_digest
+      t.timestamps
+    end
+  end
+end
+```
 - `rails db:migrate`
 - `puravida app/models/user.rb ~`
 ```
