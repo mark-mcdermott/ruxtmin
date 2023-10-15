@@ -19,9 +19,14 @@ This uses Nuxt 2 as a frontend and Rails 7 as a backend API and uses very simple
 
 ### Health Controller
 - `rails g controller health index`
-- in `app/controllers/health_controller.rb` add:
+- `puravida app/controllers/health_controller.rb ~`
 ```
-render json: { status: 'online', status: 200 }
+class HealthController < ApplicationController
+  def index
+    render json: { status: 'online', status: 200 }
+  end
+end
+~
 ```
 
 ### Users
