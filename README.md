@@ -78,7 +78,14 @@ class UsersController < ApplicationController
   end
 
   def show
-    @user = User.find(param[:id])
+    @user = User.find(params[:id])
+    render json: {
+      id: @user.id,
+      name: @user.name,
+      email: @user.email,
+      avatar: url_for(@user.avatar),
+      admin: @user.admin
+    }
   end
   
   def create
@@ -208,7 +215,7 @@ export default {
       <p>Email :</p><input v-model="email">
       <p>Avatar :</p><input type="file" ref="inputFile" @change=uploadAvatar()>
       <p>Password :</p><input type="password" v-model="password">
-      <button @click.prevent=createUser>Create this User !</button>
+      <button @click.prevent=createUser>Create User</button>
     </form>
   </section>
 </template>
@@ -263,11 +270,12 @@ export default {
   <section>
     <div v-for="user in users" :key="user.id">
       <article>
-        <p>Name: {{ user.name }}</p>
-        <p>Email: {{ user.email }}</p>
-        <p>Avatar:</p>
+        <h2><NuxtLink :to="`users/${user.id}`">{{ user.name }}</NuxtLink></h2>
+        <p>id: {{ user.id }}</p>
+        <p>email: {{ user.email }}</p>
+        <p>avatar:</p>
         <img :src="user.avatar" />
-        <p>Admin: {{ user.admin }}</p>
+        <p>admin: {{ user.admin }}</p>
       </article>
     </div>
   </section>
