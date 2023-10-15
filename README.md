@@ -15,7 +15,7 @@ This uses Nuxt 2 as a frontend and Rails 7 as a backend API and uses very simple
 - `rails db:migrate`
 - `rails g model user name email avatar:attachment`
 - `rails db:migrate`
-- make `config/initializers/cors.rb` look like this
+- `puravida config/initializers/cors.rb ~`
 ```
 Rails.application.config.middleware.insert_before 0, Rack::Cors do
   allow do
@@ -25,6 +25,7 @@ Rails.application.config.middleware.insert_before 0, Rack::Cors do
       methods: [:get, :post, :put, :patch, :delete, :options, :head]
   end
 end
+~
 ```
 - `puravida app/controllers/users_controller.rb ~`
 ```
@@ -74,11 +75,12 @@ class UsersController < ApplicationController
 end
 ~
 ```
-- make `config/routes.rb` look like this:
+- `puravida config/routes.rb ~`
 ```
 Rails.application.routes.draw do
   resources :users
 end
+~
 ```
 
 ## FRONTEND
@@ -98,7 +100,7 @@ end
   - Version control system: None
   - (takes 30 seconds to setup starter files)
 - `cd front`
-- make `nuxt.config.js` look like this:
+- `puravida nuxt.config.js ~`
 ```
 let development = process.env.NODE_ENV !== 'production'
 export default {
@@ -129,6 +131,7 @@ export default {
     baseURL: development ? 'http://localhost:3000' : 'https://back-v001.fly.dev/'
   },
 }
+~
 ```
 - `rm -rf components/*`
 - `y`
@@ -220,7 +223,7 @@ export default {
 </template>
 ~
 ```
-- change `pages/index.vue` to this:
+- `puravida pages/index.vue ~`
 ```
 <template>
   <Home />
@@ -231,4 +234,5 @@ export default {
   name: 'IndexPage'
 }
 </script>
+~
 ```
