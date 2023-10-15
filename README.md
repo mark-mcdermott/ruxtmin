@@ -202,18 +202,15 @@ export default {
 - `puravida components/NewUserForm.vue ~`
 ```
 <template>
-  <main class="container">
-    <section>
-      <h2>Add n user</h2>
-      <form enctype="multipart/form-data">
-        <p>Name: </p><input v-model="name">
-        <p>Email :</p><input v-model="email">
-        <p>Avatar :</p><input type="file" ref="inputFile" @change=uploadAvatar()>
-        <p>Password :</p><input type="password" v-model="password">
-        <button @click.prevent=createUser>Create this User !</button>
-      </form>
-    </section>
-  </main>
+  <section>
+    <form enctype="multipart/form-data">
+      <p>Name: </p><input v-model="name">
+      <p>Email :</p><input v-model="email">
+      <p>Avatar :</p><input type="file" ref="inputFile" @change=uploadAvatar()>
+      <p>Password :</p><input type="password" v-model="password">
+      <button @click.prevent=createUser>Create this User !</button>
+    </form>
+  </section>
 </template>
 
 <script>
@@ -251,30 +248,29 @@ export default {
 - `puravida pages/users/new.vue ~`
 ```
 <template>
-  <header><h1>New User</h1></header>
-  <NewUserForm />
+  <main class="container">
+    <h1>New User</h1>
+    <NewUserForm />
+  </main>
 </template>
 ~
 ```
 
 ### Users Page
-- `puravida components/Users.vue ~`
+- `puravida components/UsersList.vue ~`
 ```
 <template>
-  <main class="container">
-    <section>
-      <h2>Users</h2>
-      <div v-for="user in users" :key="user.id">
-        <article>
-          <p>Name: {{ user.name }}</p>
-          <p>Email: {{ user.email }}</p>
-          <p>Avatar:</p>
-          <img :src="user.avatar" />
-          <p>Admin: {{ user.admin }}</p>
-        </article>
-      </div>
-    </section>
-  </main>
+  <section>
+    <div v-for="user in users" :key="user.id">
+      <article>
+        <p>Name: {{ user.name }}</p>
+        <p>Email: {{ user.email }}</p>
+        <p>Avatar:</p>
+        <img :src="user.avatar" />
+        <p>Admin: {{ user.admin }}</p>
+      </article>
+    </div>
+  </section>
 </template>
 
 <script>
@@ -292,8 +288,9 @@ export default {
 - `puravida pages/users/index.vue ~`
 ```
 <template>
-  <header><h1>User</h1></header>
-  <Users />
+  <main class="container">
+    <h1>User</h1>
+    <UsersList />
 </template>
 ~
 ```
