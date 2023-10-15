@@ -132,6 +132,7 @@ user.save!
 - `rails s`
 
 ## FRONTEND
+- (in a separate terminal tab)
 - `cd ~/Desktop`
 - `npx create-nuxt-app front`
   - Project name: `front`
@@ -187,11 +188,11 @@ export default {
     <header>&nbsp;</header>
     <main class="container">
       <section>
-        <h2>Add an user</h2>
+        <h2>Add n user</h2>
         <form enctype="multipart/form-data">
           <p>Name: </p><input v-model="name">
           <p>Email :</p><input v-model="email">
-          <p>Avatar :</p><input type="file" ref="inputFile" @change=uploadFile()>
+          <p>Avatar :</p><input type="file" ref="inputFile" @change=uploadAvatar()>
           <p>Password :</p><input type="password" v-model="password">
           <button @click.prevent=createUser>Create this User !</button>
         </form>
@@ -202,38 +203,37 @@ export default {
 
 <script>
 export default {
-  name: 'usersForm',
   data () {
     return {
       name: "",
       email: "",
-      inputAvatar: null,
+      avatar: null,
       password: ""
     }
   },
   methods: {
-    uploadFile: function() {
-      this.inputAvatar = this.$refs.inputFile.files[0];
+    uploadAvatar: function() {
+      this.avatar = this.$refs.inputFile.files[0];
     },
     createUser: function() {
       const params = {
         'name': this.name,
         'email': this.email,
-        'avatar': this.inputAvatar,
+        'avatar': this.avatar,
         'password': this.password,
       }
-      let formData = new FormData()
+      let payload = new FormData()
       Object.entries(params).forEach(
-        ([key, value]) => formData.append(key, value)
+        ([key, value]) => payload.append(key, value)
       )
-      this.$axios.$post('users', formData)
+      this.$axios.$post('users', payload)
     }
   }
 }
 </script>
 ~
 ```
-- `puravida components/Home.vue ~`
+- `puravida components/Users.vue ~`
 ```
 <template>
   <div>
@@ -275,14 +275,8 @@ export default {
 - `puravida pages/index.vue ~`
 ```
 <template>
-  <Home />
+  <Users />
 </template>
-
-<script>
-export default {
-  name: 'IndexPage'
-}
-</script>
 ~
 ```
 - `npm run dev`
