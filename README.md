@@ -10,12 +10,22 @@ This uses Nuxt 2 as a frontend and Rails 7 as a backend API and uses very simple
 - `cd ~/Desktop`
 - `rails new back --api --database=postgresql`
 - `cd back`
-- `rails db:create`
+- create database
+  - if first time doing this: `rails db:create`
+  - if database already exists: `rails db:drop db:create`
 - `bundle add rack-cors bcrypt`
 - `rails active_storage:install`
 - `rails db:migrate`
 - `rails g model user name email avatar:attachment admin:boolean password_digest`
 - `rails db:migrate`
+- `puravida app/models/user.rb ~`
+```
+class User < ApplicationRecord
+  has_one_attached :avatar
+  has_secure_password
+end
+~
+```
 - `puravida config/initializers/cors.rb ~`
 ```
 Rails.application.config.middleware.insert_before 0, Rack::Cors do
@@ -89,7 +99,8 @@ end
 ```
 
 ### Seeds
-- `puravida db/seeds.rb ~
+- copy `assets` folder into `app` folder
+- `puravida db/seeds.rb ~`
 ```
 user = User.create(name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password")
 user.avatar.attach(io: URI.open("/Users/mmcdermott/Desktop/back/app/assets/office-avatars/michael-scott.png"), filename: "michael-scott.png")
@@ -100,6 +111,7 @@ user.save!
 user = User.create(name: "Pam Beesly", email: "pambeesly@dundermifflin.com", admin: "false", password: "password")
 user.avatar.attach(io: URI.open("/Users/mmcdermott/Desktop/back/app/assets/office-avatars/pam-beesly.png"), filename: "jim-halpert.png")
 user.save!
+~
 ```
 - `rails db:seed`
 - `rails s`
