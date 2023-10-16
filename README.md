@@ -50,18 +50,6 @@ Rails.application.config.middleware.insert_before 0, Rack::Cors do
 end
 ~
 ```
-- TODO: I'm not sure the below puma bit is necessary, I'm trying this time without it. If it works, delete.
-- `puravida config/puma.rb ~`
-```
-max_threads_count = ENV.fetch("RAILS_MAX_THREADS") { 5 }
-min_threads_count = ENV.fetch("RAILS_MIN_THREADS") { max_threads_count }
-threads min_threads_count, max_threads_count
-worker_timeout 3600 if ENV.fetch("RAILS_ENV", "development") == "development"
-port ENV.fetch("PORT") { 3000 }
-environment ENV.fetch("RAILS_ENV") { "development" }
-pidfile ENV.fetch("PIDFILE") { "tmp/pids/server.pid" }
-plugin :tmp_restart
-```
 
 ### Health Controller
 - `rails g controller health index`
@@ -492,7 +480,6 @@ end
   - "Select configuration: Production (High Availability)": `3 nodes, 4x shared CPUs, 8GB RAM, 80GB disk`
   - wait a bit
   - "Would you like to set up an Upstash Redis database now? (y/N)": `N`
-- TODO: delete this line `fly volume create storage_volume -r dfw -n 2`
 - `fly deploy`
 - seed prod users:
   - `fly ssh console`
@@ -501,6 +488,7 @@ end
 
 ### Deploy Frontend
 - `cd ~/Desktop/front`
+- `npm run build`
 - `fly launch --name ruxtmin-front --region dfw --yes`
 - `fly deploy`
 
