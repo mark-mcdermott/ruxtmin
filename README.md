@@ -191,7 +191,7 @@ user.save!
 ### Setup
 - (in a separate terminal tab)
 - `cd ~/Desktop`
-- `npx create-nuxt-app front`
+- `(printf 'front\n'; sleep 2; printf "\n"; sleep 2; echo -n $'\033[1B'; sleep 1; printf "\n"; sleep 2; echo -n $'\033[1B'; sleep 0.1; echo -n $'\033[1B'; sleep 0.1; echo -n $'\033[1B'; sleep 0.1; echo -n $'\033[1B'; sleep 0.1; echo -n $'\033[1B'; sleep 0.1; echo -n $'\033[1B'; sleep 0.1; echo -n $'\033[1B'; sleep 0.1; echo -n $'\033[1B'; sleep 0.1; echo -n $'\033[1B'; sleep 0.1; echo -n $'\033[1B'; sleep 0.1; printf "\n"; sleep 2; printf "\n"; sleep 2; printf " \n"; sleep 2; printf "\n"; sleep 2; printf "\n"; sleep 2; echo -n $'\033[1B'; sleep 1; printf "\n"; sleep 2; printf "\n"; sleep 2; printf "\n"; sleep 2; printf "\n"; sleep 2; echo -n $'\033[1B'; sleep 1; printf "\n") | npx create-nuxt-app front`
   - Project name: `front`
   - Programming language: JavaScript
   - Package manager: Npm
@@ -419,7 +419,6 @@ export default {
 
 ### Deploy Backend
 - `cd ~/Desktop/back`
-- `fly launch`
 - `puravida fly.toml ~`
 ```
 app = "ruxtmin-back"
@@ -446,6 +445,7 @@ console_command = "/rails/bin/rails console"
   destination = "/mnt/volume"
 ~
 ```
+- `fly launch --copy-config --name ruxtmin-back --region dfw --yes`
 - `puravida config/storage.yml ~`
 ```
 test:
@@ -462,6 +462,6 @@ local:
 
 ### Deploy Frontend
 - `cd ~/Desktop/front`
-- `fly launch`
+- `fly launch --name ruxtmin-front --region dfw --yes`
 - `fly deploy`
 
