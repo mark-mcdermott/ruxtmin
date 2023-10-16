@@ -139,10 +139,11 @@ class UsersController < ApplicationController
   end
 
   def user_params
+    admin = admin_params[:admin].present? ? admin_params[:admin] : false
     {
       name: admin_params[:name],
       email: admin_params[:email],
-      admin: admin_params[:admin],
+      admin: admin,
       password: admin_params[:password],
     }
   end
