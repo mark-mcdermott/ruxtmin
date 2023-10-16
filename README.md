@@ -82,9 +82,9 @@ end
 class CreateUsers < ActiveRecord::Migration[7.0]
   def change
     create_table :users do |t|
-      t.string :name
+      t.string :name, null: false
       t.string :email, null: false, index: { unique: true }
-      t.boolean :admin, default: false
+      t.boolean :admin, null: false, default: false
       t.string :password_digest
       t.timestamps
     end
@@ -246,9 +246,9 @@ export default {
   <section>
     <form enctype="multipart/form-data">
       <p>Name: </p><input v-model="name">
-      <p>Email :</p><input v-model="email">
-      <p>Avatar :</p><input type="file" ref="inputFile" @change=uploadAvatar()>
-      <p>Password :</p><input type="password" v-model="password">
+      <p>Email: </p><input v-model="email">
+      <p>Avatar: </p><input type="file" ref="inputFile" @change=uploadAvatar()>
+      <p>Password: </p><input type="password" v-model="password">
       <button @click.prevent=createUser>Create User</button>
     </form>
   </section>
@@ -413,6 +413,7 @@ export default {
 ```
 - `npm run dev`
 - you can now test the app locally at http://localhost:3001
+- kill both the frontend and backend servers by pressing `control + c` in their respective terminal tabs
 
 ### DEPLOY TO FLY.IO
 
@@ -445,9 +446,16 @@ console_command = "/rails/bin/rails console"
   destination = "/mnt/volume"
 ~
 ```
-- in `config/storage.yml` change the root line of the local part to:
+- `puravida config/storage.yml ~`
 ```
-root: <%= ENV.fetch('RAILS_STORAGE', Rails.root.join("storage")) %>
+test:
+  service: Disk
+  root: <%= Rails.root.join("tmp/storage") %>
+
+local:
+  service: Disk
+  root: <%= ENV.fetch('RAILS_STORAGE', Rails.root.join("storage")) %>
+~
 ```
 - `fly volume create storage_volume -r dfw -n 2`
 - `fly deploy`
