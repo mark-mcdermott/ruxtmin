@@ -438,11 +438,11 @@ console_command = "/rails/bin/rails console"
   url_prefix = "/"
 
 [env]
-  RAILS_STORAGE = "/mnt/volume/storage"
+  RAILS_STORAGE = "/data"
 
 [mounts]
-  source = "storage_volume"
-  destination = "/mnt/volume"
+  source = "ruxtmin_data"
+  destination = "/data"
 ~
 ```
 - `fly launch --copy-config --name ruxtmin-back --region dfw --yes`
@@ -454,11 +454,15 @@ test:
 
 local:
   service: Disk
-  root: <%= ENV.fetch('RAILS_STORAGE', Rails.root.join("storage")) %>
+  root: <%= ENV.fetch('RAILS_STORAGE') %>
 ~
 ```
-- `fly volume create storage_volume -r dfw -n 2`
+- TODO: delete this line `fly volume create storage_volume -r dfw -n 2`
 - `fly deploy`
+- seed prod users:
+  - `fly ssh console`
+  - `bin/rails db:seed`
+  - `exit`
 
 ### Deploy Frontend
 - `cd ~/Desktop/front`
