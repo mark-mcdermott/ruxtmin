@@ -485,6 +485,7 @@ Rails.application.configure do
   end
   config.active_record.dump_schema_after_migration = false
 end
+~
 ```
 - `fly launch --copy-config --name ruxtmin-back --region dfw --yes`
   - Would you like to set up a Postgresql database now? `Yes`
