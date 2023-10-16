@@ -50,7 +50,8 @@ Rails.application.config.middleware.insert_before 0, Rack::Cors do
 end
 ~
 ```
-- make `config/puma.rb` look like this:
+- TODO: I'm not sure the below puma bit is necessary, I'm trying this time without it. If it works, delete.
+- `puravida config/puma.rb ~`
 ```
 max_threads_count = ENV.fetch("RAILS_MAX_THREADS") { 5 }
 min_threads_count = ENV.fetch("RAILS_MIN_THREADS") { max_threads_count }
