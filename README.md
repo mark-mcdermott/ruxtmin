@@ -150,13 +150,13 @@ end
 - `puravida db/seeds.rb ~`
 ```
 user = User.create(name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password")
-user.avatar.attach(io: URI.open("/Users/mmcdermott/Desktop/back/app/assets/office-avatars/michael-scott.png"), filename: "michael-scott.png")
+user.avatar.attach(io: URI.open("#{Rails.root}/app/assets/office-avatars/michael-scott.png"), filename: "michael-scott.png")
 user.save!
 user = User.create(name: "Jim Halpert", email: "jimhalpert@dundermifflin.com", admin: "false", password: "password")
-user.avatar.attach(io: URI.open("/Users/mmcdermott/Desktop/back/app/assets/office-avatars/jim-halpert.png"), filename: "jim-halpert.png")
+user.avatar.attach(io: URI.open("#{Rails.root}/app/assets/office-avatars/jim-halpert.png"), filename: "jim-halpert.png")
 user.save!
 user = User.create(name: "Pam Beesly", email: "pambeesly@dundermifflin.com", admin: "false", password: "password")
-user.avatar.attach(io: URI.open("/Users/mmcdermott/Desktop/back/app/assets/office-avatars/pam-beesly.png"), filename: "jim-halpert.png")
+user.avatar.attach(io: URI.open("#{Rails.root}/app/assets/office-avatars/pam-beesly.png"), filename: "jim-halpert.png")
 user.save!
 ~
 ```
@@ -413,7 +413,18 @@ console_command = "/rails/bin/rails console"
 [[statics]]
   guest_path = "/rails/public"
   url_prefix = "/"
+
+[env]
+  RAILS_STORAGE = "/mnt/volume/storage"
+
+[mounts]
+  source = "storage_volume"
+  destination = "/mnt/volume"
 ~
+```
+- in `config/storage.yml` change the root line of the local part to:
+```
+root: <%= ENV.fetch('RAILS_STORAGE', Rails.root.join("storage")) %>
 ```
 - `fly deploy`
 
