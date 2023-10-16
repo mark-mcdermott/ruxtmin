@@ -425,6 +425,15 @@ app = "ruxtmin-back"
 primary_region = "dfw"
 console_command = "/rails/bin/rails console"
 
+[build]
+
+[env]
+  RAILS_STORAGE = "/data"
+
+[[mounts]]
+  source = "ruxtmin_data"
+  destination = "/data"
+
 [http_service]
   internal_port = 3000
   force_https = true
@@ -436,13 +445,6 @@ console_command = "/rails/bin/rails console"
 [[statics]]
   guest_path = "/rails/public"
   url_prefix = "/"
-
-[env]
-  RAILS_STORAGE = "/data"
-
-[mounts]
-  source = "ruxtmin_data"
-  destination = "/data"
 ~
 ```
 - `puravida config/storage.yml ~`
@@ -453,8 +455,35 @@ test:
 
 local:
   service: Disk
-  root: <%= ENV.fetch('RAILS_STORAGE') %>
+  root: <%= Rails.root.join("storage") %>
+
+production:
+  service: Disk
+  root: /data
 ~
+```
+- `puravida config/environmnets/production.rb ~`
+```
+require "active_support/core_ext/integer/time"
+Rails.application.configure do
+  config.cache_classes = true
+  config.eager_load = true
+  config.consider_all_requests_local       = false
+  config.public_file_server.enabled = ENV["RAILS_SERVE_STATIC_FILES"].present?
+  config.active_storage.service = :production
+  config.log_level = :info
+  config.log_tags = [ :request_id ]
+  config.action_mailer.perform_caching = false
+  config.i18n.fallbacks = true
+  config.active_support.report_deprecations = false
+  config.log_formatter = ::Logger::Formatter.new
+  if ENV["RAILS_LOG_TO_STDOUT"].present?
+    logger           = ActiveSupport::Logger.new(STDOUT)
+    logger.formatter = config.log_formatter
+    config.logger    = ActiveSupport::TaggedLogging.new(logger)
+  end
+  config.active_record.dump_schema_after_migration = false
+end
 ```
 - `fly launch --copy-config --name ruxtmin-back --region dfw --yes`
   - Would you like to set up a Postgresql database now? `Yes`
