@@ -426,6 +426,7 @@ console_command = "/rails/bin/rails console"
 ```
 root: <%= ENV.fetch('RAILS_STORAGE', Rails.root.join("storage")) %>
 ```
+- `fly volume create storage_volume -r dfw -n 2`
 - `fly deploy`
 
 ### Deploy Frontend
