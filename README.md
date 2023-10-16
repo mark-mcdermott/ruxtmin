@@ -445,7 +445,6 @@ console_command = "/rails/bin/rails console"
   destination = "/data"
 ~
 ```
-- `fly launch --copy-config --name ruxtmin-back --region dfw --yes`
 - `puravida config/storage.yml ~`
 ```
 test:
@@ -457,6 +456,11 @@ local:
   root: <%= ENV.fetch('RAILS_STORAGE') %>
 ~
 ```
+- `fly launch --copy-config --name ruxtmin-back --region dfw --yes`
+  - Would you like to set up a Postgresql database now? `Yes`
+  - Select configuration: Production (High Availability) `3 nodes, 4x shared CPUs, 8GB RAM, 80GB disk`
+  - wait a bit
+  - Would you like to set up an Upstash Redis database now? (y/N) `N`
 - TODO: delete this line `fly volume create storage_volume -r dfw -n 2`
 - `fly deploy`
 - seed prod users:
