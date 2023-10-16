@@ -2,9 +2,31 @@
 
 This uses Nuxt 2 as a frontend and Rails 7 as a backend API and uses very simple implementation of Rail's Active Storage for local file upload and image display.
 
+## Requirements
+This uses a small custom bash command called [puravida](https://github.com/mark-mcdermott/puravida) - it's just a simple one-liner I wrote and use to replace having to use `mkdir` and `touch`. Instead of `mkdir folder && touch file.txt`, you can do `puravida folder/file.txt`. It's also a cleaner replacement for multiline text insertion. Instead of doing:
+```
+mkdir folder
+cat >> folder/file.txt << 'END'
+first text line
+second text line
+END
+```
+you can just do
+```
+puravida folder/file.txt ~
+first text line
+second text line
+~
+```
+So if you don't feel like downloading my `puravida` script and putting it in your system path, feel free to substitute all instances of `puravida` here with the commands it's replacing.
+
 ## Sources
 - https://suchdevblog.com/tutorials/UploadFilesFromVueToRails.html#our-vue-js-form-component
 - https://edgeguides.rubyonrails.org/active_storage_overview.html
+- https://stackoverflow.com/questions/76049560/how-to-attach-image-url-in-seed-file-with-rails-active-storage
+- https://itecnote.com/tecnote/ruby-on-rails-how-to-get-url-of-the-attachment-stored-in-active-storage-in-the-rails-controller/
+- https://stackoverflow.com/questions/50424251/how-can-i-get-url-of-my-attachment-stored-in-active-storage-in-my-rails-controll
+- https://stackoverflow.com/questions/5576550/in-rails-how-to-get-current-url-but-no-paths
 
 ## BACKEND
 - `cd ~/Desktop`
