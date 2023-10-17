@@ -18,7 +18,7 @@ first text line
 second text line
 ~
 ```
-If you don't feel like downloading my `puravida` script and putting it in your system path, feel free to substitute all instances of `puravida` here with the commands it's replacing.
+If you don't feel like downloading my `puravida` script and putting it in your system path, feel free to substitute the instances of `puravida` below with the commands it's replacing.
 
 ## Sources
 - https://suchdevblog.com/tutorials/UploadFilesFromVueToRails.html#our-vue-js-form-component
