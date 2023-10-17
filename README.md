@@ -20,14 +20,6 @@ second text line
 ```
 If you don't feel like downloading my `puravida` script and putting it in your system path, feel free to substitute the instances of `puravida` below with the commands it's replacing.
 
-## Sources
-- https://suchdevblog.com/tutorials/UploadFilesFromVueToRails.html#our-vue-js-form-component
-- https://edgeguides.rubyonrails.org/active_storage_overview.html
-- https://stackoverflow.com/questions/76049560/how-to-attach-image-url-in-seed-file-with-rails-active-storage
-- https://itecnote.com/tecnote/ruby-on-rails-how-to-get-url-of-the-attachment-stored-in-active-storage-in-the-rails-controller/
-- https://stackoverflow.com/questions/50424251/how-can-i-get-url-of-my-attachment-stored-in-active-storage-in-my-rails-controll
-- https://stackoverflow.com/questions/5576550/in-rails-how-to-get-current-url-but-no-paths
-
 ## BACKEND
 - `cd ~/Desktop`
 - `rails new back --api --database=postgresql`
@@ -499,3 +491,10 @@ end
 - `fly launch --name ruxtmin-front --region dfw --yes`
 - `fly deploy`
 
+## Sources
+- https://suchdevblog.com/tutorials/UploadFilesFromVueToRails.html#our-vue-js-form-component
+- https://edgeguides.rubyonrails.org/active_storage_overview.html
+- https://stackoverflow.com/questions/76049560/how-to-attach-image-url-in-seed-file-with-rails-active-storage
+- https://itecnote.com/tecnote/ruby-on-rails-how-to-get-url-of-the-attachment-stored-in-active-storage-in-the-rails-controller/
+- https://stackoverflow.com/questions/50424251/how-can-i-get-url-of-my-attachment-stored-in-active-storage-in-my-rails-controll
+- https://stackoverflow.com/questions/5576550/in-rails-how-to-get-current-url-but-no-paths
