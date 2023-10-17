@@ -5,6 +5,232 @@ Nuxt 2 frontend, Rails 7 backend API and a simple implementation of Rail's Activ
 ## Requirements
 This readme uses a small custom bash command called [puravida](#user-content-puravida).
 
+## BACKEND
+- `cd ~/Desktop`
+- `rails new back --api --database=postgresql`
+- `cd back`
+- create database
+  - if first time doing this: `rails db:create`
+  - if database already exists: `rails db:drop db:create`
+- `bundle add rack-cors bcrypt jwt`
+- `rails active_storage:install`
+- `rails db:migrate`
+- `puravida config/initializers/cors.rb ~`
+```
+Rails.application.config.middleware.insert_before 0, Rack::Cors do
+  allow do
+    origins "*"
+    resource "*",
+      headers: :any,
+      methods: [:get, :post, :put, :patch, :delete, :options, :head]
+  end
+end
+~
+```
+
+### Health Controller
+- `rails g controller health index`
+- `puravida app/controllers/health_controller.rb ~`
+```
+class HealthController < ApplicationController
+  def index
+    render json: { status: 'online', status: 200 }
+  end
+end
+~
+```
+
+### Users
+- `rails g model user name email avatar:attachment admin:boolean password_digest`
+- change the migration file (`db/migrate/<timestamp>_create_users.rb`) to:
+```
+class CreateUsers < ActiveRecord::Migration[7.0]
+  def change
+    create_table :users do |t|
+      t.string :name, null: false
+      t.string :email, null: false, index: { unique: true }
+      t.boolean :admin, null: false, default: false
+      t.string :password_digest
+      t.timestamps
+    end
+  end
+end
+```
+- `rails db:migrate`
+- `puravida app/models/user.rb ~`
+```
+class User < ApplicationRecord
+  has_one_attached :avatar
+  has_secure_password
+end
+~
+```
+- `puravida app/controllers/users_controller.rb ~`
+```
+class UsersController < ApplicationController
+  
+  def index
+    @users = User.all.map do |u|
+      { :id => u.id, :name => u.name, :email => u.email, :avatar => url_for(u.avatar), :admin => u.admin }
+    end
+    render json: @users
+  end
+
+  def show
+    @user = User.find(params[:id])
+    render json: {
+      id: @user.id,
+      name: @user.name,
+      email: @user.email,
+      avatar: url_for(@user.avatar),
+      admin: @user.admin
+    }
+  end
+  
+  def create
+    user = User.create user_params
+    attach_main_pic(user) if admin_params[:avatar].present?
+    if user.save
+      render json: user, status: 200
+    else
+      render json: user, status: 400
+    end
+  end
+
+  private
+
+  def attach_main_pic(user)
+    user.avatar.attach(admin_params[:avatar])
+  end
+
+  def user_params
+    admin = admin_params[:admin].present? ? admin_params[:admin] : false
+    {
+      name: admin_params[:name],
+      email: admin_params[:email],
+      admin: admin,
+      password: admin_params[:password],
+    }
+  end
+
+  def admin_params
+    params.permit(
+      :name,
+      :email,
+      :avatar,
+      :admin,
+      :password
+    )
+  end
+end
+~
+```
+- `puravida config/routes.rb ~`
+```
+Rails.application.routes.draw do
+  resources :users
+  get "health", to: "health#index"
+end
+~
+```
+
+### Seeds
+- copy `assets` folder into `app` folder
+- `puravida db/seeds.rb ~`
+```
+user = User.create(name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password")
+user.avatar.attach(io: URI.open("#{Rails.root}/app/assets/office-avatars/michael-scott.png"), filename: "michael-scott.png")
+user.save!
+user = User.create(name: "Jim Halpert", email: "jimhalpert@dundermifflin.com", admin: "false", password: "password")
+user.avatar.attach(io: URI.open("#{Rails.root}/app/assets/office-avatars/jim-halpert.png"), filename: "jim-halpert.png")
+user.save!
+user = User.create(name: "Pam Beesly", email: "pambeesly@dundermifflin.com", admin: "false", password: "password")
+user.avatar.attach(io: URI.open("#{Rails.root}/app/assets/office-avatars/pam-beesly.png"), filename: "jim-halpert.png")
+user.save!
+~
+```
+- `rails db:seed`
+
+### Backend Auth
+- `puravida app/controllers/application_controller.rb ~`
+```
+class ApplicationController < ActionController::API
+  SECRET_KEY_BASE = Rails.application.credentials.secret_key_base
+  before_action :require_login
+  rescue_from Exception, with: :response_internal_server_error
+  
+  def user_from_token
+    user = current_user.slice(:id,:email,:name,:admin)
+    user['admin'] = user['admin'] == 't' ? 'true' : 'false'
+    render json: { data: user, status: 200 }
+  end
+
+  def require_login
+    response_unauthorized if current_user.blank?
+  end
+  
+  def current_user
+    if decoded_token.present?
+      user_id = decoded_token[0]['user_id']
+      @user = User.find_by(id: user_id)
+    else
+      nil
+    end
+  end
+  
+  def encode_token(payload)
+    JWT.encode payload, SECRET_KEY_BASE, 'HS256'
+  end
+  
+  def decoded_token
+    if auth_header
+      token = auth_header.split(' ')[1]
+      begin
+        JWT.decode token, SECRET_KEY_BASE, true, { algorithm: 'HS256' }
+      rescue JWT::DecodeError
+        []
+      end
+    end
+  end
+  
+  def response_unauthorized
+    render status: 401, json: { status: 401, message: 'Unauthorized' }
+  end
+  
+  def response_internal_server_error
+    render status: 500, json: { status: 500, message: 'Internal Server Error' }
+  end
+  
+  private 
+  
+    def auth_header
+      request.headers['Authorization']
+    end
+end
+~
+```
+- `rails g controller Authentications`
+- `puravida app/controllers/authentications_controller.rb ~`
+```
+class AuthenticationsController < UsersController
+  skip_before_action :require_login
+  
+  def create
+    user = User.find_by(email: params[:email])
+    if user && user.authenticate(params[:password])
+      payload = { user_id: user.id, email: user.email }
+      token = encode_token(payload)
+      render json: { data: token, status: 200, message: 'You are logged in successfully' }
+    else
+      response_unauthorized
+    end
+  end
+end
+```
+- TODO: put users controller here
+
+- `rails s`
+
 ## FRONTEND
 
 ### Setup
@@ -220,7 +446,6 @@ h2
   vertical-align: center
   text-align: center
 
-
 html, body 
   margin: 0
   height: 100%
@@ -366,153 +591,6 @@ html, body
 ~
 ```
 - `npm run dev`
-
-## BACKEND
-- `cd ~/Desktop`
-- `rails new back --api --database=postgresql`
-- `cd back`
-- create database
-  - if first time doing this: `rails db:create`
-  - if database already exists: `rails db:drop db:create`
-- `bundle add rack-cors bcrypt`
-- `rails active_storage:install`
-- `rails db:migrate`
-- `puravida config/initializers/cors.rb ~`
-```
-Rails.application.config.middleware.insert_before 0, Rack::Cors do
-  allow do
-    origins "*"
-    resource "*",
-      headers: :any,
-      methods: [:get, :post, :put, :patch, :delete, :options, :head]
-  end
-end
-~
-```
-
-### Health Controller
-- `rails g controller health index`
-- `puravida app/controllers/health_controller.rb ~`
-```
-class HealthController < ApplicationController
-  def index
-    render json: { status: 'online', status: 200 }
-  end
-end
-~
-```
-
-### Users
-- `rails g model user name email avatar:attachment admin:boolean password_digest`
-- change the migration file (`db/migrate/<timestamp>_create_users.rb`) to:
-```
-class CreateUsers < ActiveRecord::Migration[7.0]
-  def change
-    create_table :users do |t|
-      t.string :name, null: false
-      t.string :email, null: false, index: { unique: true }
-      t.boolean :admin, null: false, default: false
-      t.string :password_digest
-      t.timestamps
-    end
-  end
-end
-```
-- `rails db:migrate`
-- `puravida app/models/user.rb ~`
-```
-class User < ApplicationRecord
-  has_one_attached :avatar
-  has_secure_password
-end
-~
-```
-- `puravida app/controllers/users_controller.rb ~`
-```
-class UsersController < ApplicationController
-  
-  def index
-    @users = User.all.map do |u|
-      { :id => u.id, :name => u.name, :email => u.email, :avatar => url_for(u.avatar), :admin => u.admin }
-    end
-    render json: @users
-  end
-
-  def show
-    @user = User.find(params[:id])
-    render json: {
-      id: @user.id,
-      name: @user.name,
-      email: @user.email,
-      avatar: url_for(@user.avatar),
-      admin: @user.admin
-    }
-  end
-  
-  def create
-    user = User.create user_params
-    attach_main_pic(user) if admin_params[:avatar].present?
-    if user.save
-      render json: user, status: 200
-    else
-      render json: user, status: 400
-    end
-  end
-
-  private
-
-  def attach_main_pic(user)
-    user.avatar.attach(admin_params[:avatar])
-  end
-
-  def user_params
-    admin = admin_params[:admin].present? ? admin_params[:admin] : false
-    {
-      name: admin_params[:name],
-      email: admin_params[:email],
-      admin: admin,
-      password: admin_params[:password],
-    }
-  end
-
-  def admin_params
-    params.permit(
-      :name,
-      :email,
-      :avatar,
-      :admin,
-      :password
-    )
-  end
-end
-~
-```
-- `puravida config/routes.rb ~`
-```
-Rails.application.routes.draw do
-  resources :users
-  get "health", to: "health#index"
-end
-~
-```
-
-### Seeds
-- copy `assets` folder into `app` folder
-- `puravida db/seeds.rb ~`
-```
-user = User.create(name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password")
-user.avatar.attach(io: URI.open("#{Rails.root}/app/assets/office-avatars/michael-scott.png"), filename: "michael-scott.png")
-user.save!
-user = User.create(name: "Jim Halpert", email: "jimhalpert@dundermifflin.com", admin: "false", password: "password")
-user.avatar.attach(io: URI.open("#{Rails.root}/app/assets/office-avatars/jim-halpert.png"), filename: "jim-halpert.png")
-user.save!
-user = User.create(name: "Pam Beesly", email: "pambeesly@dundermifflin.com", admin: "false", password: "password")
-user.avatar.attach(io: URI.open("#{Rails.root}/app/assets/office-avatars/pam-beesly.png"), filename: "jim-halpert.png")
-user.save!
-~
-```
-- `rails db:seed`
-- `rails s`
 - you can now test the app locally at http://localhost:3001
 - kill both the frontend and backend servers by pressing `control + c` in their respective terminal tabs
 
