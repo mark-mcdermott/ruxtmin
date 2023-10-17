@@ -20,159 +20,12 @@ second text line
 ```
 If you don't feel like downloading my `puravida` script and putting it in your system path, feel free to substitute the instances of `puravida` below with the commands it's replacing.
 
-## BACKEND
-- `cd ~/Desktop`
-- `rails new back --api --database=postgresql`
-- `cd back`
-- create database
-  - if first time doing this: `rails db:create`
-  - if database already exists: `rails db:drop db:create`
-- `bundle add rack-cors bcrypt`
-- `rails active_storage:install`
-- `rails db:migrate`
-- `puravida config/initializers/cors.rb ~`
-```
-Rails.application.config.middleware.insert_before 0, Rack::Cors do
-  allow do
-    origins "*"
-    resource "*",
-      headers: :any,
-      methods: [:get, :post, :put, :patch, :delete, :options, :head]
-  end
-end
-~
-```
-
-### Health Controller
-- `rails g controller health index`
-- `puravida app/controllers/health_controller.rb ~`
-```
-class HealthController < ApplicationController
-  def index
-    render json: { status: 'online', status: 200 }
-  end
-end
-~
-```
-
-### Users
-- `rails g model user name email avatar:attachment admin:boolean password_digest`
-- change the migration file (`db/migrate/<timestamp>_create_users.rb`) to:
-```
-class CreateUsers < ActiveRecord::Migration[7.0]
-  def change
-    create_table :users do |t|
-      t.string :name, null: false
-      t.string :email, null: false, index: { unique: true }
-      t.boolean :admin, null: false, default: false
-      t.string :password_digest
-      t.timestamps
-    end
-  end
-end
-```
-- `rails db:migrate`
-- `puravida app/models/user.rb ~`
-```
-class User < ApplicationRecord
-  has_one_attached :avatar
-  has_secure_password
-end
-~
-```
-- `puravida app/controllers/users_controller.rb ~`
-```
-class UsersController < ApplicationController
-  
-  def index
-    @users = User.all.map do |u|
-      { :id => u.id, :name => u.name, :email => u.email, :avatar => url_for(u.avatar), :admin => u.admin }
-    end
-    render json: @users
-  end
-
-  def show
-    @user = User.find(params[:id])
-    render json: {
-      id: @user.id,
-      name: @user.name,
-      email: @user.email,
-      avatar: url_for(@user.avatar),
-      admin: @user.admin
-    }
-  end
-  
-  def create
-    user = User.create user_params
-    attach_main_pic(user) if admin_params[:avatar].present?
-    if user.save
-      render json: user, status: 200
-    else
-      render json: user, status: 400
-    end
-  end
-
-  private
-
-  def attach_main_pic(user)
-    user.avatar.attach(admin_params[:avatar])
-  end
-
-  def user_params
-    admin = admin_params[:admin].present? ? admin_params[:admin] : false
-    {
-      name: admin_params[:name],
-      email: admin_params[:email],
-      admin: admin,
-      password: admin_params[:password],
-    }
-  end
-
-  def admin_params
-    params.permit(
-      :name,
-      :email,
-      :avatar,
-      :admin,
-      :password
-    )
-  end
-end
-~
-```
-- `puravida config/routes.rb ~`
-```
-Rails.application.routes.draw do
-  resources :users
-  get "health", to: "health#index"
-end
-~
-```
-
-### Seeds
-- copy `assets` folder into `app` folder
-- `puravida db/seeds.rb ~`
-```
-user = User.create(name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password")
-user.avatar.attach(io: URI.open("#{Rails.root}/app/assets/office-avatars/michael-scott.png"), filename: "michael-scott.png")
-user.save!
-user = User.create(name: "Jim Halpert", email: "jimhalpert@dundermifflin.com", admin: "false", password: "password")
-user.avatar.attach(io: URI.open("#{Rails.root}/app/assets/office-avatars/jim-halpert.png"), filename: "jim-halpert.png")
-user.save!
-user = User.create(name: "Pam Beesly", email: "pambeesly@dundermifflin.com", admin: "false", password: "password")
-user.avatar.attach(io: URI.open("#{Rails.root}/app/assets/office-avatars/pam-beesly.png"), filename: "jim-halpert.png")
-user.save!
-~
-```
-- `rails db:seed`
-- `rails s`
-
 ## FRONTEND
 
 ### Setup
 - (in a separate terminal tab)
 - `cd ~/Desktop`
-- `(printf 'front\n'; sleep 2; printf "\n"; sleep 2; echo -n $'\033[1B'; sleep 1; printf "\n"; sleep 2; printf "\n"; sleep 2; sleep 2; printf "\n"; sleep 2; printf " \n"; sleep 2; printf "\n"; sleep 2; printf "\n"; sleep 2; echo -n $'\033[1B'; sleep 1; printf "\n"; sleep 2; printf "\n"; sleep 2; printf "\n"; sleep 2; printf "\n"; sleep 2; echo -n $'\033[1B'; sleep 1; printf "\n") | npx create-nuxt-app front`
+- `(printf 'front\n'; sleep 1; printf "\n"; sleep 1; echo -n $'\033[1B'; sleep 1; printf "\n"; sleep 1; printf "\n"; sleep 1; sleep 1; printf "\n"; sleep 1; printf " \n"; sleep 1; printf "\n"; sleep 1; printf "\n"; sleep 1; echo -n $'\033[1B'; sleep 1; printf "\n"; sleep 1; printf "\n"; sleep 1; printf "\n"; sleep 1; printf "\n"; sleep 1; echo -n $'\033[1B'; sleep 1; printf "\n") | npx create-nuxt-app front`
   - Project name: `front`
   - Programming language: JavaScript
   - Package manager: Npm
@@ -188,7 +41,7 @@ user.save!
   - Version control system: None
   - (takes 30 seconds to setup starter files)
 - `cd front`
-- `npm install --save-dev sass sass-loader@10`
+- `npm install --save-dev sass sass-loader@10 @picocss/pico`
 - `puravida assets/scss/main.scss`
 - `puravida nuxt.config.js ~`
 ```
@@ -396,6 +249,153 @@ export default {
 ~
 ```
 - `npm run dev`
+
+## BACKEND
+- `cd ~/Desktop`
+- `rails new back --api --database=postgresql`
+- `cd back`
+- create database
+  - if first time doing this: `rails db:create`
+  - if database already exists: `rails db:drop db:create`
+- `bundle add rack-cors bcrypt`
+- `rails active_storage:install`
+- `rails db:migrate`
+- `puravida config/initializers/cors.rb ~`
+```
+Rails.application.config.middleware.insert_before 0, Rack::Cors do
+  allow do
+    origins "*"
+    resource "*",
+      headers: :any,
+      methods: [:get, :post, :put, :patch, :delete, :options, :head]
+  end
+end
+~
+```
+
+### Health Controller
+- `rails g controller health index`
+- `puravida app/controllers/health_controller.rb ~`
+```
+class HealthController < ApplicationController
+  def index
+    render json: { status: 'online', status: 200 }
+  end
+end
+~
+```
+
+### Users
+- `rails g model user name email avatar:attachment admin:boolean password_digest`
+- change the migration file (`db/migrate/<timestamp>_create_users.rb`) to:
+```
+class CreateUsers < ActiveRecord::Migration[7.0]
+  def change
+    create_table :users do |t|
+      t.string :name, null: false
+      t.string :email, null: false, index: { unique: true }
+      t.boolean :admin, null: false, default: false
+      t.string :password_digest
+      t.timestamps
+    end
+  end
+end
+```
+- `rails db:migrate`
+- `puravida app/models/user.rb ~`
+```
+class User < ApplicationRecord
+  has_one_attached :avatar
+  has_secure_password
+end
+~
+```
+- `puravida app/controllers/users_controller.rb ~`
+```
+class UsersController < ApplicationController
+  
+  def index
+    @users = User.all.map do |u|
+      { :id => u.id, :name => u.name, :email => u.email, :avatar => url_for(u.avatar), :admin => u.admin }
+    end
+    render json: @users
+  end
+
+  def show
+    @user = User.find(params[:id])
+    render json: {
+      id: @user.id,
+      name: @user.name,
+      email: @user.email,
+      avatar: url_for(@user.avatar),
+      admin: @user.admin
+    }
+  end
+  
+  def create
+    user = User.create user_params
+    attach_main_pic(user) if admin_params[:avatar].present?
+    if user.save
+      render json: user, status: 200
+    else
+      render json: user, status: 400
+    end
+  end
+
+  private
+
+  def attach_main_pic(user)
+    user.avatar.attach(admin_params[:avatar])
+  end
+
+  def user_params
+    admin = admin_params[:admin].present? ? admin_params[:admin] : false
+    {
+      name: admin_params[:name],
+      email: admin_params[:email],
+      admin: admin,
+      password: admin_params[:password],
+    }
+  end
+
+  def admin_params
+    params.permit(
+      :name,
+      :email,
+      :avatar,
+      :admin,
+      :password
+    )
+  end
+end
+~
+```
+- `puravida config/routes.rb ~`
+```
+Rails.application.routes.draw do
+  resources :users
+  get "health", to: "health#index"
+end
+~
+```
+
+### Seeds
+- copy `assets` folder into `app` folder
+- `puravida db/seeds.rb ~`
+```
+user = User.create(name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password")
+user.avatar.attach(io: URI.open("#{Rails.root}/app/assets/office-avatars/michael-scott.png"), filename: "michael-scott.png")
+user.save!
+user = User.create(name: "Jim Halpert", email: "jimhalpert@dundermifflin.com", admin: "false", password: "password")
+user.avatar.attach(io: URI.open("#{Rails.root}/app/assets/office-avatars/jim-halpert.png"), filename: "jim-halpert.png")
+user.save!
+user = User.create(name: "Pam Beesly", email: "pambeesly@dundermifflin.com", admin: "false", password: "password")
+user.avatar.attach(io: URI.open("#{Rails.root}/app/assets/office-avatars/pam-beesly.png"), filename: "jim-halpert.png")
+user.save!
+~
+```
+- `rails db:seed`
+- `rails s`
 - you can now test the app locally at http://localhost:3001
 - kill both the frontend and backend servers by pressing `control + c` in their respective terminal tabs
 
@@ -494,3 +494,21 @@ end
 - https://itecnote.com/tecnote/ruby-on-rails-how-to-get-url-of-the-attachment-stored-in-active-storage-in-the-rails-controller/
 - https://stackoverflow.com/questions/50424251/how-can-i-get-url-of-my-attachment-stored-in-active-storage-in-my-rails-controll
 - https://stackoverflow.com/questions/5576550/in-rails-how-to-get-current-url-but-no-paths
+
+## Puravida
+This readme uses a small custom bash command called [puravida](https://github.com/mark-mcdermott/puravida) - it's just a simple one-liner I wrote to replace `mkdir` and `touch`. Instead of `mkdir folder && touch file.txt`, you can do `puravida folder/file.txt`. It's also a cleaner replacement for multiline text insertion. Instead of doing:
+```
+mkdir folder
+cat >> folder/file.txt << 'END'
+first text line
+second text line
+END
+```
+you can just do
+```
+puravida folder/file.txt ~
+first text line
+second text line
+~
+```
+If you don't feel like downloading my `puravida` script and putting it in your system path, feel free to substitute the instances of `puravida` below with the commands it's replacing.
