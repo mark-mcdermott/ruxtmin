@@ -34,6 +34,7 @@ This readme uses a small custom bash command called [puravida](#user-content-pur
 
 // Pico overrides 
 $primary-500: #e91e63;
+~
 ```
 - `puravida nuxt.config.js ~`
 ```
