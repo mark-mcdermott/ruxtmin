@@ -3,22 +3,7 @@
 This uses Nuxt 2 as a frontend and Rails 7 as a backend API and uses very simple implementation of Rail's Active Storage for local file upload and image display.
 
 ## Requirements
-This readme uses a small custom bash command called [puravida](https://github.com/mark-mcdermott/puravida) - it's just a simple one-liner I wrote to replace `mkdir` and `touch`. Instead of `mkdir folder && touch file.txt`, you can do `puravida folder/file.txt`. It's also a cleaner replacement for multiline text insertion. Instead of doing:
-```
-mkdir folder
-cat >> folder/file.txt << 'END'
-first text line
-second text line
-END
-```
-you can just do
-```
-puravida folder/file.txt ~
-first text line
-second text line
-~
-```
-If you don't feel like downloading my `puravida` script and putting it in your system path, feel free to substitute the instances of `puravida` below with the commands it's replacing.
+This readme uses a small custom bash command called [puravida](#user-content-puravida).
 
 ## FRONTEND
 
