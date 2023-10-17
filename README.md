@@ -1,6 +1,6 @@
 # Ruxtmin - Rails 7 Nuxt 2 Admin Boilerplate (With Active Storage Avatars)
 
-This uses Nuxt 2 as a frontend and Rails 7 as a backend API and uses very simple implementation of Rail's Active Storage for local file upload and image display.
+Nuxt 2 frontend, Rails 7 backend API and a simple implementation of Rail's Active Storage for uploading and displaying avatars.
 
 ## Requirements
 This readme uses a small custom bash command called [puravida](#user-content-puravida).
