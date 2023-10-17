@@ -1,4 +1,4 @@
-# Rails 7 Nuxt 2 Admin Boilerplate (With Active Storage Avatars)
+# Ruxtmin - Rails 7 Nuxt 2 Admin Boilerplate (With Active Storage Avatars)
 
 This uses Nuxt 2 as a frontend and Rails 7 as a backend API and uses very simple implementation of Rail's Active Storage for local file upload and image display.
 
@@ -196,6 +196,12 @@ user.save!
   - Version control system: None
   - (takes 30 seconds to setup starter files)
 - `cd front`
+- `npm install --save-dev sass sass-loader@10`
+- `puravida assets/scss/main.scss ~`
+```
+body { background: orange; }
+~
+```
 - `puravida nuxt.config.js ~`
 ```
 let development = process.env.NODE_ENV !== 'production'
@@ -217,6 +223,7 @@ export default {
       { rel: 'stylesheet', href: 'https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css' }
     ]
   },
+  css: ['@/assets/scss/main.scss'],
   components: true,
   buildModules: [],
   modules: ['@nuxtjs/axios'],
