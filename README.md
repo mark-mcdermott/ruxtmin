@@ -189,11 +189,7 @@ user.save!
   - (takes 30 seconds to setup starter files)
 - `cd front`
 - `npm install --save-dev sass sass-loader@10`
-- `puravida assets/scss/main.scss ~`
-```
-body { background: orange; }
-~
-```
+- `puravida assets/scss/main.scss`
 - `puravida nuxt.config.js ~`
 ```
 let development = process.env.NODE_ENV !== 'production'
