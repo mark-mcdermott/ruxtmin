@@ -27,7 +27,14 @@ This readme uses a small custom bash command called [puravida](#user-content-pur
   - (takes 30 seconds to setup starter files)
 - `cd front`
 - `npm install --save-dev sass sass-loader@10 @picocss/pico`
-- `puravida assets/scss/main.scss`
+- add `"sass": "node-sass ./public/scss/main.scss ./public/css/style.css -w"` to the `scripts` section of your `package.json` file
+- `puravida assets/scss/main.scss ~`
+```
+@import "node_modules/@picocss/pico/scss/pico.scss";
+
+// Pico overrides 
+$primary-500: #e91e63;
+```
 - `puravida nuxt.config.js ~`
 ```
 let development = process.env.NODE_ENV !== 'production'
@@ -46,7 +53,6 @@ export default {
     ],
     link: [
       { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
-      { rel: 'stylesheet', href: 'https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css' }
     ]
   },
   css: ['@/assets/scss/main.scss'],
@@ -192,15 +198,140 @@ export default {
 - `puravida components/Nav.vue ~`
 ```
 <template>
-  <nav class="container-fluid">
-    <ul><li><strong><NuxtLink to="/">Ruxtmin</NuxtLink></strong></li></ul>
-    <ul>
+  <nav class="top-nav container-fluid">
+    <ul><li><strong><a href="#">Ruxtmin</a></strong></li></ul>
+    <input id="menu-toggle" type="checkbox" />
+    <label class='menu-button-container' for="menu-toggle">
+      <div class='menu-button'></div>
+    </label>
+    <ul class="menu">
       <li><strong><NuxtLink to="/users">Users</NuxtLink></strong></li>
       <li><strong><NuxtLink to="/users/new">New User</NuxtLink></strong></li>
-      <!-- <li><a class="seconday" href="#" role="button">Button</a></li> -->
     </ul>
   </nav>
 </template>
+
+<style lang="sass" scoped>
+// css-only responsive nav
+// from https://codepen.io/alvarotrigo/pen/MWEJEWG (accessed 10/16/23, modified slightly)
+
+h2 
+  vertical-align: center
+  text-align: center
+
+
+html, body 
+  margin: 0
+  height: 100%
+
+.top-nav 
+  // display: flex
+  // flex-direction: row
+  // align-items: center
+  // justify-content: space-between
+  // background-color: #00BAF0
+  // background: linear-gradient(to left, #f46b45, #eea849)
+  /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+  // color: #FFF
+  height: 50px
+  // padding: 1em
+
+.top-nav > ul 
+  margin-top: 15px
+
+.menu 
+  display: flex
+  flex-direction: row
+  list-style-type: none
+  margin: 0
+  padding: 0
+
+.menu > li 
+  // margin: 0 1rem
+  overflow: hidden
+
+[type="checkbox"] ~ label.menu-button-container 
+  display: none
+  height: 100%
+  width: 30px
+  cursor: pointer
+  flex-direction: column
+  justify-content: center
+  align-items: center
+
+#menu-toggle 
+  display: none
+
+.menu-button,
+.menu-button::before,
+.menu-button::after 
+  display: block
+  background-color: #000
+  position: absolute
+  height: 4px
+  width: 30px
+  transition: transform 400ms cubic-bezier(0.23, 1, 0.32, 1)
+  border-radius: 2px
+
+.menu-button::before 
+  content: ''
+  margin-top: -8px
+
+.menu-button::after 
+  content: ''
+  margin-top: 8px
+
+#menu-toggle:checked + .menu-button-container .menu-button::before 
+  margin-top: 0px
+  transform: rotate(405deg)
+
+#menu-toggle:checked + .menu-button-container .menu-button 
+  background: rgba(255, 255, 255, 0)
+
+#menu-toggle:checked + .menu-button-container .menu-button::after 
+  margin-top: 0px
+  transform: rotate(-405deg)
+
+@media (max-width: 991px) 
+  [type="checkbox"] ~ label.menu-button-container 
+    display: flex
+
+  .top-nav > ul.menu 
+    position: absolute
+    top: 0
+    margin-top: 50px
+    left: 0
+    flex-direction: column
+    width: 100%
+    justify-content: center
+    align-items: center
+
+  #menu-toggle ~ .menu li 
+    height: 0
+    margin: 0
+    padding: 0
+    border: 0
+    transition: height 400ms cubic-bezier(0.23, 1, 0.32, 1)
+
+  #menu-toggle:checked ~ .menu li 
+    border: 1px solid #333
+    height: 2.5em
+    padding: 0.5em
+    transition: height 400ms cubic-bezier(0.23, 1, 0.32, 1)
+
+  .menu > li 
+    display: flex
+    justify-content: center
+    margin: 0
+    padding: 0.5em 0
+    width: 100%
+    // color: white
+    background-color: #222
+
+  .menu > li:not(:last-child) 
+    border-bottom: 1px solid #444
+
+</style>
 ~
 ```
 
