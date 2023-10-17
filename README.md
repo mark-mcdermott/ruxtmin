@@ -227,7 +227,76 @@ class AuthenticationsController < UsersController
   end
 end
 ```
-- TODO: put users controller here
+- `puravida app/controllers/users_controller.rb ~`
+```
+class UsersController < ApplicationController
+  skip_before_action :require_login, only: :create
+  
+  def index
+    @users = User.all.map do |u|
+      { :id => u.id, :name => u.name, :email => u.email, :avatar => url_for(u.avatar), :admin => u.admin }
+    end
+    render json: @users
+  end
+
+  def show
+    @user = User.find(params[:id])
+    render json: {
+      id: @user.id,
+      name: @user.name,
+      email: @user.email,
+      avatar: url_for(@user.avatar),
+      admin: @user.admin
+    }
+  end
+  
+  def create
+    user = User.create user_params
+    attach_main_pic(user) if admin_params[:avatar].present?
+    if user.save
+      render json: user, status: 200
+    else
+      render json: user, status: 400
+    end
+  end
+
+  private
+
+  def attach_main_pic(user)
+    user.avatar.attach(admin_params[:avatar])
+  end
+
+  def user_params
+    admin = admin_params[:admin].present? ? admin_params[:admin] : false
+    {
+      name: admin_params[:name],
+      email: admin_params[:email],
+      admin: admin,
+      password: admin_params[:password],
+    }
+  end
+
+  def admin_params
+    params.permit(
+      :name,
+      :email,
+      :avatar,
+      :admin,
+      :password
+    )
+  end
+end
+~
+```
+- `puravida config/routes.rb ~`
+```
+Rails.application.routes.draw do
+  resources :users
+  get "health", to: "health#index"
+  post "/login", to: "authentications#create"
+end
+~
+```
 
 - `rails s`
 
