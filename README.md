@@ -316,7 +316,7 @@ end
 ### Setup
 - (in a separate terminal tab)
 - `cd ~/Desktop`
-- `(printf 'front\n'; sleep 1; printf "\n"; sleep 1; echo -n $'\033[1B'; sleep 1; printf "\n"; sleep 1; printf "\n"; sleep 1; sleep 1; printf "\n"; sleep 1; printf " \n"; sleep 1; printf "\n"; sleep 1; printf "\n"; sleep 1; echo -n $'\033[1B'; sleep 1; printf "\n"; sleep 1; printf "\n"; sleep 1; printf "\n"; sleep 1; printf "\n"; sleep 1; echo -n $'\033[1B'; sleep 1; printf "\n") | npx create-nuxt-app front`
+- `(sleep 0.5; printf "\n"; sleep 0.5; printf "\n"; sleep 0.5; echo -n $'\033[1B'; printf "\n"; sleep 0.5; printf "\n"; sleep 0.5; printf "\n"; sleep 0.1; echo -n $'\x20'; sleep 0.1; printf "\n"; sleep 0.5; printf "\n"; sleep 0.5; printf "\n"; sleep 0.5; echo -n $'\033[1B'; printf "\n"; sleep 0.5; printf "\n"; sleep 0.5; printf "\n"; sleep 0.5; printf "\n"; sleep 0.5; echo -n $'\033[1B'; printf "\n";) | npx create-nuxt-app front`
   - Project name: `front`
   - Programming language: JavaScript
   - Package manager: Npm
