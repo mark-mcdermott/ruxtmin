@@ -516,7 +516,7 @@ export default {
 ```
 <template>
   <nav class="top-nav container-fluid">
-    <ul><li><strong><a href="#">Ruxtmin</a></strong></li></ul>
+    <ul><li><strong><NuxtLink to="/">Ruxtmin</NuxtLink></strong></li></ul>
     <input id="menu-toggle" type="checkbox" />
     <label class='menu-button-container' for="menu-toggle">
       <div class='menu-button'></div>
@@ -661,7 +661,6 @@ html, body
 
   .menu > li:not(:last-child) 
     border-bottom: 1px solid #444
-
 </style>
 ~
 ```
@@ -693,6 +692,12 @@ html, body
     -->
   </main>
 </template>
+
+<script>
+export default {
+  auth: false
+}
+</script>
 ~
 ```
 - `puravida components/Notification.vue ~`
@@ -714,45 +719,40 @@ export default {
 - `puravida pages/log-in.vue ~`
 ```
 <template>
-  <section class="bg-white dark:bg-gray-900">
-    <div>
+  <main class="container">
+    <h2>Log In</h2>
+    <Notification :message="error" v-if="error"/>
+    <form method="post" @submit.prevent="login">
       <div>
-        <h2>Log In</h2>
-        <Notification :message="error" v-if="error"/>
-        <form method="post" @submit.prevent="login">
-          <div>
-            <label>Email</label>
-            <div>
-              <input
-                type="email"
-                name="email"
-                v-model="email"
-              />
-            </div>
-          </div>
-          <div>
-            <label>Password</label>
-            <div>
-              <input
-                type="password"
-                name="password"
-                v-model="password"
-              />
-            </div>
-          </div>
-          <div>
-            <button type="submit">Log In</button>
-          </div>
-        </form>
+        <label>Email</label>
         <div>
-          <p>
-            Don't have an account? <NuxtLink to="/sign-up">Sign up</NuxtLink>
-          </p>
+          <input
+            type="email"
+            name="email"
+            v-model="email"
+          />
         </div>
-        
       </div>
+      <div>
+        <label>Password</label>
+        <div>
+          <input
+            type="password"
+            name="password"
+            v-model="password"
+          />
+        </div>
+      </div>
+      <div>
+        <button type="submit">Log In</button>
+      </div>
+    </form>
+    <div>
+      <p>
+        Don't have an account? <NuxtLink to="/sign-up">Sign up</NuxtLink>
+      </p>
     </div>
-  </section>
+  </main>
 </template>
 
 <script>
@@ -791,59 +791,55 @@ export default {
 - `puravida pages/sign-up.vue ~`
 ```
 <template>
-  <section>
-    <div>
+  <main class="container">
+    <h2>Sign Up</h2>
+    <Notification :message="error" v-if="error"/>
+    <form method="post" @submit.prevent="register">
       <div>
-        <h2>Sign Up</h2>
-        <Notification :message="error" v-if="error"/>
-        <form method="post" @submit.prevent="register">
-          <div>
-            <label>Name</label>
-            <div>
-              <input
-                type="name"
-                name="name"
-                v-model="name"
-              />
-            </div>
-          </div>
-          <div>
-            <label>Email</label>
-            <div>
-              <input
-                type="email"
-                name="email"
-                v-model="email"
-              />
-            </div>
-          </div>
-          <div>
-            <label>Password</label>
-            <div>
-              <input
-                type="password"
-                name="password"
-                v-model="password"
-              />
-            </div>
-          </div>
-          <div>
-            <label>Password Confirmation</label>
-            <div>
-              <input
-                type="password"
-                name="passwordConfirmation"
-                v-model="passwordConfirmation"
-              />
-            </div>
-          </div>
-          <div>
-            <button type="submit">Log In</button>
-          </div>
-        </form>        
+        <label>Name</label>
+        <div>
+          <input
+            type="name"
+            name="name"
+            v-model="name"
+          />
+        </div>
       </div>
-    </div>
-  </section>
+      <div>
+        <label>Email</label>
+        <div>
+          <input
+            type="email"
+            name="email"
+            v-model="email"
+          />
+        </div>
+      </div>
+      <div>
+        <label>Password</label>
+        <div>
+          <input
+            type="password"
+            name="password"
+            v-model="password"
+          />
+        </div>
+      </div>
+      <div>
+        <label>Password Confirmation</label>
+        <div>
+          <input
+            type="password"
+            name="passwordConfirmation"
+            v-model="passwordConfirmation"
+          />
+        </div>
+      </div>
+      <div>
+        <button type="submit">Log In</button>
+      </div>
+    </form>        
+  </main>
 </template>
 
 <script>
@@ -866,10 +862,10 @@ export default {
     async register() {
       try {
         await this.$axios.post('users', {
-          "user": {name: this.name,
+          name: this.name,
           email: this.email,
           password: this.password,
-          password_confirmation: this.passwordConfirmation}
+          password_confirmation: this.passwordConfirmation
         })
         await this.$auth.loginWith('local', {
           data: {
@@ -895,7 +891,11 @@ export const getters = {
   },
 
   isAdmin(state) {
-    return state.auth.user?.admin
+    if (state.auth.user && state.auth.user.admin !== null && state.auth.user.admin == 'true') { 
+        return true
+    } else {
+      return false
+    } 
   },
 
   loggedInUser(state) {
