@@ -918,6 +918,7 @@ export const getters = {
     return state.auth.user
   }
 }
+~
 ```
 ~
 - `npm run dev`
