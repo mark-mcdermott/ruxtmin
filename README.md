@@ -332,8 +332,8 @@ end
   - Version control system: None
   - (takes 30 seconds to setup starter files)
 - `cd front`
-- `npm install @picocss/pico @nuxtjs/auth@4.5.1`
-- `npm install --save-dev sass sass-loader@10 @picocss/pico`
+- `npm install @picocss/pico @nuxtjs/auth@4.5.1 @fortawesome/fontawesome-svg-core @fortawesome/free-solid-svg-icons @fortawesome/free-brands-svg-icons @fortawesome/vue-fontawesome@latest-2`
+- `npm install --save-dev sass sass-loader@10`
 - add `"sass": "node-sass ./public/scss/main.scss ./public/css/style.css -w"` to the `scripts` section of your `package.json` file
 - `puravida assets/scss/main.scss ~`
 ```
@@ -355,7 +355,8 @@ export default {
       { name: 'format-detection', content: 'telephone=no' }
     ], link: [{ rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }]
   },
-  css: ['@/assets/scss/main.scss'],
+  css: ['@fortawesome/fontawesome-svg-core/styles.css','@/assets/scss/main.scss'],
+  plugins: [ '~/plugins/fontawesome.js' ],
   components: true,
   buildModules: [],
   router: { middleware: ['auth'] },
@@ -381,8 +382,21 @@ export default {
 }
 ~
 ```
+- `puravida plugins/fontawesome.js ~`
+```
+import Vue from 'vue'
+import { library, config } from '@fortawesome/fontawesome-svg-core'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { fas } from '@fortawesome/free-solid-svg-icons'
+
+config.autoAddCss = false
+library.add(fas)
+Vue.component('font-awesome-icon', FontAwesomeIcon)
+~
+```
 - `rm -rf components/*`
 - `y`
+
 
 ## New User Page
 - `puravida components/NewUserForm.vue ~`
@@ -516,7 +530,7 @@ export default {
 ```
 <template>
   <nav class="top-nav container-fluid">
-    <ul><li><strong><NuxtLink to="/">Ruxtmin</NuxtLink></strong></li></ul>
+    <ul><li><strong><NuxtLink to="/"><font-awesome-icon icon="car" /> Ruxtmin</NuxtLink></strong></li></ul>
     <input id="menu-toggle" type="checkbox" />
     <label class='menu-button-container' for="menu-toggle">
       <div class='menu-button'></div>
