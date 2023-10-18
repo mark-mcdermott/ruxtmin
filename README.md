@@ -304,7 +304,8 @@ end
 Rails.application.routes.draw do
   resources :users
   get "health", to: "health#index"
-  post "/login", to: "authentications#create"
+  post "login", to: "authentications#create"
+  get "me", to: "application#user_from_token"
 end
 ~
 ```
@@ -695,6 +696,116 @@ html, body
 </template>
 ~
 ```
+- `puravida components/Notification.vue ~`
+```
+<template>
+  <div class="notification is-danger">
+    {{ message }}
+  </div>
+</template>
+
+<script>
+export default {
+  name: 'Notification',
+  props: ['message']
+}
+</script>
+~
+```
+- `puravida pages/log-in.vue ~`
+```
+<template>
+  <section class="bg-white dark:bg-gray-900">
+    <div>
+      <div>
+        <h2>Log In</h2>
+        <Notification :message="error" v-if="error"/>
+        <form method="post" @submit.prevent="login">
+          <div>
+            <label>Email</label>
+            <div>
+              <input
+                type="email"
+                name="email"
+                v-model="email"
+              />
+            </div>
+          </div>
+          <div>
+            <label>Password</label>
+            <div>
+              <input
+                type="password"
+                name="password"
+                v-model="password"
+              />
+            </div>
+          </div>
+          <div>
+            <button type="submit">Log In</button>
+          </div>
+        </form>
+        <div>
+          <p>
+            Don't have an account? <NuxtLink to="/sign-up">Sign up</NuxtLink>
+          </p>
+        </div>
+        
+      </div>
+    </div>
+  </section>
+</template>
+
+<script>
+import Notification from '~/components/Notification'
+export default {
+  auth: false,
+  components: {
+    Notification,
+  },
+  data() {
+    return {
+      email: '',
+      password: '',
+      error: null
+    }
+  },
+  methods: {
+    async login() {
+      try {
+        await this.$auth.loginWith('local', {
+          data: {
+            email: this.email,
+            password: this.password
+          }
+        })
+        this.$router.push(`/users/${this.$auth.user.id}`)
+      } catch (e) {
+        this.error = e.response.data.message
+      }
+    }
+  }
+}
+</script>
+~
+```
+- `puravida store/index.js ~`
+```
+export const getters = {
+  isAuthenticated(state) {
+    return state.auth.loggedIn
+  },
+
+  isAdmin(state) {
+    return state.auth.user?.admin?.toLowerCase() === 'true'
+  },
+
+  loggedInUser(state) {
+    return state.auth.user
+  }
+}
+```
+~
 - `npm run dev`
 - you can now test the app locally at http://localhost:3001
 - kill both the frontend and backend servers by pressing `control + c` in their respective terminal tabs
