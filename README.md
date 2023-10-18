@@ -1,3 +1,5 @@
+![Ruxt Mech](https://github.com/mark-mcdermott/ruxtmin/blob/main/assets/ruxtmin-mech.png)
+
 # Ruxtmin - Rails 7 Nuxt 2 Admin Boilerplate (With Active Storage Avatars)
 
 Nuxt 2 frontend, Rails 7 backend API and a simple implementation of Rail's Active Storage for uploading and displaying avatars.
