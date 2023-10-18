@@ -161,7 +161,6 @@ class ApplicationController < ActionController::API
   
   def user_from_token
     user = current_user.slice(:id,:email,:name,:admin)
-    user['admin'] = user['admin'] == 't' ? 'true' : 'false'
     render json: { data: user, status: 200 }
   end
 
@@ -896,7 +895,7 @@ export const getters = {
   },
 
   isAdmin(state) {
-    return state.auth.user?.admin?.toLowerCase() === 'true'
+    return state.auth.user?.admin
   },
 
   loggedInUser(state) {
