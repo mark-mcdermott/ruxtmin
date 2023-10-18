@@ -532,7 +532,7 @@ export default {
 ```
 <template>
   <nav class="top-nav container-fluid">
-    <ul><li><strong><NuxtLink to="/"><font-awesome-icon icon="car" /> Ruxtmin</NuxtLink></strong></li></ul>
+    <ul><li><strong><NuxtLink to="/"><font-awesome-icon icon="laptop-code" /> Ruxtmin</NuxtLink></strong></li></ul>
     <input id="menu-toggle" type="checkbox" />
     <label class='menu-button-container' for="menu-toggle">
       <div class='menu-button'></div>
