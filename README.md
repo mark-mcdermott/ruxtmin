@@ -34,7 +34,7 @@ end
 ```
 class HealthController < ApplicationController
   def index
-    render json: { status: 'online', status: 200 }
+    render json: { status: 'online' }
   end
 end
 ~
@@ -212,7 +212,7 @@ end
 - `rails g controller Authentications`
 - `puravida app/controllers/authentications_controller.rb ~`
 ```
-class AuthenticationsController < UsersController
+class AuthenticationsController < ApplicationController
   skip_before_action :require_login
   
   def create
@@ -226,6 +226,7 @@ class AuthenticationsController < UsersController
     end
   end
 end
+~
 ```
 - `puravida app/controllers/users_controller.rb ~`
 ```
@@ -284,6 +285,16 @@ class UsersController < ApplicationController
       :admin,
       :password
     )
+  end
+end
+~
+```
+- `puravida app/controllers/health_controller.rb ~`
+```
+class HealthController < ApplicationController
+  skip_before_action :require_login
+  def index
+    render json: { status: 'online' }
   end
 end
 ~
