@@ -1,4 +1,4 @@
-![Ruxt Mech](https://github.com/mark-mcdermott/ruxtmin/blob/main/assets/ruxtmin-mech.png)
+![Ruxtmin Mech Diagram](https://github.com/mark-mcdermott/ruxtmin/blob/main/assets/images/mechs/ruxtmin-mech-diagram.png)
 
 # Ruxtmin - Rails 7 Nuxt 2 Admin Boilerplate (With Active Storage Avatars)
 
@@ -1038,3 +1038,5 @@ second text line
 ~
 ```
 If you don't feel like downloading my `puravida` script and putting it in your system path, feel free to substitute the instances of `puravida` below with the commands it's replacing.
+
+![Ruxt Wolf Mech](https://github.com/mark-mcdermott/ruxtmin/blob/main/assets/ruxtmin-mech.png)
