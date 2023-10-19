@@ -1039,4 +1039,4 @@ second text line
 ```
 If you don't feel like downloading my `puravida` script and putting it in your system path, feel free to substitute the instances of `puravida` below with the commands it's replacing.
 
-![Ruxt Wolf Mech](https://github.com/mark-mcdermott/ruxtmin/blob/main/assets/ruxtmin-mech.png)
+![Ruxt Wolf Mech](https://github.com/mark-mcdermott/ruxtmin/blob/main/assets/images/mechs/wolf-mech.png)
