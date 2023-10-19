@@ -287,3 +287,563 @@ sleep 5
 cd front
 npm install @picocss/pico @nuxtjs/auth@4.5.1 @fortawesome/fontawesome-svg-core @fortawesome/free-solid-svg-icons @fortawesome/free-brands-svg-icons @fortawesome/vue-fontawesome@latest-2
 npm install --save-dev sass sass-loader@10
+sed -i '' "s/\"generate\": \"nuxt generate\"/\"generate\": \"nuxt generate\",/" /Users/mmcdermott/Desktop/front/package.json
+awk 'NR==10{print "\t\t\"sass\": \"node-sass ./public/scss/main.scss ./public/css/style.css -w\""}1' /Users/mmcdermott/Desktop/front/package.json > temp.txt && mv temp.txt /Users/mmcdermott/Desktop/front/package.json
+cat <<'EOF' | puravida assets/scss/main.scss ~
+@import "node_modules/@picocss/pico/scss/pico.scss";
+
+// Pico overrides 
+$primary-500: #e91e63;
+~
+EOF
+cat <<'EOF' | puravida nuxt.config.js ~
+let development = process.env.NODE_ENV !== 'production'
+export default {
+  ssr: false,
+  head: { title: 'front', htmlAttrs: { lang: 'en' },
+    meta: [ { charset: 'utf-8' },
+      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+      { hid: 'description', name: 'description', content: '' },
+      { name: 'format-detection', content: 'telephone=no' }
+    ], link: [{ rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }]
+  },
+  css: ['@fortawesome/fontawesome-svg-core/styles.css','@/assets/scss/main.scss'],
+  plugins: [ '~/plugins/fontawesome.js' ],
+  components: true,
+  buildModules: [],
+  router: { middleware: ['auth'] },
+  modules: ['@nuxtjs/axios', '@nuxtjs/auth'],
+  axios: { baseURL: development ? 'http://localhost:3000' : 'https://ruxtmin-back.fly.dev/' },
+  server: { port: development ? 3001 : 3000 },
+  auth: {
+    strategies: {
+      local: {
+        endpoints: {
+          login: { url: 'login', method: 'post', propertyName: 'data' },
+          logout: false,
+          user: { url: 'me', method: 'get', propertyName: 'data' }
+        }
+      }
+    },
+    redirect: {
+      login: '/log-in',
+      logout: '/',
+      home: '/'
+    }
+  }
+}
+~
+EOF
+cat <<'EOF' | puravida plugins/fontawesome.js ~
+import Vue from 'vue'
+import { library, config } from '@fortawesome/fontawesome-svg-core'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { fas } from '@fortawesome/free-solid-svg-icons'
+
+config.autoAddCss = false
+library.add(fas)
+Vue.component('font-awesome-icon', FontAwesomeIcon)
+~
+EOF
+rm -f components/*.vue
+echo -e "\n\n🦄 New User Page\n\n"
+cat <<'EOF' | puravida components/NewUserForm.vue ~
+<template>
+  <section>
+    <form enctype="multipart/form-data">
+      <p>Name: </p><input v-model="name">
+      <p>Email: </p><input v-model="email">
+      <p>Avatar: </p><input type="file" ref="inputFile" @change=uploadAvatar()>
+      <p>Password: </p><input type="password" v-model="password">
+      <button @click.prevent=createUser>Create User</button>
+    </form>
+  </section>
+</template>
+
+<script>
+export default {
+  data () {
+    return {
+      name: "",
+      email: "",
+      avatar: null,
+      password: ""
+    }
+  },
+  methods: {
+    uploadAvatar: function() {
+      this.avatar = this.$refs.inputFile.files[0];
+    },
+    createUser: function() {
+      const params = {
+        'name': this.name,
+        'email': this.email,
+        'avatar': this.avatar,
+        'password': this.password,
+      }
+      let payload = new FormData()
+      Object.entries(params).forEach(
+        ([key, value]) => payload.append(key, value)
+      )
+      this.$axios.$post('users', payload)
+    }
+  }
+}
+</script>
+~
+EOF
+cat <<'EOF' | puravida pages/users/new.vue ~
+<template>
+  <main class="container">
+    <h1>New User</h1>
+    <NewUserForm />
+  </main>
+</template>
+~
+EOF
+echo -e "\n\n🦄 Users Page\n\n"
+cat <<'EOF' | puravida components/UsersList.vue ~
+<template>
+  <section>
+    <div v-for="user in users" :key="user.id">
+      <article>
+        <h2><NuxtLink :to="`users/${user.id}`">{{ user.name }}</NuxtLink></h2>
+        <p>id: {{ user.id }}</p>
+        <p>email: {{ user.email }}</p>
+        <p>avatar:</p>
+        <img :src="user.avatar" />
+        <p>admin: {{ user.admin }}</p>
+      </article>
+    </div>
+  </section>
+</template>
+
+<script>
+export default {
+  data: () => ({
+    users: []
+  }),
+  async fetch() {
+    this.users = await this.$axios.$get('users')
+  },
+}
+</script>
+~
+EOF
+cat <<'EOF' | puravida pages/users/index.vue ~
+<template>
+  <main class="container">
+    <h1>Users</h1>
+    <UsersList />
+  </main>
+</template>
+~
+echo -e "\n\n🦄 User Page\n\n"
+cat <<'EOF' | puravida pages/users/_id.vue ~
+<template>
+  <main class="container">
+    <h1>{{ user.name }}</h1>
+    <section>
+      <p>id: {{ user.id }}</p>
+      <p>email: {{ user.email }}</p>
+      <p>avatar:</p>
+      <img :src="user.avatar" />
+    </section>
+  </main>
+</template>
+
+<script>
+export default {
+  data: () => ({
+    user: {},
+  }),
+  async fetch() {
+    this.user = await this.$axios.$get(`users/${this.$route.params.id}`)
+  }
+}
+</script>
+~
+EOF
+echo -e "\n\n🦄 Nav\n\n"
+cat <<'EOF' | puravida components/Nav.vue ~
+<template>
+  <nav class="top-nav container-fluid">
+    <ul><li><strong><NuxtLink to="/"><font-awesome-icon icon="laptop-code" /> Ruxtmin</NuxtLink></strong></li></ul>
+    <input id="menu-toggle" type="checkbox" />
+    <label class='menu-button-container' for="menu-toggle">
+      <div class='menu-button'></div>
+    </label>
+    <ul class="menu">
+      <li v-if="!isAuthenticated"><strong><NuxtLink to="/log-in">Log In</NuxtLink></strong></li>
+      <li v-if="!isAuthenticated"><strong><NuxtLink to="/sign-up">Sign Up</NuxtLink></strong></li>
+      <li v-if="isAdmin"><strong><NuxtLink to="/users">Users</NuxtLink></strong></li>
+      <li v-if="isAuthenticated"><strong><a @click="logOut">Log Out</a></strong></li>
+    </ul>
+  </nav>
+</template>
+
+<script>
+import { mapGetters } from 'vuex'
+export default {
+  computed: {
+    ...mapGetters(['isAuthenticated', 'isAdmin', 'loggedInUser']),
+  }, methods: {
+    async logOut() {
+      await this.$auth.logout();
+    },
+  }
+}
+</script>
+
+<style lang="sass" scoped>
+// css-only responsive nav
+// from https://codepen.io/alvarotrigo/pen/MWEJEWG (accessed 10/16/23, modified slightly)
+
+h2 
+  vertical-align: center
+  text-align: center
+
+html, body 
+  margin: 0
+  height: 100%
+
+.top-nav 
+  // display: flex
+  // flex-direction: row
+  // align-items: center
+  // justify-content: space-between
+  // background-color: #00BAF0
+  // background: linear-gradient(to left, #f46b45, #eea849)
+  /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+  // color: #FFF
+  height: 50px
+  // padding: 1em
+
+.top-nav > ul 
+  margin-top: 15px
+
+.menu 
+  display: flex
+  flex-direction: row
+  list-style-type: none
+  margin: 0
+  padding: 0
+
+.menu > li 
+  // margin: 0 1rem
+  overflow: hidden
+
+[type="checkbox"] ~ label.menu-button-container 
+  display: none
+  height: 100%
+  width: 30px
+  cursor: pointer
+  flex-direction: column
+  justify-content: center
+  align-items: center
+
+#menu-toggle 
+  display: none
+
+.menu-button,
+.menu-button::before,
+.menu-button::after 
+  display: block
+  background-color: #000
+  position: absolute
+  height: 4px
+  width: 30px
+  transition: transform 400ms cubic-bezier(0.23, 1, 0.32, 1)
+  border-radius: 2px
+
+.menu-button::before 
+  content: ''
+  margin-top: -8px
+
+.menu-button::after 
+  content: ''
+  margin-top: 8px
+
+#menu-toggle:checked + .menu-button-container .menu-button::before 
+  margin-top: 0px
+  transform: rotate(405deg)
+
+#menu-toggle:checked + .menu-button-container .menu-button 
+  background: rgba(255, 255, 255, 0)
+
+#menu-toggle:checked + .menu-button-container .menu-button::after 
+  margin-top: 0px
+  transform: rotate(-405deg)
+
+@media (max-width: 991px) 
+  [type="checkbox"] ~ label.menu-button-container 
+    display: flex
+
+  .top-nav > ul.menu 
+    position: absolute
+    top: 0
+    margin-top: 50px
+    left: 0
+    flex-direction: column
+    width: 100%
+    justify-content: center
+    align-items: center
+
+  #menu-toggle ~ .menu li 
+    height: 0
+    margin: 0
+    padding: 0
+    border: 0
+    transition: height 400ms cubic-bezier(0.23, 1, 0.32, 1)
+
+  #menu-toggle:checked ~ .menu li 
+    border: 1px solid #333
+    height: 2.5em
+    padding: 0.5em
+    transition: height 400ms cubic-bezier(0.23, 1, 0.32, 1)
+
+  .menu > li 
+    display: flex
+    justify-content: center
+    margin: 0
+    padding: 0.5em 0
+    width: 100%
+    // color: white
+    background-color: #222
+
+  .menu > li:not(:last-child) 
+    border-bottom: 1px solid #444
+</style>
+~
+EOF
+cat <<'EOF' | puravida layouts/default.vue ~
+<template>
+  <div>
+    <Nav />
+    <Nuxt />
+  </div>
+</template>
+~
+EOF
+echo -e "\n\n🦄 Home\n\n"
+cat <<'EOF' | puravida pages/index.vue ~
+<template>
+  <main class="container">
+    <h1>Rails 7 Nuxt 2 Admin Boilerplate</h1>
+    <p>Uses local active storage for user avatars</p>
+    <!-- 
+    <p>
+      <a href="docs/" role="button" class="secondary" aria-label="Documentation">Get started</a> 
+      <a href="https://github.com/picocss/pico/archive/refs/tags/v1.5.9.zip" role="button" class="contrast outline" aria-label="Download">Download</a>
+    </p>
+    <p><code><small>Less than 10 kB minified and gzipped</small></code></p>
+    -->
+  </main>
+</template>
+
+<script>
+export default {
+  auth: false
+}
+</script>
+~
+EOF
+cat <<'EOF' | puravida components/Notification.vue ~
+<template>
+  <div class="notification is-danger">
+    {{ message }}
+  </div>
+</template>
+
+<script>
+export default {
+  name: 'Notification',
+  props: ['message']
+}
+</script>
+~
+EOF
+cat <<'EOF' | puravida pages/log-in.vue ~
+<template>
+  <main class="container">
+    <h2>Log In</h2>
+    <Notification :message="error" v-if="error"/>
+    <form method="post" @submit.prevent="login">
+      <div>
+        <label>Email</label>
+        <div>
+          <input
+            type="email"
+            name="email"
+            v-model="email"
+          />
+        </div>
+      </div>
+      <div>
+        <label>Password</label>
+        <div>
+          <input
+            type="password"
+            name="password"
+            v-model="password"
+          />
+        </div>
+      </div>
+      <div>
+        <button type="submit">Log In</button>
+      </div>
+    </form>
+    <div>
+      <p>
+        Don't have an account? <NuxtLink to="/sign-up">Sign up</NuxtLink>
+      </p>
+    </div>
+  </main>
+</template>
+
+<script>
+import Notification from '~/components/Notification'
+export default {
+  auth: false,
+  components: {
+    Notification,
+  },
+  data() {
+    return {
+      email: '',
+      password: '',
+      error: null
+    }
+  },
+  methods: {
+    async login() {
+      try {
+        await this.$auth.loginWith('local', {
+          data: {
+            email: this.email,
+            password: this.password
+          }
+        })
+        this.$router.push(`/users/${this.$auth.user.id}`)
+      } catch (e) {
+        this.error = e.response.data.message
+      }
+    }
+  }
+}
+</script>
+~
+EOF
+cat <<'EOF' | puravida pages/sign-up.vue ~
+<template>
+  <main class="container">
+    <h2>Sign Up</h2>
+    <Notification :message="error" v-if="error"/>
+    <form method="post" @submit.prevent="register">
+      <div>
+        <label>Name</label>
+        <div>
+          <input
+            type="name"
+            name="name"
+            v-model="name"
+          />
+        </div>
+      </div>
+      <div>
+        <label>Email</label>
+        <div>
+          <input
+            type="email"
+            name="email"
+            v-model="email"
+          />
+        </div>
+      </div>
+      <div>
+        <label>Password</label>
+        <div>
+          <input
+            type="password"
+            name="password"
+            v-model="password"
+          />
+        </div>
+      </div>
+      <div>
+        <label>Password Confirmation</label>
+        <div>
+          <input
+            type="password"
+            name="passwordConfirmation"
+            v-model="passwordConfirmation"
+          />
+        </div>
+      </div>
+      <div>
+        <button type="submit">Log In</button>
+      </div>
+    </form>        
+  </main>
+</template>
+
+<script>
+import Notification from '~/components/Notification'
+export default {
+  auth: false,
+  components: {
+    Notification,
+  },
+  data() {
+    return {
+      name: '',
+      email: '',
+      password: '',
+      passwordConfirmation: '',
+      error: null
+    }
+  },
+  methods: {
+    async register() {
+      try {
+        await this.$axios.post('users', {
+          name: this.name,
+          email: this.email,
+          password: this.password,
+          password_confirmation: this.passwordConfirmation
+        })
+        await this.$auth.loginWith('local', {
+          data: {
+          email: this.email,
+          password: this.password
+          },
+        })
+        this.$router.push('/')
+      } catch (e) {
+        this.error = e.response.data.message
+      }
+    }
+  }
+}
+</script>
+~
+EOF
+cat <<'EOF' | puravida store/index.js ~
+export const getters = {
+  isAuthenticated(state) {
+    return state.auth.loggedIn
+  },
+
+  isAdmin(state) {
+    if (state.auth.user && state.auth.user.admin !== null && state.auth.user.admin == 'true') { 
+        return true
+    } else {
+      return false
+    } 
+  },
+
+  loggedInUser(state) {
+    return state.auth.user
+  }
+}
+~
