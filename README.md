@@ -555,7 +555,7 @@ export default {
         <h2>
           {{ user.name }} 
           <NuxtLink :to="`/users/${user.id}/edit`"><font-awesome-icon icon="pencil" /></NuxtLink> 
-          <a @click.prevent=deleteUser href="#"><font-awesome-icon icon="trash" /></a>
+          <a @click.prevent=deleteUser(user.id) href="#"><font-awesome-icon icon="trash" /></a>
         </h2>
         <p>id: {{ user.id }}</p>
         <p>email: {{ user.email }}</p>
@@ -579,7 +579,7 @@ export default {
     uploadAvatar: function() {
       this.avatar = this.$refs.inputFile.files[0];
     },
-    deleteUser: function() {
+    deleteUser: function(id) {
       this.$axios.$delete(`users/${this.$route.params.id}`)
     }
   }
