@@ -108,6 +108,13 @@ class UsersController < ApplicationController
     end
   end
 
+  def destroy
+    @user = User.find(params[:id])
+    @user.avatar.purge
+    @user.destroy
+    render json: { status: 200, message: "user deleted successfully" }
+  end
+
   private
 
   def attach_main_pic(user)
@@ -279,6 +286,13 @@ class UsersController < ApplicationController
     else
       json render: @user, status: 400
     end
+  end
+
+  def destroy
+    @user = User.find(params[:id])
+    @user.avatar.purge
+    @user.destroy
+    render json: { status: 200, message: "user deleted successfully" }
   end
 
   private
@@ -488,7 +502,7 @@ export default {
         <h2>
           <NuxtLink :to="`users/${user.id}`">{{ user.name }}</NuxtLink> 
           <NuxtLink :to="`/users/${user.id}/edit`"><font-awesome-icon icon="pencil" /></NuxtLink>
-          <font-awesome-icon icon="trash" />
+          <a @click.prevent=deleteUser(user.id) href="#"><font-awesome-icon icon="trash" /></a>
         </h2>
         <p>id: {{ user.id }}</p>
         <p>email: {{ user.email }}</p>
@@ -508,6 +522,14 @@ export default {
   async fetch() {
     this.users = await this.$axios.$get('users')
   },
+  methods: {
+    uploadAvatar: function() {
+      this.avatar = this.$refs.inputFile.files[0];
+    },
+    deleteUser: function(id) {
+      this.$axios.$delete(`users/${id}`)
+    }
+  }
 }
 </script>
 ~
@@ -533,7 +555,7 @@ export default {
         <h2>
           {{ user.name }} 
           <NuxtLink :to="`/users/${user.id}/edit`"><font-awesome-icon icon="pencil" /></NuxtLink> 
-          <font-awesome-icon icon="trash" />
+          <a @click.prevent=deleteUser href="#"><font-awesome-icon icon="trash" /></a>
         </h2>
         <p>id: {{ user.id }}</p>
         <p>email: {{ user.email }}</p>
@@ -552,6 +574,14 @@ export default {
   }),
   async fetch() {
     this.user = await this.$axios.$get(`users/${this.$route.params.id}`)
+  },
+  methods: {
+    uploadAvatar: function() {
+      this.avatar = this.$refs.inputFile.files[0];
+    },
+    deleteUser: function() {
+      this.$axios.$delete(`users/${this.$route.params.id}`)
+    }
   }
 }
 </script>
