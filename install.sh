@@ -126,12 +126,16 @@ cat <<'EOF' | puravida pages/users/new.vue ~
 ~
 EOF
 echo -e "\n\n🦄 Users Page\n\n"
-cat <<'EOF' | puravida components/UsersList.vue ~
+cat <<'EOF' | puravida components/UserCards.vue ~
 <template>
   <section>
     <div v-for="user in users" :key="user.id">
       <article>
-        <h2><NuxtLink :to="`users/${user.id}`">{{ user.name }}</NuxtLink></h2>
+        <h2>
+          <NuxtLink :to="`users/${user.id}`">{{ user.name }}</NuxtLink> 
+          <NuxtLink :to="`/users/${user.id}/edit`"><font-awesome-icon icon="pencil" /></NuxtLink>
+          <font-awesome-icon icon="trash" />
+        </h2>
         <p>id: {{ user.id }}</p>
         <p>email: {{ user.email }}</p>
         <p>avatar:</p>
@@ -155,35 +159,33 @@ export default {
 ~
 EOF
 
-echo -e "\n\n🦄 Howdy\n\n"
-
 cat <<'EOF' | puravida pages/users/index.vue ~
 <template>
   <main class="container">
     <h1>Users</h1>
-    <UsersList />
+    <UserCards />
   </main>
 </template>
 ~
 EOF
 
-echo -e "\n\n🦄 Heeeeeey\n\n"
-
 echo -e "\n\n🦄 User Page\n\n"
-sleep 5
-echo -e "\n\n🦄 Hi\n\n"
-puravida pages/users/_id.vue
-sleep 5
-echo -e "\n\n🦄 Bye\n\n"
-cat <<'EOF' | puravida pages/users/_id.vue ~
+cat <<'EOF' | puravida pages/users/_id/index.vue ~
 <template>
   <main class="container">
-    <h1>{{ user.name }}</h1>
     <section>
-      <p>id: {{ user.id }}</p>
-      <p>email: {{ user.email }}</p>
-      <p>avatar:</p>
-      <img :src="user.avatar" />
+      <article>
+        <h2>
+          {{ user.name }} 
+          <NuxtLink :to="`/users/${user.id}/edit`"><font-awesome-icon icon="pencil" /></NuxtLink> 
+          <font-awesome-icon icon="trash" />
+        </h2>
+        <p>id: {{ user.id }}</p>
+        <p>email: {{ user.email }}</p>
+        <p>avatar:</p>
+        <img :src="user.avatar" />
+        <p>admin: {{ user.admin }}</p>
+      </article>
     </section>
   </main>
 </template>
@@ -195,6 +197,57 @@ export default {
   }),
   async fetch() {
     this.user = await this.$axios.$get(`users/${this.$route.params.id}`)
+  }
+}
+</script>
+~
+EOF
+
+echo -e "\n\n🦄 User Edit Page\n\n"
+cat <<'EOF' | puravida pages/users/_id/edit.vue ~
+<template>
+  <section>
+    <article>
+      <h2>Edit User</h2>
+      <p>id: {{ user.id }}</p>
+      <form enctype="multipart/form-data">
+        <p>Name: </p><input v-model="user.name">
+        <p>Email: </p><input v-model="user.email">
+        <p>Avatar: </p>
+        <img :src="user.avatar" />
+        <input type="file" ref="inputFile" @change=uploadAvatar()>
+        <button @click.prevent=editUser>Edit User</button>
+      </form>
+    </article>
+  </section>
+</template>
+
+<script>
+export default {
+  data: () => ({
+    user: {},
+    avatar: null
+  }),
+  async fetch() {
+    this.user = await this.$axios.$get(`users/${this.$route.params.id}`)
+  },
+  methods: {
+    uploadAvatar: function() {
+      this.avatar = this.$refs.inputFile.files[0];
+    },
+    editUser: function() {
+      let params = {}
+      if (this.avatar == null) {
+        params = {'name': this.user.name,'email': this.user.email}
+      } else {
+        params = {'name': this.user.name,'email': this.user.email,'avatar': this.avatar}
+      }
+      let payload = new FormData()
+      Object.entries(params).forEach(
+        ([key, value]) => payload.append(key, value)
+      )
+      this.$axios.$patch(`users/${this.$route.params.id}`, payload)
+    }
   }
 }
 </script>
@@ -662,6 +715,15 @@ class UsersController < ApplicationController
     end
   end
 
+  def update
+    @user = User.find(params[:id])
+    if @user.update(admin_params)
+      render json: @user, status: 200
+    else
+      json render: @user, status: 400
+    end
+  end
+
   private
 
   def attach_main_pic(user)
@@ -680,6 +742,7 @@ class UsersController < ApplicationController
 
   def admin_params
     params.permit(
+      :id,
       :name,
       :email,
       :avatar,
@@ -818,6 +881,15 @@ class UsersController < ApplicationController
     end
   end
 
+  def update
+    @user = User.find(params[:id])
+    if @user.update(admin_params)
+      render json: @user, status: 200
+    else
+      json render: @user, status: 400
+    end
+  end
+
   private
 
   def attach_main_pic(user)
@@ -836,6 +908,7 @@ class UsersController < ApplicationController
 
   def admin_params
     params.permit(
+      :id,
       :name,
       :email,
       :avatar,
