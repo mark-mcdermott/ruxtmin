@@ -49,7 +49,8 @@ class UsersController < ApplicationController
   
   def index
     @users = User.all.map do |u|
-      { :id => u.id, :name => u.name, :email => u.email, :avatar => url_for(u.avatar), :admin => u.admin }
+      avatar = u.avatar.present? ? url_for(u.avatar) : nil
+      { :id => u.id, :name => u.name, :email => u.email, :avatar => avatar, :admin => u.admin }
     end
     render json: @users
   end
@@ -222,7 +223,8 @@ class UsersController < ApplicationController
   
   def index
     @users = User.all.map do |u|
-      { :id => u.id, :name => u.name, :email => u.email, :avatar => url_for(u.avatar), :admin => u.admin }
+      avatar = u.avatar.present? ? url_for(u.avatar) : nil
+      { :id => u.id, :name => u.name, :email => u.email, :avatar => avatar, :admin => u.admin }
     end
     render json: @users
   end
@@ -537,20 +539,22 @@ EOF
 echo -e "\n\n🦄 User Edit Page\n\n"
 cat <<'EOF' | puravida pages/users/_id/edit.vue ~
 <template>
-  <section>
-    <article>
-      <h2>Edit User</h2>
-      <p>id: {{ user.id }}</p>
-      <form enctype="multipart/form-data">
-        <p>Name: </p><input v-model="user.name">
-        <p>Email: </p><input v-model="user.email">
-        <p>Avatar: </p>
-        <img :src="user.avatar" />
-        <input type="file" ref="inputFile" @change=uploadAvatar()>
-        <button @click.prevent=editUser>Edit User</button>
-      </form>
-    </article>
-  </section>
+  <main class="container">
+    <section>
+      <article>
+        <h2>Edit User</h2>
+        <p>id: {{ user.id }}</p>
+        <form enctype="multipart/form-data">
+          <p>Name: </p><input v-model="user.name">
+          <p>Email: </p><input v-model="user.email">
+          <p>Avatar: </p>
+          <img :src="user.avatar" />
+          <input type="file" ref="inputFile" @change=uploadAvatar()>
+          <button @click.prevent=editUser>Edit User</button>
+        </form>
+      </article>
+    </section>
+  </main>
 </template>
 
 <script>
@@ -598,7 +602,18 @@ cat <<'EOF' | puravida components/Nav.vue ~
       <li v-if="!isAuthenticated"><strong><NuxtLink to="/log-in">Log In</NuxtLink></strong></li>
       <li v-if="!isAuthenticated"><strong><NuxtLink to="/sign-up">Sign Up</NuxtLink></strong></li>
       <li v-if="isAdmin"><strong><NuxtLink to="/users">Users</NuxtLink></strong></li>
-      <li v-if="isAuthenticated"><strong><a @click="logOut">Log Out</a></strong></li>
+      <li v-if="isAuthenticated" class='dropdown'>
+        <details role="list" dir="rtl">
+          <summary class='summary' aria-haspopup="listbox" role="link"><font-awesome-icon icon="circle-user" /></summary>
+          <ul role="listbox">
+            <li><NuxtLink :to="`/users/${loggedInUser.id}`">Profile</NuxtLink></li>
+            <li><NuxtLink :to="`/users/${loggedInUser.id}/edit`">Settings</NuxtLink></li>
+            <li><a @click="logOut">Log Out</a></li>
+          </ul>
+        </details>
+      </li>
+      <!-- <li v-if="isAuthenticated"><strong><NuxtLink :to="`/users/${loggedInUser.id}`">Settings</NuxtLink></strong></li> -->
+      <li class="logout-desktop" v-if="isAuthenticated"><strong><a @click="logOut">Log Out</a></strong></li>
     </ul>
   </nav>
 </template>
@@ -650,10 +665,6 @@ html, body
   margin: 0
   padding: 0
 
-.menu > li 
-  // margin: 0 1rem
-  overflow: hidden
-
 [type="checkbox"] ~ label.menu-button-container 
   display: none
   height: 100%
@@ -696,7 +707,45 @@ html, body
   margin-top: 0px
   transform: rotate(-405deg)
 
+.menu 
+  > li 
+    overflow: visible
+
+  > li.dropdown
+    background: none
+
+    .summary
+      margin: 0
+      padding: 1rem 0
+      font-size: 1.5rem
+
+      &:focus
+        color: var(--color)
+        background: none
+
+      &:after
+        display: none
+
+    ul
+      padding-top: 0
+      margin-top: 0
+      right: -1rem
+
+  > li.logout-desktop
+    display: none
+
 @media (max-width: 991px) 
+  .menu 
+    
+    > li 
+      overflow: hidden
+    
+    > li.dropdown
+      display: none
+
+    > li.logout-desktop
+      display: flex
+
   [type="checkbox"] ~ label.menu-button-container 
     display: flex
 
