@@ -907,7 +907,7 @@ export const getters = {
   },
 
   isAdmin(state) {
-    if (state.auth.user && state.auth.user.admin !== null && state.auth.user.admin == 'true') { 
+    if (state.auth.user && state.auth.user.admin !== null && state.auth.user.admin == true) { 
         return true
     } else {
       return false
