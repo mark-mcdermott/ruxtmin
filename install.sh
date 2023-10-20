@@ -472,6 +472,8 @@ export default {
     },
     deleteUser: function(id) {
       this.$axios.$delete(`users/${id}`)
+      const index = this.users.findIndex((i) => { return i.id === id })
+      this.users.splice(index, 1);
     }
   }
 }
@@ -524,6 +526,7 @@ export default {
     },
     deleteUser: function(id) {
       this.$axios.$delete(`users/${this.$route.params.id}`)
+      this.$router.push('/users')
     }
   }
 }
