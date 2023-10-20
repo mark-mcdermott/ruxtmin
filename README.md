@@ -2,7 +2,7 @@
 
 # Ruxtmin - Rails 7 Nuxt 2 Admin Boilerplate (With Active Storage Avatars)
 
-Nuxt 2 frontend, Rails 7 backend API and a simple implementation of Rail's Active Storage for uploading and displaying avatars.
+Nuxt 2 frontend, Rails 7 backend API and a simple implementation of Rail's Active Storage for uploading and displaying avatars. It uses bcrypt and jwt for backend auth and Nuxt's auth module for frontend auth.
 
 ## Requirements
 This readme uses a small custom bash command called [puravida](#user-content-puravida).
@@ -495,34 +495,35 @@ export default {
 ```
 
 ### Users Page
-- `puravida components/UserCards.vue ~`
+- `puravida components/UserCard.vue ~`
 ```
 <template>
-  <section>
-    <div v-for="user in users" :key="user.id">
-      <article>
-        <h2>
-          <NuxtLink :to="`users/${user.id}`">{{ user.name }}</NuxtLink> 
-          <NuxtLink :to="`/users/${user.id}/edit`"><font-awesome-icon icon="pencil" /></NuxtLink>
-          <a @click.prevent=deleteUser(user.id) href="#"><font-awesome-icon icon="trash" /></a>
-        </h2>
-        <p>id: {{ user.id }}</p>
-        <p>email: {{ user.email }}</p>
-        <p>avatar:</p>
-        <img :src="user.avatar" />
-        <p>admin: {{ user.admin }}</p>
-      </article>
-    </div>
-  </section>
+  <article>
+    <h2>
+      <NuxtLink :to="`users/${user.id}`">{{ user.name }}</NuxtLink> 
+      <NuxtLink :to="`/users/${user.id}/edit`"><font-awesome-icon icon="pencil" /></NuxtLink>
+      <a @click.prevent=deleteUser(user.id) href="#"><font-awesome-icon icon="trash" /></a>
+    </h2>
+    <p>id: {{ user.id }}</p>
+    <p>email: {{ user.email }}</p>
+    <p>avatar:</p>
+    <img :src="user.avatar" />
+    <p>admin: {{ user.admin }}</p>
+  </article>
 </template>
 
 <script>
 export default {
-  data: () => ({
-    users: []
-  }),
-  async fetch() {
-    this.users = await this.$axios.$get('users')
+  name: 'UserCard',
+  props: {
+    user: {
+      type: Object,
+      default: () => ({}),
+    },
+    users: {
+      type: Array,
+      default: () => ([]),
+    },
   },
   methods: {
     uploadAvatar: function() {
@@ -533,6 +534,32 @@ export default {
       const index = this.users.findIndex((i) => { return i.id === id })
       this.users.splice(index, 1);
     }
+  }
+}
+</script>
+~
+```
+- `puravida components/UserCards.vue ~`
+```
+<template>
+  <section>
+    <div v-for="user in users" :key="user.id">
+      <UserCard :user="user" :users="users" />
+    </div>
+  </section>
+</template>
+
+<script>
+import UserCard from './UserCard';
+export default {
+  component: {
+    UserCard
+  },
+  data: () => ({
+    users: []
+  }),
+  async fetch() {
+    this.users = await this.$axios.$get('users')
   }
 }
 </script>
@@ -555,23 +582,13 @@ export default {
 <template>
   <main class="container">
     <section>
-      <article>
-        <h2>
-          {{ user.name }} 
-          <NuxtLink :to="`/users/${user.id}/edit`"><font-awesome-icon icon="pencil" /></NuxtLink> 
-          <a @click.prevent=deleteUser(user.id) href="#"><font-awesome-icon icon="trash" /></a>
-        </h2>
-        <p>id: {{ user.id }}</p>
-        <p>email: {{ user.email }}</p>
-        <p>avatar:</p>
-        <img :src="user.avatar" />
-        <p>admin: {{ user.admin }}</p>
-      </article>
+      <UserCard :user="user" />
     </section>
   </main>
 </template>
 
 <script>
+import UserCard from '../../../components/UserCard';
 export default {
   data: () => ({
     user: {},
