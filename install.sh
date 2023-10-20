@@ -364,7 +364,7 @@ export default {
       }
     },
     redirect: {
-      login: '/log-in',
+      login: '/users/${loggedInUser.id}',
       logout: '/',
       home: '/'
     }
@@ -640,8 +640,8 @@ export default {
   computed: {
     ...mapGetters(['isAuthenticated', 'isAdmin', 'loggedInUser']),
   }, methods: {
-    async logOut() {
-      await this.$auth.logout();
+    logOut() {
+      this.$auth.logout()
     },
   }
 }
