@@ -426,8 +426,8 @@ export default function ({ store, redirect }) {
 ```
 - `puravida middleware/currentUserOrAdminOnly.js ~`
 ```
-export default function ({ store, redirect }) {
-  const splitPath = $nuxt.$route.path.split('/')
+export default function ({ route, store, redirect }) {
+  const splitPath = route.fullPath.split('/')
   const idParam = splitPath[splitPath.length-1]
   const currentUserId = store.state.auth.user.id
   const isAdmin = store.state.auth.user.admin
