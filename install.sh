@@ -362,12 +362,27 @@ export default {
           user: { url: 'me', method: 'get', propertyName: 'data' }
         }
       }
-    },
-    redirect: {
-      login: '/users/${loggedInUser.id}',
-      logout: '/',
-      home: '/'
     }
+  }
+}
+~
+EOF
+cat <<'EOF' | puravida middleware/adminOnly.js ~
+export default function ({ store, redirect }) {
+  if (!store.state.auth.user.admin) {
+    return redirect('/')
+  }
+}
+~
+EOF
+cat <<'EOF' | puravida middleware/currentUserOrAdminOnly.js ~
+export default function ({ store, redirect }) {
+  const splitPath = $nuxt.$route.path.split('/')
+  const idParam = splitPath[splitPath.length-1]
+  const currentUserId = store.state.auth.user.id
+  const isAdmin = store.state.auth.user.admin
+  if (!isAdmin && idParam != currentUserId) {
+    return redirect('/')
   }
 }
 ~
@@ -516,6 +531,12 @@ cat <<'EOF' | puravida pages/users/index.vue ~
     <UserCards />
   </main>
 </template>
+
+<script>
+export default {
+  middleware: 'adminOnly'
+}
+</script>
 ~
 EOF
 
@@ -532,6 +553,7 @@ cat <<'EOF' | puravida pages/users/_id/index.vue ~
 <script>
 import UserCard from '../../../components/UserCard';
 export default {
+  middleware: 'currentUserOrAdminOnly',
   data: () => ({
     user: {},
   }),
@@ -903,17 +925,15 @@ export default {
   },
   methods: {
     async login() {
-      try {
-        await this.$auth.loginWith('local', {
-          data: {
-            email: this.email,
-            password: this.password
-          }
-        })
-        this.$router.push(`/users/${this.$auth.user.id}`)
-      } catch (e) {
-        this.error = e.response.data.message
-      }
+      this.$auth.loginWith('local', {
+        data: {
+          email: this.email,
+          password: this.password
+        }
+      }).then (() => {
+        const id = this.$auth.$state.user.id
+        this.$router.push(`/users/${id}`)
+      })
     }
   }
 }
