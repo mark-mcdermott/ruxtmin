@@ -680,7 +680,8 @@ export default {
       Object.entries(params).forEach(
         ([key, value]) => payload.append(key, value)
       )
-      this.$axios.$patch(`users/${this.$route.params.id}`, payload)
+      this.$axios.$patch(`/users/${this.$route.params.id}`, payload)
+      this.$router.push(`/users/${this.$route.params.id}`)
     }
   }
 }
