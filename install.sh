@@ -347,7 +347,7 @@ export default {
   },
   css: ['@fortawesome/fontawesome-svg-core/styles.css','@/assets/scss/main.scss'],
   plugins: [ '~/plugins/fontawesome.js' ],
-  components: true,
+  components: {dirs: ['~/components','~/components/cards','~/components/sets','~/components/forms']},
   buildModules: [],
   router: { middleware: ['auth'] },
   modules: ['@nuxtjs/axios', '@nuxtjs/auth'],
@@ -400,7 +400,7 @@ Vue.component('font-awesome-icon', FontAwesomeIcon)
 EOF
 rm -f components/*.vue
 echo -e "\n\n🦄 New User Page\n\n"
-cat <<'EOF' | puravida components/NewUserForm.vue ~
+cat <<'EOF' | puravida components/forms/NewUserForm.vue ~
 <template>
   <section>
     <form enctype="multipart/form-data">
@@ -455,7 +455,7 @@ cat <<'EOF' | puravida pages/users/new.vue ~
 ~
 EOF
 echo -e "\n\n🦄 Users Page\n\n"
-cat <<'EOF' | puravida components/UserCard.vue ~
+cat <<'EOF' | puravida components/cards/User.vue ~
 <template>
   <article>
     <h2>
@@ -498,27 +498,20 @@ export default {
 </script>
 ~
 EOF
-cat <<'EOF' | puravida components/UserCards.vue ~
+cat <<'EOF' | puravida components/sets/Users.vue ~
 <template>
   <section>
     <div v-for="user in users" :key="user.id">
-      <UserCard :user="user" :users="users" />
+      <User :user="user" :users="users" />
     </div>
   </section>
 </template>
 
 <script>
-import UserCard from './UserCard';
 export default {
-  component: {
-    UserCard
-  },
-  data: () => ({
-    users: []
-  }),
-  async fetch() {
-    this.users = await this.$axios.$get('users')
-  }
+  component: { User },
+  data: () => ({ users: [] }),
+  async fetch() { this.users = await this.$axios.$get('users') }
 }
 </script>
 ~
@@ -528,7 +521,7 @@ cat <<'EOF' | puravida pages/users/index.vue ~
 <template>
   <main class="container">
     <h1>Users</h1>
-    <UserCards />
+    <Users />
   </main>
 </template>
 
@@ -545,13 +538,12 @@ cat <<'EOF' | puravida pages/users/_id/index.vue ~
 <template>
   <main class="container">
     <section>
-      <UserCard :user="user" />
+      <User :user="user" />
     </section>
   </main>
 </template>
 
 <script>
-import UserCard from '../../../components/UserCard';
 export default {
   middleware: 'currentUserOrAdminOnly',
   data: () => ({

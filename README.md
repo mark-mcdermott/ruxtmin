@@ -395,7 +395,7 @@ export default {
   },
   css: ['@fortawesome/fontawesome-svg-core/styles.css','@/assets/scss/main.scss'],
   plugins: [ '~/plugins/fontawesome.js' ],
-  components: true,
+  components: {dirs: ['~/components','~/components/cards','~/components/sets','~/components/forms']},
   buildModules: [],
   router: { middleware: ['auth'] },
   modules: ['@nuxtjs/axios', '@nuxtjs/auth'],
@@ -454,7 +454,7 @@ Vue.component('font-awesome-icon', FontAwesomeIcon)
 
 
 ## New User Page
-- `puravida components/NewUserForm.vue ~`
+- `puravida components/forms/NewUserForm.vue ~`
 ```
 <template>
   <section>
@@ -512,7 +512,7 @@ export default {
 ```
 
 ### Users Page
-- `puravida components/UserCard.vue ~`
+- `puravida components/cards/User.vue ~`
 ```
 <template>
   <article>
@@ -556,7 +556,7 @@ export default {
 </script>
 ~
 ```
-- `puravida components/UserCards.vue ~`
+- `puravida components/sets/Users.vue ~`
 ```
 <template>
   <section>
@@ -567,7 +567,6 @@ export default {
 </template>
 
 <script>
-import UserCard from './UserCard';
 export default {
   component: {
     UserCard
@@ -605,13 +604,12 @@ export default {
 <template>
   <main class="container">
     <section>
-      <UserCard :user="user" />
+      <User :user="user" />
     </section>
   </main>
 </template>
 
 <script>
-import UserCard from '../../../components/UserCard';
 export default {
   middleware: 'currentUserOrAdminOnly',
   data: () => ({
