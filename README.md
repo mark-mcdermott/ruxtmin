@@ -395,7 +395,7 @@ export default {
   },
   css: ['@fortawesome/fontawesome-svg-core/styles.css','@/assets/scss/main.scss'],
   plugins: [ '~/plugins/fontawesome.js' ],
-  components: {dirs: ['~/components','~/components/cards','~/components/sets','~/components/forms']},
+  components: {dirs: ['~/components']},
   buildModules: [],
   router: { middleware: ['auth'] },
   modules: ['@nuxtjs/axios', '@nuxtjs/auth'],
