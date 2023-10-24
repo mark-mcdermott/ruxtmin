@@ -347,7 +347,7 @@ export default {
   },
   css: ['@fortawesome/fontawesome-svg-core/styles.css','@/assets/scss/main.scss'],
   plugins: [ '~/plugins/fontawesome.js' ],
-  components: {dirs: ['~/components']},
+  components: true,
   buildModules: [],
   router: { middleware: ['auth'] },
   modules: ['@nuxtjs/axios', '@nuxtjs/auth'],
@@ -400,7 +400,7 @@ Vue.component('font-awesome-icon', FontAwesomeIcon)
 EOF
 rm -f components/*.vue
 echo -e "\n\n🦄 New User Page\n\n"
-cat <<'EOF' | puravida components/forms/NewUserForm.vue ~
+cat <<'EOF' | puravida components/user/Form.vue ~
 <template>
   <section>
     <form enctype="multipart/form-data">
@@ -455,7 +455,7 @@ cat <<'EOF' | puravida pages/users/new.vue ~
 ~
 EOF
 echo -e "\n\n🦄 Users Page\n\n"
-cat <<'EOF' | puravida components/cards/User.vue ~
+cat <<'EOF' | puravida components/user/Card.vue ~
 <template>
   <article>
     <h2>
@@ -498,18 +498,18 @@ export default {
 </script>
 ~
 EOF
-cat <<'EOF' | puravida components/sets/Users.vue ~
+cat <<'EOF' | puravida components/user/Set.vue ~
 <template>
   <section>
     <div v-for="user in users" :key="user.id">
-      <User :user="user" :users="users" />
+      <UserCard :user="user" :users="users" />
     </div>
   </section>
 </template>
 
 <script>
 export default {
-  component: { User },
+  component: { UserCard },
   data: () => ({ users: [] }),
   async fetch() { this.users = await this.$axios.$get('users') }
 }
@@ -621,7 +621,15 @@ export default {
 EOF
 
 echo -e "\n\n🦄 Nav\n\n"
-cat <<'EOF' | puravida components/Nav.vue ~
+cat <<'EOF' | puravida components/navs/Brand.vue ~
+<template>
+  <span>
+    <font-awesome-icon icon="laptop-code" /> Ruxtmin
+  </span>
+</template>
+~
+EOF
+cat <<'EOF' | puravida components/navs/Default.vue ~
 <template>
   <nav class="top-nav container-fluid">
     <ul><li><strong><NuxtLink to="/"><font-awesome-icon icon="laptop-code" /> Ruxtmin</NuxtLink></strong></li></ul>
@@ -820,7 +828,7 @@ EOF
 cat <<'EOF' | puravida layouts/default.vue ~
 <template>
   <div>
-    <Nav />
+    <NavDefault />
     <Nuxt />
   </div>
 </template>

@@ -395,7 +395,7 @@ export default {
   },
   css: ['@fortawesome/fontawesome-svg-core/styles.css','@/assets/scss/main.scss'],
   plugins: [ '~/plugins/fontawesome.js' ],
-  components: {dirs: ['~/components']},
+  components: true,
   buildModules: [],
   router: { middleware: ['auth'] },
   modules: ['@nuxtjs/axios', '@nuxtjs/auth'],
@@ -454,7 +454,7 @@ Vue.component('font-awesome-icon', FontAwesomeIcon)
 
 
 ## New User Page
-- `puravida components/forms/NewUserForm.vue ~`
+- `puravida components/user/Form.vue ~`
 ```
 <template>
   <section>
@@ -512,7 +512,7 @@ export default {
 ```
 
 ### Users Page
-- `puravida components/cards/User.vue ~`
+- `puravida components/user/Card.vue ~`
 ```
 <template>
   <article>
@@ -556,7 +556,7 @@ export default {
 </script>
 ~
 ```
-- `puravida components/sets/Users.vue ~`
+- `puravida components/user/Set.vue ~`
 ```
 <template>
   <section>
@@ -688,11 +688,20 @@ export default {
 ```
 
 ### Nav
-- `puravida components/Nav.vue ~`
+- `puravida components/navs/Brand.vue ~`
+```
+<template>
+  <span>
+    <font-awesome-icon icon="laptop-code" /> Ruxtmin
+  </span>
+</template>
+~
+```
+- `puravida components/navs/Default.vue ~`
 ```
 <template>
   <nav class="top-nav container-fluid">
-    <ul><li><strong><NuxtLink to="/"><font-awesome-icon icon="laptop-code" /> Ruxtmin</NuxtLink></strong></li></ul>
+    <ul><li><strong><NuxtLink to="/"><Brand /></NuxtLink></strong></li></ul>
     <input id="menu-toggle" type="checkbox" />
     <label class='menu-button-container' for="menu-toggle">
       <div class='menu-button'></div>
@@ -890,7 +899,7 @@ html, body
 ```
 <template>
   <div>
-    <Nav />
+    <NavDefault />
     <Nuxt />
   </div>
 </template>
