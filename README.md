@@ -378,7 +378,11 @@ end
 @import "node_modules/@picocss/pico/scss/pico.scss";
 
 // Pico overrides 
-$primary-500: #e91e63;
+// $primary-500: #e91e63;
+
+h1 {
+  margin: 4rem 0;
+}
 ~
 ```
 - `puravida nuxt.config.js ~`
@@ -459,13 +463,17 @@ Vue.component('font-awesome-icon', FontAwesomeIcon)
 ```
 <template>
   <section>
-    <form enctype="multipart/form-data">
-      <p>Name: </p><input v-model="name">
-      <p>Email: </p><input v-model="email">
-      <p>Avatar: </p><input type="file" ref="inputFile" @change=uploadAvatar()>
-      <p>Password: </p><input type="password" v-model="password">
-      <button @click.prevent=createUser>Create User</button>
-    </form>
+    <article>
+      <form enctype="multipart/form-data">
+        <p>Name: </p><input v-model="name">
+        <p>Email: </p><input v-model="email">
+        <p>Avatar: </p>
+        <img :src="avatar" />    
+        <input type="file" ref="inputFile" @change=uploadAvatar()>
+        <p>Password: </p><input type="password" v-model="password">
+        <button @click.prevent=createUser>Create User</button>
+      </form>
+    </article>
   </section>
 </template>
 
@@ -475,8 +483,22 @@ export default {
     return {
       name: "",
       email: "",
-      avatar: null,
+      avatar: "",
       password: ""
+    }
+  },
+  computed: {
+    editNewOrSignup: function () {
+      const splitPath = $nuxt.$route.path.split('/')
+      return splitPath[splitPath.length-1]
+    }
+  },
+  async fetch() {
+    if (this.newOrEdit=='edit') {
+      const user = await this.$axios.$get(`users/${this.$route.params.id}`)
+      this.name = user.name
+      this.email = user.email,
+      this.avatar = user.avatar  
     }
   },
   methods: {
@@ -506,7 +528,7 @@ export default {
 <template>
   <main class="container">
     <h1>New User</h1>
-    <NewUserForm />
+    <UserForm />
   </main>
 </template>
 ~
@@ -587,6 +609,7 @@ export default {
 <template>
   <main class="container">
     <h1>Users</h1>
+    <NuxtLink to="/users/new" role="button">Add User</NuxtLink>
     <UserSet />
   </main>
 </template>
@@ -638,20 +661,7 @@ export default {
 ```
 <template>
   <main class="container">
-    <section>
-      <article>
-        <h2>Edit User</h2>
-        <p>id: {{ user.id }}</p>
-        <form enctype="multipart/form-data">
-          <p>Name: </p><input v-model="user.name">
-          <p>Email: </p><input v-model="user.email">
-          <p>Avatar: </p>
-          <img :src="user.avatar" />
-          <input type="file" ref="inputFile" @change=uploadAvatar()>
-          <button @click.prevent=editUser>Edit User</button>
-        </form>
-      </article>
-    </section>
+    <UserForm />
   </main>
 </template>
 

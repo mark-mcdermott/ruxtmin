@@ -332,7 +332,11 @@ cat <<'EOF' | puravida assets/scss/main.scss ~
 @import "node_modules/@picocss/pico/scss/pico.scss";
 
 // Pico overrides 
-$primary-500: #e91e63;
+// $primary-500: #e91e63;
+
+h1 {
+  margin: 4rem 0;
+}
 ~
 EOF
 cat <<'EOF' | puravida nuxt.config.js ~
@@ -405,13 +409,17 @@ echo -e "\n\n🦄 New User Page\n\n"
 cat <<'EOF' | puravida components/user/Form.vue ~
 <template>
   <section>
-    <form enctype="multipart/form-data">
-      <p>Name: </p><input v-model="name">
-      <p>Email: </p><input v-model="email">
-      <p>Avatar: </p><input type="file" ref="inputFile" @change=uploadAvatar()>
-      <p>Password: </p><input type="password" v-model="password">
-      <button @click.prevent=createUser>Create User</button>
-    </form>
+    <article>
+      <form enctype="multipart/form-data">
+        <p>Name: </p><input v-model="name">
+        <p>Email: </p><input v-model="email">
+        <p>Avatar: </p>
+        <img :src="avatar" />    
+        <input type="file" ref="inputFile" @change=uploadAvatar()>
+        <p>Password: </p><input type="password" v-model="password">
+        <button @click.prevent=createUser>Create User</button>
+      </form>
+    </article>
   </section>
 </template>
 
@@ -421,8 +429,22 @@ export default {
     return {
       name: "",
       email: "",
-      avatar: null,
+      avatar: "",
       password: ""
+    }
+  },
+  computed: {
+    editNewOrSignup: function () {
+      const splitPath = $nuxt.$route.path.split('/')
+      return splitPath[splitPath.length-1]
+    }
+  },
+  async fetch() {
+    if (this.newOrEdit=='edit') {
+      const user = await this.$axios.$get(`users/${this.$route.params.id}`)
+      this.name = user.name
+      this.email = user.email,
+      this.avatar = user.avatar  
     }
   },
   methods: {
@@ -451,7 +473,7 @@ cat <<'EOF' | puravida pages/users/new.vue ~
 <template>
   <main class="container">
     <h1>New User</h1>
-    <NewUserForm />
+    <UserForm />
   </main>
 </template>
 ~
@@ -522,6 +544,7 @@ cat <<'EOF' | puravida pages/users/index.vue ~
 <template>
   <main class="container">
     <h1>Users</h1>
+    <NuxtLink to="/users/new" role="button">Add User</NuxtLink>
     <UserSet />
   </main>
 </template>
