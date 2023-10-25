@@ -412,12 +412,15 @@ echo -e "\n\n🦄 New User Page\n\n"
 cat <<'EOF' | puravida components/user/Form.vue ~
 <template>
   <section>
+    <h1 v-if="editNewOrSignup === 'edit'">Edit User</h1>
+    <h1 v-else-if="editNewOrSignup === 'new'">Add User</h1>
+    <h1 v-else-if="editNewOrSignup === 'sign-up'">Sign Up</h1>
     <article>
       <form enctype="multipart/form-data">
         <p>Name: </p><input v-model="name">
         <p>Email: </p><input v-model="email">
-        <p>Avatar: </p>
-        <img :src="avatar" />    
+        <p class="no-margin">Avatar: </p>
+        <img v-if="editNewOrSignup === 'edit'" :src="avatar" />    
         <input type="file" ref="inputFile" @change=uploadAvatar()>
         <p>Password: </p><input type="password" v-model="password">
         <button @click.prevent=createUser>Create User</button>
@@ -427,6 +430,7 @@ cat <<'EOF' | puravida components/user/Form.vue ~
 </template>
 
 <script>
+import { mapGetters } from 'vuex'
 export default {
   data () {
     return {
@@ -440,7 +444,8 @@ export default {
     editNewOrSignup: function () {
       const splitPath = $nuxt.$route.path.split('/')
       return splitPath[splitPath.length-1]
-    }
+    },
+    ...mapGetters(['isAuthenticated', 'isAdmin', 'loggedInUser`']),
   },
   async fetch() {
     if (this.newOrEdit=='edit') {
@@ -466,6 +471,18 @@ export default {
         ([key, value]) => payload.append(key, value)
       )
       this.$axios.$post('users', payload)
+        .then(() => {
+          this.$auth.loginWith('local', {
+            data: {
+            email: this.email,
+            password: this.password
+            },
+          })
+          .then(() => {
+            const userId = this.$auth.$state.user.id
+            this.$router.push(`/users/${userId}`)
+          })
+        })
     }
   }
 }
@@ -974,93 +991,13 @@ EOF
 cat <<'EOF' | puravida pages/sign-up.vue ~
 <template>
   <main class="container">
-    <h2>Sign Up</h2>
-    <Notification :message="error" v-if="error"/>
-    <form method="post" @submit.prevent="register">
-      <div>
-        <label>Name</label>
-        <div>
-          <input
-            type="name"
-            name="name"
-            v-model="name"
-          />
-        </div>
-      </div>
-      <div>
-        <label>Email</label>
-        <div>
-          <input
-            type="email"
-            name="email"
-            v-model="email"
-          />
-        </div>
-      </div>
-      <div>
-        <label>Password</label>
-        <div>
-          <input
-            type="password"
-            name="password"
-            v-model="password"
-          />
-        </div>
-      </div>
-      <div>
-        <label>Password Confirmation</label>
-        <div>
-          <input
-            type="password"
-            name="passwordConfirmation"
-            v-model="passwordConfirmation"
-          />
-        </div>
-      </div>
-      <div>
-        <button type="submit">Log In</button>
-      </div>
-    </form>        
+    <UserForm />      
   </main>
 </template>
 
 <script>
-import Notification from '~/components/Notification'
 export default {
-  auth: false,
-  components: {
-    Notification,
-  },
-  data() {
-    return {
-      name: '',
-      email: '',
-      password: '',
-      passwordConfirmation: '',
-      error: null
-    }
-  },
-  methods: {
-    async register() {
-      try {
-        await this.$axios.post('users', {
-          name: this.name,
-          email: this.email,
-          password: this.password,
-          password_confirmation: this.passwordConfirmation
-        })
-        await this.$auth.loginWith('local', {
-          data: {
-          email: this.email,
-          password: this.password
-          },
-        })
-        this.$router.push('/')
-      } catch (e) {
-        this.error = e.response.data.message
-      }
-    }
-  }
+  auth: false
 }
 </script>
 ~
