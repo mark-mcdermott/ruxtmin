@@ -57,13 +57,8 @@ class UsersController < ApplicationController
 
   def show
     @user = User.find(params[:id])
-    render json: {
-      id: @user.id,
-      name: @user.name,
-      email: @user.email,
-      avatar: url_for(@user.avatar),
-      admin: @user.admin
-    }
+    avatar = @user.avatar.present? ? url_for(@user.avatar) : nil
+    render json: { id: @user.id, name: @user.name, email: @user.email, avatar: avatar, admin: @user.admin }
   end
   
   def create
