@@ -518,7 +518,7 @@ export default {
 <template>
   <article>
     <h2>
-      <NuxtLink :to="`users/${user.id}`">{{ user.name }}</NuxtLink> 
+      <NuxtLink :to="`/users/${user.id}`">{{ user.name }}</NuxtLink> 
       <NuxtLink :to="`/users/${user.id}/edit`"><font-awesome-icon icon="pencil" /></NuxtLink>
       <a @click.prevent=deleteUser(user.id) href="#"><font-awesome-icon icon="trash" /></a>
     </h2>

@@ -461,7 +461,7 @@ cat <<'EOF' | puravida components/user/Card.vue ~
 <template>
   <article>
     <h2>
-      <NuxtLink :to="`users/${user.id}`">{{ user.name }}</NuxtLink> 
+      <NuxtLink :to="`/users/${user.id}`">{{ user.name }}</NuxtLink> 
       <NuxtLink :to="`/users/${user.id}/edit`"><font-awesome-icon icon="pencil" /></NuxtLink>
       <a @click.prevent=deleteUser(user.id) href="#"><font-awesome-icon icon="trash" /></a>
     </h2>
@@ -622,7 +622,7 @@ export default {
 EOF
 
 echo -e "\n\n🦄 Nav\n\n"
-cat <<'EOF' | puravida components/s/Brand.vue ~
+cat <<'EOF' | puravida components/nav/Brand.vue ~
 <template>
   <span>
     <font-awesome-icon icon="laptop-code" /> Ruxtmin
