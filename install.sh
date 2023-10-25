@@ -320,8 +320,9 @@ echo -e "\n\n🦄 FRONTEND\n\n"
 echo -e "\n\n🦄 Setup\n\n"
 
 cd ~/Desktop
-sleep 5
-(sleep 2; printf "\n"; sleep 0.5; printf "\n"; sleep 0.5; echo -n $'\033[1B'; printf "\n"; sleep 0.5; printf "\n"; sleep 0.5; printf "\n"; sleep 0.1; echo -n $'\x20'; sleep 0.1; printf "\n"; sleep 0.5; printf "\n"; sleep 0.5; printf "\n"; sleep 0.5; echo -n $'\033[1B'; printf "\n"; sleep 0.5; printf "\n"; sleep 0.5; printf "\n"; sleep 0.5; printf "\n"; sleep 0.5; echo -n $'\033[1B'; printf "\n";) | npx create-nuxt-app front
+npx create-nuxt-app front
+# sleep 5
+# (sleep 2; printf "\n"; sleep 0.5; printf "\n"; sleep 0.5; echo -n $'\033[1B'; printf "\n"; sleep 0.5; printf "\n"; sleep 0.5; printf "\n"; sleep 0.1; echo -n $'\x20'; sleep 0.1; printf "\n"; sleep 0.5; printf "\n"; sleep 0.5; printf "\n"; sleep 0.5; echo -n $'\033[1B'; printf "\n"; sleep 0.5; printf "\n"; sleep 0.5; printf "\n"; sleep 0.5; printf "\n"; sleep 0.5; echo -n $'\033[1B'; printf "\n";) | npx create-nuxt-app front
 cd front
 npm install @picocss/pico @nuxtjs/auth@4.5.1 @fortawesome/fontawesome-svg-core @fortawesome/free-solid-svg-icons @fortawesome/free-brands-svg-icons @fortawesome/vue-fontawesome@latest-2
 npm install --save-dev sass sass-loader@10
@@ -510,7 +511,6 @@ cat <<'EOF' | puravida components/user/Set.vue ~
 
 <script>
 export default {
-  component: { UserCard },
   data: () => ({ users: [] }),
   async fetch() { this.users = await this.$axios.$get('users') }
 }
@@ -522,7 +522,7 @@ cat <<'EOF' | puravida pages/users/index.vue ~
 <template>
   <main class="container">
     <h1>Users</h1>
-    <Users />
+    <UserSet />
   </main>
 </template>
 
@@ -539,7 +539,7 @@ cat <<'EOF' | puravida pages/users/_id/index.vue ~
 <template>
   <main class="container">
     <section>
-      <User :user="user" />
+      <UserCard :user="user" />
     </section>
   </main>
 </template>
@@ -622,7 +622,7 @@ export default {
 EOF
 
 echo -e "\n\n🦄 Nav\n\n"
-cat <<'EOF' | puravida components/navs/Brand.vue ~
+cat <<'EOF' | puravida components/s/Brand.vue ~
 <template>
   <span>
     <font-awesome-icon icon="laptop-code" /> Ruxtmin
@@ -630,7 +630,7 @@ cat <<'EOF' | puravida components/navs/Brand.vue ~
 </template>
 ~
 EOF
-cat <<'EOF' | puravida components/navs/Default.vue ~
+cat <<'EOF' | puravida components/nav/Default.vue ~
 <template>
   <nav class="top-nav container-fluid">
     <ul><li><strong><NuxtLink to="/"><font-awesome-icon icon="laptop-code" /> Ruxtmin</NuxtLink></strong></li></ul>

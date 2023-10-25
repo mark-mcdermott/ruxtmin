@@ -587,7 +587,7 @@ export default {
 <template>
   <main class="container">
     <h1>Users</h1>
-    <UserCards />
+    <UserSet />
   </main>
 </template>
 
@@ -605,7 +605,7 @@ export default {
 <template>
   <main class="container">
     <section>
-      <User :user="user" />
+      <UserCard :user="user" />
     </section>
   </main>
 </template>
@@ -689,7 +689,7 @@ export default {
 ```
 
 ### Nav
-- `puravida components/navs/Brand.vue ~`
+- `puravida components/nav/Brand.vue ~`
 ```
 <template>
   <span>
@@ -698,7 +698,7 @@ export default {
 </template>
 ~
 ```
-- `puravida components/navs/Default.vue ~`
+- `puravida components/nav/Default.vue ~`
 ```
 <template>
   <nav class="top-nav container-fluid">
