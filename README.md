@@ -376,7 +376,15 @@ end
 // $primary-500: #e91e63;
 
 h1 {
-  margin: 4rem 0;
+  margin: 4rem 0
+}
+
+p.no-margin {
+  margin: 0
+}
+
+article img {
+  margin-bottom: var(--typography-spacing-vertical)
 }
 ~
 ```
@@ -522,7 +530,6 @@ export default {
 ```
 <template>
   <main class="container">
-    <h1>New User</h1>
     <UserForm />
   </main>
 </template>
@@ -541,15 +548,17 @@ export default {
     </h2>
     <p>id: {{ user.id }}</p>
     <p>email: {{ user.email }}</p>
-    <p>avatar:</p>
-    <img :src="user.avatar" />
-    <p>admin: {{ user.admin }}</p>
+    <p v-if="user.avatar !== null" class="no-margin">avatar:</p>
+    <img v-if="user.avatar !== null" :src="user.avatar" />
+    <p v-if="isAdmin">admin: {{ user.admin }}</p>
   </article>
 </template>
 
 <script>
+import { mapGetters } from 'vuex'
 export default {
   name: 'UserCard',
+  computed: { ...mapGetters(['isAdmin']) },
   props: {
     user: {
       type: Object,
