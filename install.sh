@@ -417,13 +417,16 @@ cat <<'EOF' | puravida components/user/Form.vue ~
     <h1 v-else-if="editNewOrSignup === 'sign-up'">Sign Up</h1>
     <article>
       <form enctype="multipart/form-data">
+        <p>id: {{ $route.params.id }}</p>
         <p>Name: </p><input v-model="name">
         <p>Email: </p><input v-model="email">
         <p class="no-margin">Avatar: </p>
-        <img v-if="editNewOrSignup === 'edit'" :src="avatar" />    
+        <img v-if="!hideAvatar && editNewOrSignup === 'edit'" :src="avatar" />    
         <input type="file" ref="inputFile" @change=uploadAvatar()>
-        <p>Password: </p><input type="password" v-model="password">
-        <button @click.prevent=createUser>Create User</button>
+        <p v-if="editNewOrSignup !== 'edit'">Password: </p>
+        <input v-if="editNewOrSignup !== 'edit'" type="password" v-model="password">
+        <button v-if="editNewOrSignup !== 'edit'" @click.prevent=createUser>Create User</button>
+        <button v-else-if="editNewOrSignup == 'edit'" @click.prevent=editUser>Edit User</button>
       </form>
     </article>
   </section>
@@ -437,18 +440,22 @@ export default {
       name: "",
       email: "",
       avatar: "",
-      password: ""
+      password: "",
+      editNewOrSignup: "",
+      hideAvatar: false
     }
   },
+  mounted() {
+    const splitPath = $nuxt.$route.path.split('/')
+    this.editNewOrSignup = splitPath[splitPath.length-1]
+  },
   computed: {
-    editNewOrSignup: function () {
-      const splitPath = $nuxt.$route.path.split('/')
-      return splitPath[splitPath.length-1]
-    },
     ...mapGetters(['isAuthenticated', 'isAdmin', 'loggedInUser`']),
   },
   async fetch() {
-    if (this.newOrEdit=='edit') {
+    const splitPath = $nuxt.$route.path.split('/')
+    this.editNewOrSignup = $nuxt.$route.path.split('/')[$nuxt.$route.path.split('/').length-1]
+    if ($nuxt.$route.path.split('/')[$nuxt.$route.path.split('/').length-1]=='edit') {
       const user = await this.$axios.$get(`users/${this.$route.params.id}`)
       this.name = user.name
       this.email = user.email,
@@ -457,7 +464,8 @@ export default {
   },
   methods: {
     uploadAvatar: function() {
-      this.avatar = this.$refs.inputFile.files[0];
+      this.avatar = this.$refs.inputFile.files[0]
+      this.hideAvatar = true
     },
     createUser: function() {
       const params = {
@@ -483,7 +491,24 @@ export default {
             this.$router.push(`/users/${userId}`)
           })
         })
-    }
+    },
+    editUser: function() {
+      let params = {}
+      const filePickerFile = this.$refs.inputFile.files[0]
+      if (filePickerFile === null) {
+        params = { 'name': this.name, 'email': this.email }
+      } else {
+        params = { 'name': this.name, 'email': this.email, 'avatar': this.avatar }
+      }
+      let payload = new FormData()
+      Object.entries(params).forEach(
+        ([key, value]) => payload.append(key, value)
+      )
+      this.$axios.$patch(`/users/${this.$route.params.id}`, payload)
+        .then(() => {
+          this.$router.push(`/users/${this.$route.params.id}`)
+        })
+    },
   }
 }
 </script>
