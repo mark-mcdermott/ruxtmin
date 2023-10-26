@@ -82,7 +82,13 @@ class UsersController < ApplicationController
   def show
     @user = User.find(params[:id])
     avatar = @user.avatar.present? ? url_for(@user.avatar) : nil
-    render json: { id: @user.id, name: @user.name, email: @user.email, avatar: avatar, admin: @user.admin }
+    render json: {
+      id: @user.id,
+      name: @user.name,
+      email: @user.email,
+      avatar: avatar,
+      admin: @user.admin
+    }
   end
   
   def create
@@ -471,7 +477,7 @@ Vue.component('font-awesome-icon', FontAwesomeIcon)
     <h1 v-else-if="editNewOrSignup === 'sign-up'">Sign Up</h1>
     <article>
       <form enctype="multipart/form-data">
-        <p>id: {{ $route.params.id }}</p>
+        <p v-if="editNewOrSignup === 'edit'">id: {{ $route.params.id }}</p>
         <p>Name: </p><input v-model="name">
         <p>Email: </p><input v-model="email">
         <p class="no-margin">Avatar: </p>
