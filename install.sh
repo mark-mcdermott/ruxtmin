@@ -126,6 +126,65 @@ EOF
 rails g scaffold widget name description image:attachment user:references
 rails db:migrate
 
+cat <<'EOF' | puravida app/controllers/widgets_controller.rb ~
+class WidgetsController < ApplicationController
+  before_action :set_widget, only: %i[ show update destroy ]
+
+  # GET /widgets
+  def index
+    @widgets = Widget.all.map do |w|
+      image = w.image.present? ? url_for(w.image) : nil
+      { :id => w.id, :name => w.name, :description => w.description, :image => image, :user_id => w.user_id }
+    end
+    render json: @widgets
+  end
+
+  # GET /widgets/1
+  def show
+    image = @widget.image.present? ? url_for(@widget.image) : nil
+    user_name = User.find(@widget.user_id).name
+    render json: { id: @widget.id, name: @widget.name, description: @widget.description, image: image, userId: @widget.user_id, userName: user_name }
+  end
+
+  # POST /widgets
+  def create
+    @widget = Widget.new(widget_params)
+
+    if @widget.save
+      render json: @widget, status: :created, location: @widget
+    else
+      render json: @widget.errors, status: :unprocessable_entity
+    end
+  end
+
+  # PATCH/PUT /widgets/1
+  def update
+    if @widget.update(widget_params)
+      render json: @widget
+    else
+      render json: @widget.errors, status: :unprocessable_entity
+    end
+  end
+
+  # DELETE /widgets/1
+  def destroy
+    @widget.destroy
+  end
+
+  private
+    # Use callbacks to share common setup or constraints between actions.
+    def set_widget
+      @widget = Widget.find(params[:id])
+    end
+
+    # Only allow a list of trusted parameters through.
+    def widget_params
+      params.permit(:name, :description, :image, :user_id)
+    end
+end
+~
+EOF
+
 cat <<'EOF' | puravida config/routes.rb ~
 Rails.application.routes.draw do
   resources :widgets
@@ -335,7 +394,7 @@ end
 EOF
 cat <<'EOF' | puravida config/routes.rb ~
 Rails.application.routes.draw do
-  resources :items
+  resources :widgets
   resources :users
   get "health", to: "health#index"
   post "login", to: "authentications#create"
@@ -394,7 +453,8 @@ nav img {
 }
 
 article img {
-  margin-bottom: var(--typography-spacing-vertical)
+  margin-bottom: var(--typography-spacing-vertical);
+  width: 250px;
 }
 
 ul.features { 
@@ -744,6 +804,7 @@ cat <<'EOF' | puravida components/widget/Card.vue ~
     <p>id: {{ widget.id }}</p>
     <p>name: {{ widget.name }}</p>
     <p>description: {{ widget.description }}</p>
+    <p>user: {{ widget.userId }}</p>
     <p v-if="widget.image !== null" class="no-margin">image:</p>
     <img v-if="widget.image !== null" :src="widget.image" />
   </article>
@@ -765,6 +826,7 @@ export default {
       this.$axios.$delete(`widgets/${id}`)
       const index = this.widgets.findIndex((i) => { return i.id === id })
       this.widgets.splice(index, 1);
+      this.$router.push('/widgets')
     }
   }
 }
@@ -796,101 +858,38 @@ EOF
 
 cat <<'EOF' | puravida components/widget/Form.vue ~
 <template>
-  <section>
-    <h1 v-if="editOrNew === 'edit'">Edit Widget</h1>
-    <h1 v-else-if="editOrNew === 'new'">Add Widget</h1>
-    <article>
-      <form enctype="multipart/form-data">
-        <p v-if="editOrNew === 'edit'">id: {{ $route.params.id }}</p>
-        <p>Name: </p><input v-model="name">
-        <p>Description: </p><input v-model="description">
-        <p class="no-margin">Image: </p>
-        <img v-if="!hideImage && editOrNew === 'edit'" :src="image" />    
-        <input type="file" ref="inputFile" @change=uploadImage()>
-        <button v-if="editNewOrSignup !== 'edit'" @click.prevent=createUser>Create Widget</button>
-        <button v-else-if="editNewOrSignup == 'edit'" @click.prevent=editUser>Edit Widget</button>
-      </form>
-    </article>
-  </section>
+  <article>
+    <h2>
+      <NuxtLink :to="`/widgets/${widget.id}`">{{ widget.name }}</NuxtLink> 
+      <NuxtLink :to="`/widgets/${widget.id}/edit`"><font-awesome-icon icon="pencil" /></NuxtLink>
+      <a @click.prevent=deleteWidget(widget.id) href="#"><font-awesome-icon icon="trash" /></a>
+    </h2>
+    <p>id: {{ widget.id }}</p>
+    <p>name: {{ widget.name }}</p>
+    <p>description: {{ widget.description }}</p>
+    <p>user: <NuxtLink :to="`/users/${widget.userId}`">{{ widget.userName }}</NuxtLink></p>
+    <p v-if="widget.image !== null" class="no-margin">image:</p>
+    <img v-if="widget.image !== null" :src="widget.image" />
+  </article>
 </template>
 
 <script>
 import { mapGetters } from 'vuex'
 export default {
-  data () {
-    return {
-      name: "",
-      description: "",
-      image: "",
-      editOrNew: "",
-      hideImage: false
-    }
-  },
-  mounted() {
-    const splitPath = $nuxt.$route.path.split('/')
-    this.editOrNew = splitPath[splitPath.length-1]
-  },
-  computed: {
-    ...mapGetters(['isAuthenticated', 'isAdmin', 'loggedInUser`']),
-  },
-  async fetch() {
-    const splitPath = $nuxt.$route.path.split('/')
-    this.editNewOrSignup = $nuxt.$route.path.split('/')[$nuxt.$route.path.split('/').length-1]
-    if ($nuxt.$route.path.split('/')[$nuxt.$route.path.split('/').length-1]=='edit') {
-      const user = await this.$axios.$get(`users/${this.$route.params.id}`)
-      this.name = user.name
-      this.email = user.email,
-      this.avatar = user.avatar  
-    }
+  computed: { ...mapGetters(['isAdmin']) },
+  props: {
+    widget: { type: Object, default: () => ({}) },
+    widgets: { type: Array, default: () => ([]) },
   },
   methods: {
-    uploadAvatar: function() {
-      this.avatar = this.$refs.inputFile.files[0]
-      this.hideAvatar = true
+    uploadImage: function() {
+      this.image = this.$refs.inputFile.files[0];
     },
-    createUser: function() {
-      const params = {
-        'name': this.name,
-        'email': this.email,
-        'avatar': this.avatar,
-        'password': this.password,
-      }
-      let payload = new FormData()
-      Object.entries(params).forEach(
-        ([key, value]) => payload.append(key, value)
-      )
-      this.$axios.$post('users', payload)
-        .then(() => {
-          this.$auth.loginWith('local', {
-            data: {
-            email: this.email,
-            password: this.password
-            },
-          })
-          .then(() => {
-            const userId = this.$auth.$state.user.id
-            this.$router.push(`/users/${userId}`)
-          })
-        })
-    },
-    editUser: function() {
-      let params = {}
-      const filePickerFile = this.$refs.inputFile.files[0]
-      if (!filePickerFile) {
-        params = { 'name': this.name, 'email': this.email }
-      } else {
-        params = { 'name': this.name, 'email': this.email, 'avatar': this.avatar }
-      }
-    
-      let payload = new FormData()
-      Object.entries(params).forEach(
-        ([key, value]) => payload.append(key, value)
-      )
-      this.$axios.$patch(`/users/${this.$route.params.id}`, payload)
-        .then(() => {
-          this.$router.push(`/users/${this.$route.params.id}`)
-        })
-    },
+    deleteWidget: function(id) {
+      this.$axios.$delete(`widgets/${id}`)
+      const index = this.widgets.findIndex((i) => { return i.id === id })
+      this.widgets.splice(index, 1);
+    }
   }
 }
 </script>
@@ -939,7 +938,7 @@ export default {
   async fetch() { this.widget = await this.$axios.$get(`widgets/${this.$route.params.id}`) },
   methods: {
     uploadImage: function() { this.image = this.$refs.inputFile.files[0]; },
-    deleteWidget function(id) {
+    deleteWidget: function(id) {
       this.$axios.$delete(`widgets/${this.$route.params.id}`)
       this.$router.push('/widgets')
     }
