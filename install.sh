@@ -152,7 +152,9 @@ class ApplicationController < ActionController::API
   rescue_from Exception, with: :response_internal_server_error
   
   def user_from_token
+    avatar = current_user.avatar.present? ? url_for(current_user.avatar) : nil
     user = current_user.slice(:id,:email,:name,:admin)
+    user[:avatar] = avatar
     render json: { data: user, status: 200 }
   end
 
@@ -325,7 +327,9 @@ npx create-nuxt-app front
 # sleep 5
 # (sleep 2; printf "\n"; sleep 0.5; printf "\n"; sleep 0.5; echo -n $'\033[1B'; printf "\n"; sleep 0.5; printf "\n"; sleep 0.5; printf "\n"; sleep 0.1; echo -n $'\x20'; sleep 0.1; printf "\n"; sleep 0.5; printf "\n"; sleep 0.5; printf "\n"; sleep 0.5; echo -n $'\033[1B'; printf "\n"; sleep 0.5; printf "\n"; sleep 0.5; printf "\n"; sleep 0.5; printf "\n"; sleep 0.5; echo -n $'\033[1B'; printf "\n";) | npx create-nuxt-app front
 cd front
-npm install @picocss/pico @nuxtjs/auth@4.5.1 @fortawesome/fontawesome-svg-core @fortawesome/free-solid-svg-icons @fortawesome/free-brands-svg-icons @fortawesome/vue-fontawesome@latest-2
+npm install @picocss/pico @fortawesome/fontawesome-svg-core @fortawesome/free-solid-svg-icons @fortawesome/free-brands-svg-icons @fortawesome/vue-fontawesome@latest-2
+npm install @nuxtjs/auth@4.5.1
+# npm install --save-exact @nuxtjs/auth-next
 npm install --save-dev sass sass-loader@10
 sed -i '' "s/\"generate\": \"nuxt generate\"/\"generate\": \"nuxt generate\",/" /Users/mmcdermott/Desktop/front/package.json
 awk 'NR==10{print "\t\t\"sass\": \"node-sass ./public/scss/main.scss ./public/css/style.css -w\""}1' /Users/mmcdermott/Desktop/front/package.json > temp.txt && mv temp.txt /Users/mmcdermott/Desktop/front/package.json
@@ -354,6 +358,11 @@ h1 {
 .half-width {
   margin: 0 0 4rem;
   width: 50%;
+}
+
+nav img {
+  width: 40px;
+  border-radius: 50%;
 }
 
 article img {
@@ -426,14 +435,17 @@ export default function ({ store, redirect }) {
 ~
 EOF
 cat <<'EOF' | puravida middleware/currentUserOrAdminOnly.js ~
+import { mapGetters } from 'vuex'
 export default function ({ route, store, redirect }) {
+  const { isAdmin, loggedInUser } = store.getters
   const splitPath = route.fullPath.split('/')
-  const idParam = splitPath[splitPath.length-1]
-  const currentUserId = store.state.auth.user.id
-  const isAdmin = store.state.auth.user.admin
-  if (!isAdmin && idParam != currentUserId) {
+  const idParam = parseInt(splitPath[splitPath.length-1])
+  const isUserCurrentUser = idParam === loggedInUser.id
+
+  if (!isAdmin && !isUserCurrentUser) {
     return redirect('/')
   }
+
 }
 ~
 EOF
@@ -715,7 +727,8 @@ cat <<'EOF' | puravida components/nav/Default.vue ~
       <li v-if="isAdmin"><strong><NuxtLink to="/admin">Admin</NuxtLink></strong></li>
       <li v-if="isAuthenticated" class='dropdown'>
         <details role="list" dir="rtl">
-          <summary class='summary' aria-haspopup="listbox" role="link"><font-awesome-icon icon="circle-user" /></summary>
+          <summary class='summary' aria-haspopup="listbox" role="link"><img :src="loggedInUser.avatar" /></summary>
+          <!-- <summary class='summary' aria-haspopup="listbox" role="link"><font-awesome-icon icon="circle-user" /></summary> -->
           <ul role="listbox">
             <li><NuxtLink :to="`/users/${loggedInUser.id}`">Profile</NuxtLink></li>
             <li><NuxtLink :to="`/users/${loggedInUser.id}/edit`">Settings</NuxtLink></li>
@@ -1092,7 +1105,8 @@ cat <<'EOF' | puravida components/nav/Admin.vue ~
       <li v-if="isAdmin"><strong><NuxtLink to="/users">Users</NuxtLink></strong></li>
       <li v-if="isAuthenticated" class='dropdown'>
         <details role="list" dir="rtl">
-          <summary class='summary' aria-haspopup="listbox" role="link"><font-awesome-icon icon="circle-user" /></summary>
+          <summary class='summary' aria-haspopup="listbox" role="link"><img :src="loggedInUser.avatar" /></summary>
+          <!-- <summary class='summary' aria-haspopup="listbox" role="link"><font-awesome-icon icon="circle-user" /></summary> -->
           <ul role="listbox">
             <li><NuxtLink :to="`/users/${loggedInUser.id}`">Profile</NuxtLink></li>
             <li><NuxtLink :to="`/users/${loggedInUser.id}/edit`">Settings</NuxtLink></li>

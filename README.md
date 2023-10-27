@@ -181,7 +181,9 @@ class ApplicationController < ActionController::API
   rescue_from Exception, with: :response_internal_server_error
   
   def user_from_token
+    avatar = current_user.avatar.present? ? url_for(current_user.avatar) : nil
     user = current_user.slice(:id,:email,:name,:admin)
+    user[:avatar] = avatar
     render json: { data: user, status: 200 }
   end
 
@@ -402,6 +404,11 @@ h1 {
   width: 50%;
 }
 
+nav img {
+  width: 40px;
+  border-radius: 50%;
+}
+
 article img {
   margin-bottom: var(--typography-spacing-vertical)
 }
@@ -475,14 +482,17 @@ export default function ({ store, redirect }) {
 ```
 - `puravida middleware/currentUserOrAdminOnly.js ~`
 ```
+import { mapGetters } from 'vuex'
 export default function ({ route, store, redirect }) {
+  const { isAdmin, loggedInUser } = store.getters
   const splitPath = route.fullPath.split('/')
-  const idParam = splitPath[splitPath.length-1]
-  const currentUserId = store.state.auth.user.id
-  const isAdmin = store.state.auth.user.admin
-  if (!isAdmin && idParam != currentUserId) {
+  const idParam = parseInt(splitPath[splitPath.length-1])
+  const isUserCurrentUser = idParam === loggedInUser.id
+
+  if (!isAdmin && !isUserCurrentUser) {
     return redirect('/')
   }
+
 }
 ~
 ```
@@ -784,7 +794,8 @@ export default { middleware: 'currentUserOrAdminOnly' }
       <li v-if="isAdmin"><strong><NuxtLink to="/admin">Admin</NuxtLink></strong></li>
       <li v-if="isAuthenticated" class='dropdown'>
         <details role="list" dir="rtl">
-          <summary class='summary' aria-haspopup="listbox" role="link"><font-awesome-icon icon="circle-user" /></summary>
+          <summary class='summary' aria-haspopup="listbox" role="link"><img :src="loggedInUser.avatar" /></summary>
+          <!-- <summary class='summary' aria-haspopup="listbox" role="link"><font-awesome-icon icon="circle-user" /></summary> -->
           <ul role="listbox">
             <li><NuxtLink :to="`/users/${loggedInUser.id}`">Profile</NuxtLink></li>
             <li><NuxtLink :to="`/users/${loggedInUser.id}/edit`">Settings</NuxtLink></li>
@@ -1171,7 +1182,8 @@ export const getters = {
       <li v-if="isAdmin"><strong><NuxtLink to="/users">Users</NuxtLink></strong></li>
       <li v-if="isAuthenticated" class='dropdown'>
         <details role="list" dir="rtl">
-          <summary class='summary' aria-haspopup="listbox" role="link"><font-awesome-icon icon="circle-user" /></summary>
+          <summary class='summary' aria-haspopup="listbox" role="link"><img :src="loggedInUser.avatar" /></summary>
+          <!-- <summary class='summary' aria-haspopup="listbox" role="link"><font-awesome-icon icon="circle-user" /></summary> -->
           <ul role="listbox">
             <li><NuxtLink :to="`/users/${loggedInUser.id}`">Profile</NuxtLink></li>
             <li><NuxtLink :to="`/users/${loggedInUser.id}/edit`">Settings</NuxtLink></li>
