@@ -146,9 +146,14 @@ class UsersController < ApplicationController
 end
 ~
 ```
+
+- `rails g scaffold widget name description image:attachment`
+- `rails db:migrate`
+
 - `puravida config/routes.rb ~`
 ```
 Rails.application.routes.draw do
+  resources :wigets
   resources :users
   get "health", to: "health#index"
 end
@@ -342,6 +347,7 @@ end
 - `puravida config/routes.rb ~`
 ```
 Rails.application.routes.draw do
+  resources :items
   resources :users
   get "health", to: "health#index"
   post "login", to: "authentications#create"
