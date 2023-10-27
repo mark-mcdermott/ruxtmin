@@ -339,12 +339,47 @@ h1 {
   margin: 4rem 0
 }
 
-p.no-margin {
+.no-margin {
   margin: 0
+}
+
+.small-bottom-margin {
+  margin: 0 0 0.5rem
+}
+
+.big-bottom-margin {
+  margin: 0 0 8rem
+}
+
+.half-width {
+  margin: 0 0 4rem;
+  width: 50%;
 }
 
 article img {
   margin-bottom: var(--typography-spacing-vertical)
+}
+
+ul.features { 
+  margin: 0 0 2.5rem 1rem;
+  li {
+    margin: 0;
+    padding: 0;
+  }
+}
+
+.aligned-columns {
+  margin: 0 0 2rem;
+  p {
+    margin: 0;
+    span {
+      margin: 0 0.5rem 0 0;
+      display: inline-block;
+      width: 8rem;
+      text-align: right;
+      font-weight: bold;
+    }
+  }
 }
 ~
 EOF
@@ -876,21 +911,48 @@ cat <<'EOF' | puravida pages/index.vue ~
 <template>
   <main class="container">
     <h1>Rails 7 Nuxt 2 Admin Boilerplate</h1>
-    <p>Uses local active storage for user avatars</p>
-    <!-- 
-    <p>
-      <a href="docs/" role="button" class="secondary" aria-label="Documentation">Get started</a> 
-      <a href="https://github.com/picocss/pico/archive/refs/tags/v1.5.9.zip" role="button" class="contrast outline" aria-label="Download">Download</a>
-    </p>
-    <p><code><small>Less than 10 kB minified and gzipped</small></code></p>
-    -->
+    
+    <h2 class="small-bottom-margin">Features</h2>
+    <ul class="features">
+      <li>Admin dashboard</li>
+      <li>Placeholder users</li>
+      <li>Placeholder user item</li>
+    </ul>
+
+    <h3 class="small-bottom-margin">Stack</h3>
+    <div class="aligned-columns">
+      <p><span>frontend:</span> Nuxt 2</p>
+      <p><span>backend API:</span> Rails 7</p>
+      <p><span>database:</span> Postgres</p>
+      <p><span>styles:</span> Sass</p>
+      <p><span>css framework:</span> Pico.css</p>
+    </div>
+
+    <h3 class="small-bottom-margin">Tools</h3>
+    <div class="aligned-columns">
+      <p><span>user avatars:</span> local active storage</p>
+      <p><span>backend auth:</span> bcrypt & jwt</p>
+      <p><span>frontend auth:</span> nuxt auth module</p>
+    </div>
+
+    <h3 class="small-bottom-margin">User Logins</h3>
+    <table class="half-width">
+      <tr><th>Email</th><th>Password</th><th>Notes</th></tr>
+      <tr><td>michaelscott@dundermifflin.com</td><td>password</td><td>(admin)</td></tr>
+      <tr><td>jimhalpert@dundermifflin.com</td><td>password</td><td></td></tr>
+      <tr><td>pambeesly@dundermifflin.com</td><td>password</td><td></td></tr>
+    </table>
+    
+    <p class="big-bottom-margin">
+      <NuxtLink to="/log-in" role="button" class="secondary">Log In</NuxtLink> 
+      <NuxtLink to="/sign-up" role="button" class="contrast outline">Sign Up</NuxtLink>
+    </p>    
+
   </main>
 </template>
 
 <script>
-export default {
-  auth: false
-}
+export default { auth: false }
 </script>
 ~
 EOF
