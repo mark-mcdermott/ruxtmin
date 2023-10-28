@@ -7,8 +7,9 @@ cd ~/Desktop
 rails new back --api --database=postgresql
 cd back
 rails db:drop db:create
-bundle add rack-cors bcrypt jwt
+bundle add rack-cors bcrypt jwt rspec-rails
 rails active_storage:install
+rails generate rspec:install
 rails db:migrate
 cat <<'EOF' | puravida config/initializers/cors.rb ~
 Rails.application.config.middleware.insert_before 0, Rack::Cors do
@@ -31,6 +32,27 @@ class HealthController < ApplicationController
 end
 ~
 EOF
+cat <<'EOF' | puravida spec/requests/health_spec.rb ~
+# frozen_string_literal: true
+
+require "rails_helper"
+
+RSpec.describe "API Testing" do
+  describe "GET /health" do
+    it "returns success" do
+      get("/health")
+
+      response_data = JSON.parse(response.body)
+      expect(response).to have_http_status(:ok)
+      expect(response_data['status']).to eq('online')
+    end
+
+  end
+
+end
+~
+EOF
+
 echo -e "\n\n🦄  Users\n\n"
 rails g model user name email avatar:attachment admin:boolean password_digest
 MIGRATION_FILE=$(find /Users/mmcdermott/Desktop/back/db/migrate -name "*_create_users.rb")
@@ -123,6 +145,110 @@ end
 ~
 EOF
 
+cat <<'EOF' | puravida spec/requests/users_spec.rb ~
+# frozen_string_literal: true
+
+require "rails_helper"
+
+RSpec.describe "Users API Testing" do
+
+  describe "GET /users" do
+    it "returns 401" do
+      get("/users")
+      expect(response).to have_http_status(:unauthorized)
+    end 
+
+    it "returns users" do
+      user = User.create(name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password")
+      allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(user)
+      get("/users")
+      response_data = JSON.parse(response.body)
+      expected_user = { :id => user.id, :name => user.name, :email => user.email, :avatar => nil, :admin => user.admin }
+      expect(response).to have_http_status(:ok)
+      expect(response_data).to contain_exactly(expected_user.with_indifferent_access)
+    end
+  end
+
+  describe "GET /users/1" do
+    it "returns 401" do
+      user = User.create(name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password")
+      url = "/users/" + user.id.to_s
+      get(url)
+      expect(response).to have_http_status(:unauthorized)
+    end 
+    it "returns user" do
+      user = User.create(name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password")
+      allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(user)
+      get "/users", params: {id: 1}
+      response_data = JSON.parse(response.body)
+      expected_user = { :id => user.id, :name => user.name, :email => user.email, :avatar => nil, :admin => user.admin }
+      expect(response).to have_http_status(:ok)
+      expect(response_data).to contain_exactly(expected_user.with_indifferent_access)
+    end
+  end
+
+  describe "POST /users" do
+    it "returns new user" do
+      user = { name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: true, password: "password" }
+      post "/users", params: user
+      response_data = JSON.parse(response.body)
+      expect(response).to have_http_status(:ok)
+      expect(response_data).to include("id","name","email","admin","password_digest","created_at","updated_at")
+    end
+  end
+
+  describe "PATCH /users" do
+    it "returns 401" do
+      user = User.create(name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password")
+      url = "/users/" + user.id.to_s
+      patch url, params: {name: "Patched User!"}
+      expect(response).to have_http_status(:unauthorized)
+    end 
+    it "returns updated user" do
+      new_user_params = { name: "New User", email: "newuser@mail.com", admin: true, password: "password" }
+      post "/users", params: new_user_params
+      new_user_id = JSON.parse(response.body)['id']
+
+      current_user = User.create(name: "Michael Scottzzz", email: "michaelscott@dundermifflin.com", admin: "true", password: "password")
+      allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(current_user)
+      patch_url = "/users/" + new_user_id.to_s
+      patch patch_url, params: {name: "Patched User!"}
+      response_body = JSON.parse(response.body)
+      expect(response).to have_http_status(:ok)
+      expect(response_body['id']).to eq new_user_id
+      expect(response_body['name']).to eq "Patched User!"
+      expect(response_body['email']).to eq "newuser@mail.com"
+    end
+  end
+
+  describe "DELETE /users" do
+    it "returns 401" do
+      user = User.create(name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password")
+      url = "/users/" + user.id.to_s
+      delete url
+      expect(response).to have_http_status(:unauthorized)
+    end 
+    it "deletes user" do
+      current_user = User.create(name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password")
+      allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(current_user)
+
+      new_user_params = { name: "New User", email: "newuser@mail.com", admin: true, password: "password" }
+      post "/users", params: new_user_params
+      new_user_id = JSON.parse(response.body)['id']
+      expect(User.all.length).to eq 2
+
+      delete_url = "/users/" + new_user_id.to_s
+      delete delete_url
+      expect(User.all.length).to eq 1
+    end
+  end
+
+
+end
+~
+EOF
+
+echo -e "\n\n🦄  Widgets\n\n"
 rails g scaffold widget name description image:attachment user:references
 rails db:migrate
 
@@ -185,6 +311,162 @@ end
 ~
 EOF
 
+cat <<'EOF' | puravida spec/requests/widgets_spec.rb ~
+require 'rails_helper'
+
+RSpec.describe "/widgets", type: :request do
+  let(:user_1_params) { { name: "Michael Scott", email: SecureRandom.hex + "@mail.com", admin: true, password: "password" } }
+  let(:user_2_params) { { name: "Jim Halpert", email: SecureRandom.hex + "@mail.com", admin: false, password: "password" } }
+  let(:widget_1_params) { { name: "Michael's widget", description: "Michael's widget description" } }
+  let(:widget_1_patch_params) { { name: "Michael's widget!!" } }
+  let(:widget_2_params) { { name: "Jim's widget", description: "Jim's widget description" } }
+  let(:widget_3_params) { { name: "Pam's widget", description: "Pam's widget description" } }
+  let(:valid_attributes_without_user_id) { { name: "name", description: "description" } }
+  let(:invalid_attributes) { { name: "name", test: "test" } }
+
+  before :each do
+    create_users_and_widgets
+  end
+
+  describe "GET /widgets (no token)" do
+    it "returns 401" do
+      get widgets_url
+      expect(response).to have_http_status(401)
+    end
+  end
+
+  describe "GET /widgets" do
+    it "returns 200" do
+      get widgets_url, headers: auth_header
+      expect(response).to have_http_status(200)
+    end
+    it "returns widgets" do
+      get widgets_url, headers: auth_header
+      expect(JSON.parse(response.body)).to include("id" => an_int, "name" => "Michael's widget","description" => "Michael's widget description", "image" => nil, "user_id" => an_int)
+      expect(JSON.parse(response.body)).to include("id" => an_int, "name" => "Jim's widget","description" => "Jim's widget description", "image" => nil, "user_id" => an_int)
+    end
+  end
+
+  describe "GET /widgets/:id (no token)" do
+    it "returns 401" do
+      get widgets_url(@user1)
+      expect(response).to have_http_status(401)
+    end
+  end
+
+  describe "GET /widgets/:id" do
+    it "returns 200" do
+      get widget_path(@widget1), headers: auth_header
+      expect(response).to have_http_status(200)
+    end
+    it "returns widget 1" do
+      get widget_path(@widget1), headers: auth_header
+      expect(JSON.parse(response.body)).to include("id" => an_int, "name" => "Michael's widget","description" => "Michael's widget description", "image" => nil, "userId" => an_int)
+      expect(JSON.parse(response.body)).not_to include("name" => "Jim's widget","description" => "Jim's widget description")
+    end
+    it "returns widget 2" do
+      get widget_path(@widget2), headers: auth_header
+      expect(JSON.parse(response.body)).to include("id" => an_int, "name" => "Jim's widget","description" => "Jim's widget description", "image" => nil, "userId" => an_int)
+      expect(JSON.parse(response.body)).not_to include("name" => "Michaels's widget","description" => "Michaels's widget description")
+    end
+  end
+
+  describe "GET /widgets" do
+    it "returns 200" do
+      get '/widgets', headers: auth_header
+      expect(response).to have_http_status(200)
+    end
+    it "returns users" do
+      get '/widgets', headers: auth_header
+      expect(JSON.parse(response.body)).to include("id" => an_int, "name" => "Michael's widget","description" => "Michael's widget description", "image" => nil, "user_id" => an_int)
+      expect(JSON.parse(response.body)).to include("id" => an_int, "name" => "Jim's widget","description" => "Jim's widget description", "image" => nil, "user_id" => an_int)
+    end
+  end
+
+  describe "POST /widgets (no token)" do
+    it "returns 401" do
+      post widgets_url, params: widget_3_params
+      expect(response).to have_http_status(401)
+    end
+  end
+
+  describe "POST /widgets (no user_id)" do
+    it "returns 422" do
+      post widgets_path, headers: auth_header, params: valid_attributes_without_user_id
+      expect(response).to have_http_status(422)
+    end
+  end
+
+  describe "POST /widgets" do
+    it "returns 201" do
+      post widgets_path, headers: auth_header, params: valid_attributes_without_user_id.merge!(:user_id => @user1.id)
+      expect(response).to have_http_status(201)
+      expect(JSON.parse(response.body)).to include("id" => an_int, "name" => "name","description" => "description", "user_id" => an_int)
+    end
+  end
+
+  describe "PATCH /widgets (no token)" do
+    it "returns 401" do
+      patch widget_path(@widget1), params: widget_1_patch_params
+      expect(response).to have_http_status(401)
+    end
+  end
+
+  describe "PATCH /widgets (no params)" do
+    it "returns 200" do
+      patch widget_path(@widget1), headers: auth_header
+      expect(response).to have_http_status(200)
+    end
+  end
+
+  describe "PATCH /widgets" do
+    it "returns 200" do
+      patch widget_path(@widget1), headers: auth_header, params: widget_1_patch_params
+      expect(response).to have_http_status(200)
+      expect(JSON.parse(response.body)).to include("name" => "Michael's widget!!")
+    end
+  end
+
+  describe "DELETE /widgets/:id" do
+    it "destroys requested widget" do
+      new_widget = Widget.create! valid_attributes_without_user_id.merge!(:user_id => @user1.id)
+      expect {
+        delete widget_url(new_widget), headers: auth_header, as: :json
+      }.to change(Widget, :count).by(-1)
+    end
+  end
+end
+
+def create_users
+  @user1 = User.create(name: user_1_params[:name], email: user_1_params[:email], admin: user_1_params[:admin], password: user_1_params[:password])
+  @user2 = User.create(name: user_2_params[:name], email: user_2_params[:email], admin: user_2_params[:admin], password: user_2_params[:password])
+end
+
+def create_widgets
+  @widget1 = Widget.create! widget_1_params.merge!(:user_id => @user1.id)
+  @widget2 = Widget.create! widget_2_params.merge!(:user_id => @user2.id)
+end
+
+def create_users_and_widgets
+  create_users
+  create_widgets
+end
+
+def auth_header
+  post ("/login"), params: { email: user_1_params[:email], password: user_1_params[:password] }
+  { Authorization: "Token " + (JSON.parse(response.body))['data'] }
+end
+
+def an_int
+  be_a_kind_of(Integer)
+end
+~
+EOF
+
+
+
+
+echo -e "\n\n🦄  Routes\n\n"
 cat <<'EOF' | puravida config/routes.rb ~
 Rails.application.routes.draw do
   resources :widgets
@@ -193,6 +475,7 @@ Rails.application.routes.draw do
 end
 ~
 EOF
+
 echo -e "\n\n🦄  Seeds\n\n"
 cp -a ~/Desktop/ruxtmin/assets ~/Desktop/back/app/
 cat <<'EOF' | puravida db/seeds.rb ~
@@ -230,63 +513,7 @@ widget.save!
 EOF
 rails db:seed
 echo -e "\n\n🦄  Backend Auth\n\n"
-cat <<'EOF' | puravida app/controllers/application_controller.rb ~
-class ApplicationController < ActionController::API
-  SECRET_KEY_BASE = Rails.application.credentials.secret_key_base
-  before_action :require_login
-  rescue_from Exception, with: :response_internal_server_error
-  
-  def user_from_token
-    avatar = current_user.avatar.present? ? url_for(current_user.avatar) : nil
-    user = current_user.slice(:id,:email,:name,:admin)
-    user[:avatar] = avatar
-    render json: { data: user, status: 200 }
-  end
 
-  def require_login
-    response_unauthorized if current_user.blank?
-  end
-  
-  def current_user
-    if decoded_token.present?
-      user_id = decoded_token[0]['user_id']
-      @user = User.find_by(id: user_id)
-    else
-      nil
-    end
-  end
-  
-  def encode_token(payload)
-    JWT.encode payload, SECRET_KEY_BASE, 'HS256'
-  end
-  
-  def decoded_token
-    if auth_header
-      token = auth_header.split(' ')[1]
-      begin
-        JWT.decode token, SECRET_KEY_BASE, true, { algorithm: 'HS256' }
-      rescue JWT::DecodeError
-        []
-      end
-    end
-  end
-  
-  def response_unauthorized
-    render status: 401, json: { status: 401, message: 'Unauthorized' }
-  end
-  
-  def response_internal_server_error
-    render status: 500, json: { status: 500, message: 'Internal Server Error' }
-  end
-  
-  private 
-  
-    def auth_header
-      request.headers['Authorization']
-    end
-end
-~
-EOF
 rails g controller Authentications
 cat <<'EOF' | puravida app/controllers/authentications_controller.rb ~
 class AuthenticationsController < ApplicationController
@@ -389,6 +616,70 @@ class HealthController < ApplicationController
   def index
     render json: { status: 'online' }
   end
+end
+~
+EOF
+cat <<'EOF' | puravida app/controllers/application_controller.rb ~
+class ApplicationController < ActionController::API
+  SECRET_KEY_BASE = Rails.application.credentials.secret_key_base
+  before_action :require_login
+  rescue_from Exception, with: :response_internal_server_error
+  
+  def user_from_token
+    avatar = current_user.avatar.present? ? url_for(current_user.avatar) : nil
+    user = current_user.slice(:id,:email,:name,:admin)
+    widgets = Widget.where(user_id: user['id'])
+    widgets = widgets.map do |w|
+      image = w.image.present? ? url_for(w.image) : nil
+      user_name = User.find(w.user_id).name
+      { :id => w.id, :name => w.name, :description => w.description, :image => image, :userId => w.user_id, :userName => user_name }
+    end
+    user[:avatar] = avatar
+    user[:widgets] = widgets
+    render json: { data: user, status: 200 }
+  end
+
+  def require_login
+    response_unauthorized if current_user.blank?
+  end
+  
+  def current_user
+    if decoded_token.present?
+      user_id = decoded_token[0]['user_id']
+      @user = User.find_by(id: user_id)
+    else
+      nil
+    end
+  end
+  
+  def encode_token(payload)
+    JWT.encode payload, SECRET_KEY_BASE, 'HS256'
+  end
+  
+  def decoded_token
+    if auth_header
+      token = auth_header.split(' ')[1]
+      begin
+        JWT.decode token, SECRET_KEY_BASE, true, { algorithm: 'HS256' }
+      rescue JWT::DecodeError
+        []
+      end
+    end
+  end
+  
+  def response_unauthorized
+    render status: 401, json: { status: 401, message: 'Unauthorized' }
+  end
+  
+  def response_internal_server_error
+    render status: 500, json: { status: 500, message: 'Internal Server Error' }
+  end
+  
+  private 
+  
+    def auth_header
+      request.headers['Authorization']
+    end
 end
 ~
 EOF
@@ -836,7 +1127,7 @@ EOF
 cat <<'EOF' | puravida components/widget/Set.vue ~
 <template>
   <section>
-    <div v-for="widget in widgets" :key="widget.id">
+    <div v-for="widget in userWidgets" :key="widget.id">
       <WidgetCard :widget="widget" :widgets="widgets" />
     </div>
   </section>
@@ -844,8 +1135,12 @@ cat <<'EOF' | puravida components/widget/Set.vue ~
 
 <script>
 export default {
-  data: () => ({ widgets: [] }),
-  async fetch() { this.widgets = await this.$axios.$get('widgets') }
+  data: () => ({ userWidgets: [], allWidgets: [] }),
+  async fetch() { 
+    this.userWidgets = this.$store.getters.loggedInUser.widgets
+    this.allWidgets = await this.$axios.$get('widgets') 
+    // console.log(this.widgets)
+  }
 }
 </script>
 ~
@@ -1354,227 +1649,21 @@ export const getters = {
 EOF
 
 echo -e "\n\n🦄 Admin Page\n\n"
-cat <<'EOF' | puravida components/nav/Admin.vue ~
-<template>
-  <nav class="top-nav container-fluid">
-    <ul><li><strong><NuxtLink to="/"><NavBrand /></NuxtLink></strong></li></ul>
-    <input id="menu-toggle" type="checkbox" />
-    <label class='menu-button-container' for="menu-toggle">
-      <div class='menu-button'></div>
-    </label>
-    <ul class="menu">
-      <li v-if="!isAuthenticated"><strong><NuxtLink to="/log-in">Log In</NuxtLink></strong></li>
-      <li v-if="!isAuthenticated"><strong><NuxtLink to="/sign-up">Sign Up</NuxtLink></strong></li>
-      <li v-if="isAdmin"><strong><NuxtLink to="/users">Users</NuxtLink></strong></li>
-      <li v-if="isAuthenticated" class='dropdown'>
-        <details role="list" dir="rtl">
-          <summary class='summary' aria-haspopup="listbox" role="link"><img :src="loggedInUser.avatar" /></summary>
-          <!-- <summary class='summary' aria-haspopup="listbox" role="link"><font-awesome-icon icon="circle-user" /></summary> -->
-          <ul role="listbox">
-            <li><NuxtLink :to="`/users/${loggedInUser.id}`">Profile</NuxtLink></li>
-            <li><NuxtLink :to="`/users/${loggedInUser.id}/edit`">Settings</NuxtLink></li>
-            <li><a @click="logOut">Log Out</a></li>
-          </ul>
-        </details>
-      </li>
-      <!-- <li v-if="isAuthenticated"><strong><NuxtLink :to="`/users/${loggedInUser.id}`">Settings</NuxtLink></strong></li> -->
-      <li class="logout-desktop" v-if="isAuthenticated"><strong><a @click="logOut">Log Out</a></strong></li>
-    </ul>
-  </nav>
-</template>
 
-<script>
-import { mapGetters } from 'vuex'
-export default {
-  computed: {
-    ...mapGetters(['isAuthenticated', 'isAdmin', 'loggedInUser']),
-  }, methods: {
-    logOut() {
-      console.log(loggedInUser.id)
-      // this.$auth.logout()
-    },
-  }
-}
-</script>
-
-<style lang="sass" scoped>
-// css-only responsive nav
-// from https://codepen.io/alvarotrigo/pen/MWEJEWG (accessed 10/16/23, modified slightly)
-
-h2 
-  vertical-align: center
-  text-align: center
-
-html, body 
-  margin: 0
-  height: 100%
-
-.top-nav 
-  // display: flex
-  // flex-direction: row
-  // align-items: center
-  // justify-content: space-between
-  // background-color: #00BAF0
-  // background: linear-gradient(to left, #f46b45, #eea849)
-  /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
-  // color: #FFF
-  height: 50px
-  // padding: 1em
-
-.top-nav > ul 
-  margin-top: 15px
-
-.menu 
-  display: flex
-  flex-direction: row
-  list-style-type: none
-  margin: 0
-  padding: 0
-
-[type="checkbox"] ~ label.menu-button-container 
-  display: none
-  height: 100%
-  width: 30px
-  cursor: pointer
-  flex-direction: column
-  justify-content: center
-  align-items: center
-
-#menu-toggle 
-  display: none
-
-.menu-button,
-.menu-button::before,
-.menu-button::after 
-  display: block
-  background-color: #000
-  position: absolute
-  height: 4px
-  width: 30px
-  transition: transform 400ms cubic-bezier(0.23, 1, 0.32, 1)
-  border-radius: 2px
-
-.menu-button::before 
-  content: ''
-  margin-top: -8px
-
-.menu-button::after 
-  content: ''
-  margin-top: 8px
-
-#menu-toggle:checked + .menu-button-container .menu-button::before 
-  margin-top: 0px
-  transform: rotate(405deg)
-
-#menu-toggle:checked + .menu-button-container .menu-button 
-  background: rgba(255, 255, 255, 0)
-
-#menu-toggle:checked + .menu-button-container .menu-button::after 
-  margin-top: 0px
-  transform: rotate(-405deg)
-
-.menu 
-  > li 
-    overflow: visible
-
-  > li.dropdown
-    background: none
-
-    .summary
-      margin: 0
-      padding: 1rem 0
-      font-size: 1.5rem
-
-      &:focus
-        color: var(--color)
-        background: none
-
-      &:after
-        display: none
-
-    ul
-      padding-top: 0
-      margin-top: 0
-      right: -1rem
-
-  > li.logout-desktop
-    display: none
-
-@media (max-width: 991px) 
-  .menu 
-    
-    > li 
-      overflow: hidden
-    
-    > li.dropdown
-      display: none
-
-    > li.logout-desktop
-      display: flex
-
-  [type="checkbox"] ~ label.menu-button-container 
-    display: flex
-
-  .top-nav > ul.menu 
-    position: absolute
-    top: 0
-    margin-top: 50px
-    left: 0
-    flex-direction: column
-    width: 100%
-    justify-content: center
-    align-items: center
-
-  #menu-toggle ~ .menu li 
-    height: 0
-    margin: 0
-    padding: 0
-    border: 0
-    transition: height 400ms cubic-bezier(0.23, 1, 0.32, 1)
-
-  #menu-toggle:checked ~ .menu li 
-    border: 1px solid #333
-    height: 2.5em
-    padding: 0.5em
-    transition: height 400ms cubic-bezier(0.23, 1, 0.32, 1)
-
-  .menu > li 
-    display: flex
-    justify-content: center
-    margin: 0
-    padding: 0.5em 0
-    width: 100%
-    // color: white
-    background-color: #222
-
-  .menu > li:not(:last-child) 
-    border-bottom: 1px solid #444
-</style>
-~
-EOF
-cat <<'EOF' | puravida layouts/admin.vue ~
-<template>
-  <div>
-    <NavAdmin />
-    <Nuxt />
-  </div>
-</template>
-~
-EOF
-cat <<'EOF' | puravida pages/admin.vue ~
+cat <<'EOF' | puravida pages/admin/index.vue ~
 <template>
   <main class="container">
     <h1>Admin</h1>
     <p>Number of users: {{ this.users.length }}</p>
     <p>Number of admins: {{ (this.users.filter((obj) => obj.admin === true)).length }}</p>
-    <p><NuxtLink to="/users">Users</NuxtLink></p>
+    <p><NuxtLink to="/admin/users">Users</NuxtLink></p>
+    <p><NuxtLink to="/admin/widgets">Widgets</NuxtLink></p>
   </main>
 </template>
 
 <script>
 export default { 
   middleware: 'adminOnly',
-  layout: 'admin',
   data: () => ({ users: [] }),
   async fetch() { this.users = await this.$axios.$get('users') }
 }
@@ -1583,6 +1672,39 @@ export default {
 EOF
 
 
+echo -e "\n\n🦄 Admin\n\n"
+cat <<'EOF' | puravida pages/admin/users.vue ~
+<template>
+  <main class="container">
+    <h1>Users</h1>
+    <NuxtLink to="/users/new" role="button">Add User</NuxtLink>
+    <UserSet />
+  </main>
+</template>
+
+<script>
+export default {
+  middleware: 'adminOnly'
+}
+</script>
+~
+EOF
+cat <<'EOF' | puravida pages/admin/widgets.vue ~
+<template>
+  <main class="container">
+    <h1>Widgets</h1>
+    <NuxtLink to="/users/new" role="button">Add Widgets</NuxtLink>
+    <WidgetSet />
+  </main>
+</template>
+
+<script>
+export default {
+  middleware: 'adminOnly'
+}
+</script>
+~
+EOF
 
 
 
