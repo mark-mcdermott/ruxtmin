@@ -783,20 +783,9 @@ class ApplicationController < ActionController::API
   end
 
   def prep_raw_user(user)
-    user = trim_unsafe_attributes(user)
-    clean_avatar_url(user)
-  end
-
-  def trim_unsafe_attributes(user)
-    if user.admin
-      user = user.slice(:id,:email,:name,:admin,:avatar)
-    else
-      user = user.slice(:id,:email,:name,:avatar)
-    end
-  end
-
-  def clean_avatar_url(user)
-    user['avatar'] = user['avatar'].present? ? url_for(user['avatar']) : user
+    avatar = user.avatar.present? ? url_for(user.avatar) : nil
+    user = user.slice(:id,:email,:name)
+    user['avatar'] = avatar
     user
   end
   
