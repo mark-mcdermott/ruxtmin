@@ -91,7 +91,7 @@ class User < ApplicationRecord
 end
 ~
 ```
-- `puravida app/controllers/users_controller.rb ~`
+- `puravida app/controllers/users_controller.rb ~` (v1)
 ```
 # user controller before auth - this will have to change slightly after auth is added
 class UsersController < ApplicationController
@@ -170,6 +170,62 @@ class UsersController < ApplicationController
   end
 end
 ~
+```
+
+- `puravida app/controllers/users_controller.rb ~` (v2)
+```
+class UsersController < ApplicationController
+  before_action :set_user, only: %i[ show update destroy ]
+  # skip_before_action :require_login, only: :create
+
+  # GET /users
+  def index
+    @users = User.all
+
+    render json: @users
+  end
+
+  # GET /users/1
+  def show
+    render json: @user
+  end
+
+  # POST /users
+  def create
+    @user = User.new(user_params)
+
+    if @user.save
+      render json: @user, status: :created, location: @user
+    else
+      render json: @user.errors, status: :unprocessable_entity
+    end
+  end
+
+  # PATCH/PUT /users/1
+  def update
+    if @user.update(user_params)
+      render json: @user
+    else
+      render json: @user.errors, status: :unprocessable_entity
+    end
+  end
+
+  # DELETE /users/1
+  def destroy
+    @user.destroy
+  end
+
+  private
+    # Use callbacks to share common setup or constraints between actions.
+    def set_user
+      @user = User.find(params[:id])
+    end
+
+    # Only allow a list of trusted parameters through.
+    def user_params
+      params.permit(:name, :email, :avatar, :admin, :password)
+    end
+end
 ```
 
 - `puravida spec/requests/users_spec.rb ~` (v1)
@@ -903,24 +959,26 @@ end
 ```
 - `puravida spec/requests/users_spec.rb ~`
 ```
+# frozen_string_literal: true
 require 'rails_helper'
 RSpec.describe "/users", type: :request do
-  let(:valid_attributes) { { name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password" } }
-  let(:invalid_attributes) { { "email": "test" } }
-  let(:valid_headers) { {} }
+  let(:valid_create_user_params) { { name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password" } }
+  let(:invalid_create_user_params) { { name: "Michael Scott", email: "test", admin: "true", password: "password" } }
+  let(:valid_login_params) { { email: "michaelscott@dundermifflin.com",  password: "password" } }
+  let(:invalid_patch_params) { { email: "test" } }
 
   describe "GET /index" do
     it "renders a successful response" do
-      User.create! valid_attributes
-      get users_url, headers: valid_headers, as: :json
+      User.create! valid_create_user_params
+      get users_url, headers: valid_auth_header, as: :json
       expect(response).to be_successful
     end
   end
 
   describe "GET /show" do
     it "renders a successful response" do
-      user = User.create! valid_attributes
-      get user_url(user), as: :json
+      user = User.create! valid_create_user_params
+      get user_url(user), headers: valid_auth_header, as: :json
       expect(response).to be_successful
     end
   end
@@ -928,15 +986,12 @@ RSpec.describe "/users", type: :request do
   describe "POST /create" do
     context "with valid parameters" do
       it "creates a new User" do
-        expect {
-          post users_url,
-               params: valid_attributes, headers: valid_headers, as: :json
-        }.to change(User, :count).by(1)
+        expect { post users_url, params: valid_create_user_params, as: :json }
+          .to change(User, :count).by(1)
       end
 
       it "renders a JSON response with the new user" do
-        post users_url,
-             params: valid_attributes, headers: valid_headers, as: :json
+        post users_url, params: valid_create_user_params, as: :json
         expect(response).to have_http_status(:created)
         expect(response.content_type).to match(a_string_including("application/json"))
       end
@@ -944,15 +999,12 @@ RSpec.describe "/users", type: :request do
 
     context "with invalid parameters" do
       it "does not create a new User" do
-        expect {
-          post users_url,
-               params: invalid_attributes, as: :json
-        }.to change(User, :count).by(0)
+        expect { post users_url, params: invalid_create_user_params, as: :json}
+          .to change(User, :count).by(0)
       end
 
       it "renders a JSON response with errors for the new user" do
-        post users_url,
-             params: invalid_attributes, headers: valid_headers, as: :json
+        post users_url, params: invalid_create_user_params, as: :json
         expect(response).to have_http_status(:unprocessable_entity)
         expect(response.content_type).to match(a_string_including("application/json"))
       end
@@ -964,17 +1016,16 @@ RSpec.describe "/users", type: :request do
       let(:new_attributes) { { name: "Updated Name!!"} }
 
       it "updates the requested user" do
-        user = User.create! valid_attributes
-        patch user_url(user),
-              params: new_attributes, headers: valid_headers, as: :json
+        user = User.create! valid_create_user_params
+        patch user_url(user), params: new_attributes, headers: valid_auth_header, as: :json
         user.reload
         expect(JSON.parse(response.body)['name']).to eq "Updated Name!!"
       end
 
       it "renders a JSON response with the user" do
-        user = User.create! valid_attributes
+        user = User.create! valid_create_user_params
         patch user_url(user),
-              params: new_attributes, headers: valid_headers, as: :json
+              params: new_attributes, headers: valid_auth_header, as: :json
         expect(response).to have_http_status(:ok)
         expect(response.content_type).to match(a_string_including("application/json"))
       end
@@ -982,9 +1033,8 @@ RSpec.describe "/users", type: :request do
 
     context "with invalid parameters" do
       it "renders a JSON response with errors for the user" do
-        user = User.create! valid_attributes
-        patch user_url(user),
-              params: invalid_attributes, headers: valid_headers, as: :json
+        user = User.create! valid_create_user_params
+        patch user_url(user), params: invalid_patch_params, headers: valid_auth_header, as: :json
         expect(response).to have_http_status(:unprocessable_entity)
         expect(response.content_type).to match(a_string_including("application/json"))
       end
@@ -993,12 +1043,28 @@ RSpec.describe "/users", type: :request do
 
   describe "DELETE /destroy" do
     it "destroys the requested user" do
-      user = User.create! valid_attributes
+      user = User.create! valid_create_user_params
       expect {
-        delete user_url(user), headers: valid_headers, as: :json
+        delete user_url(user), headers: valid_auth_header, as: :json
       }.to change(User, :count).by(-1)
     end
   end
+end
+
+def valid_token
+  user = User.create(valid_create_user_params)
+  post "/login", params: valid_login_params
+  token = JSON.parse(response.body)['data']
+end
+
+def valid_auth_header
+  auth_value = "Bearer " + valid_token
+  { Authorization: auth_value }
+end
+
+def valid_token_but_poorly_formed_auth_header
+  auth_value = "Bears " + valid_token
+  { Authorization: auth_value }
 end
 ```
 - `puravida app/controllers/health_controller.rb ~`
