@@ -14,7 +14,8 @@ This readme uses a small custom bash command called [puravida](#user-content-pur
 - create database
   - if first time doing this: `rails db:create`
   - if database already exists: `rails db:drop db:create`
-- `bundle add rack-cors bcrypt jwt rspec-rails`
+- `bundle add rack-cors bcrypt jwt pry`
+- `bundle add rspec-rails factory_bot_rails --group "development, test"`
 - `rails active_storage:install`
 - `rails generate rspec:install`
 - `rails db:migrate`
@@ -54,9 +55,8 @@ RSpec.describe "API Testing" do
     it "returns success" do
       get("/health")
 
-      response_data = JSON.parse(response.body)
       expect(response).to have_http_status(:ok)
-      expect(response_data['status']).to eq('online')
+      expect(JSON.parse(response.body)['status']).to eq('online')
     end
 
   end
@@ -66,7 +66,7 @@ end
 ```
 
 ### Users
-- `rails g model user name email avatar:attachment admin:boolean password_digest`
+- `rails g scaffold user name email avatar:attachment admin:boolean password_digest`
 - change the migration file (`db/migrate/<timestamp>_create_users.rb`) to:
 ```
 class CreateUsers < ActiveRecord::Migration[7.0]
@@ -503,32 +503,28 @@ widget.save!
 - `rails db:seed`
 
 ### Backend Auth
+
+#### /me Route (Application Controller)
 - `puravida app/controllers/application_controller.rb ~`
 ```
 class ApplicationController < ActionController::API
   SECRET_KEY_BASE = Rails.application.credentials.secret_key_base
   before_action :require_login
   rescue_from Exception, with: :response_internal_server_error
-  
+
+  def require_login
+    response_unauthorized if current_user_raw.blank?
+  end
+
+  # this is safe to send to the frontend, excludes password_digest, created_at, updated_at
   def user_from_token
-    avatar = current_user.avatar.present? ? url_for(current_user.avatar) : nil
-    user = current_user.slice(:id,:email,:name,:admin)
-    widgets = Widget.where(user_id: user['id'])
-    widgets = widgets.map do |w|
-      image = w.image.present? ? url_for(w.image) : nil
-      user_name = User.find(w.user_id).name
-      { :id => w.id, :name => w.name, :description => w.description, :image => image, :userId => w.user_id, :userName => user_name }
-    end
-    user[:avatar] = avatar
-    user[:widgets] = widgets
+    user = current_user_raw.slice(:id,:email,:name,:admin)
+    # TODO: add avatar & widgets
     render json: { data: user, status: 200 }
   end
 
-  def require_login
-    response_unauthorized if current_user.blank?
-  end
-  
-  def current_user
+  # unsafe/internal: includes password_digest, created_at, updated_at - we don't want those going to the frontend
+  def current_user_raw
     if decoded_token.present?
       user_id = decoded_token[0]['user_id']
       @user = User.find_by(id: user_id)
@@ -536,11 +532,11 @@ class ApplicationController < ActionController::API
       nil
     end
   end
-  
+
   def encode_token(payload)
     JWT.encode payload, SECRET_KEY_BASE, 'HS256'
   end
-  
+
   def decoded_token
     if auth_header
       token = auth_header.split(' ')[1]
@@ -551,7 +547,7 @@ class ApplicationController < ActionController::API
       end
     end
   end
-  
+
   def response_unauthorized
     render status: 401, json: { status: 401, message: 'Unauthorized' }
   end
@@ -559,15 +555,85 @@ class ApplicationController < ActionController::API
   def response_internal_server_error
     render status: 500, json: { status: 500, message: 'Internal Server Error' }
   end
-  
+
   private 
   
     def auth_header
       request.headers['Authorization']
     end
+
 end
 ~
 ```
+- `puravida config/routes.rb ~`
+```
+Rails.application.routes.draw do
+  resources :users
+  get 'health/index'
+  get "me", to: "application#user_from_token"
+end
+~
+```
+- `puravida spec/application_spec.rb ~`
+```
+require 'rails_helper'
+
+RSpec.describe "/me", type: :request do
+  let(:valid_login_params) { { email: "michaelscott@dundermifflin.com",  password: "password" } }
+  let(:invalid_login_params) { { email: "michaelscott@dundermifflin.com",  password: "testing" } }
+  let(:create_user_params) { { name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password" }}
+  let(:invalid_token_header) { { Authorization: "Bearer xyz123"}}
+  describe "GET /me" do
+
+    context "without auth header" do
+      it "returns http success" do
+        get "/me"
+        expect(response).to have_http_status(:unauthorized)
+      end
+    end
+    
+    context "with invalid token header" do
+      it "returns http success" do
+        get "/me", headers: invalid_token_header
+        expect(response).to have_http_status(:unauthorized)
+      end
+    end
+
+    context "with valid token, but poorly formed auth header" do
+      it "returns http success" do
+        get "/me", headers: valid_token_but_poorly_formed_auth_header
+        expect(response).to have_http_status(:unauthorized)
+      end
+    end
+
+    context "with valid auth header" do
+      it "returns http success" do
+        get "/me", headers: valid_auth_header
+        expect(response).to have_http_status(:success)
+      end
+    end
+  end
+end
+
+def valid_token
+  user = User.create(create_user_params)
+  post "/login", params: valid_login_params
+  token = JSON.parse(response.body)['data']
+end
+
+def valid_auth_header
+  auth_value = "Bearer " + valid_token
+  { Authorization: auth_value }
+end
+
+def valid_token_but_poorly_formed_auth_header
+  auth_value = "Bears " + valid_token
+  { Authorization: auth_value }
+end
+~
+```
+
+#### /login Route (Authentications Controller)
 - `rails g controller Authentications`
 - `puravida app/controllers/authentications_controller.rb ~`
 ```
@@ -587,6 +653,54 @@ class AuthenticationsController < ApplicationController
 end
 ~
 ```
+- `puravida config/routes.rb ~`
+```
+Rails.application.routes.draw do
+  resources :users
+  get 'health/index'
+  post "login", to: "authentications#create"
+  get "me", to: "application#user_from_token"
+end
+```
+- `puravida spec/authentications_spec.rb ~`
+```
+require 'rails_helper'
+
+RSpec.describe "/login", type: :request do
+  let(:valid_login_params) { { email: "michaelscott@dundermifflin.com",  password: "password" } }
+  let(:invalid_login_params) { { email: "michaelscott@dundermifflin.com",  password: "testing" } }
+  let(:create_user_params) { { name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password" }}
+  describe "POST /login" do
+    context "without params" do
+      it "returns unauthorized" do
+        post "/login"
+        expect(response).to have_http_status(:unauthorized)
+      end
+    end
+  end
+  describe "POST /login" do
+    context "with invalid params" do
+      it "returns unauthorized" do
+        post "/login", params: invalid_login_params
+        expect(response).to have_http_status(:unauthorized)
+      end
+    end
+  end
+  describe "POST /login" do
+    context "with valid params" do
+      it "returns unauthorized" do
+        user = User.create(create_user_params)
+        post "/login", params: valid_login_params
+        expect(response).to have_http_status(:success)
+        expect(JSON.parse(response.body)['message']).to eq "You are logged in successfully"
+        expect(JSON.parse(response.body)['data']).to match(/^(?:[\w-]*\.){2}[\w-]*$/)
+      end
+    end
+  end
+end
+~
+```
+
 - `puravida app/controllers/users_controller.rb ~`
 ```
 class UsersController < ApplicationController
