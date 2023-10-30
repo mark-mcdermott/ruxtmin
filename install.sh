@@ -312,6 +312,7 @@ end
 EOF
 
 cat <<'EOF' | puravida spec/requests/widgets_spec.rb ~
+# frozen_string_literal: true
 require 'rails_helper'
 
 RSpec.describe "/widgets", type: :request do
@@ -330,18 +331,18 @@ RSpec.describe "/widgets", type: :request do
 
   describe "GET /widgets (no token)" do
     it "returns 401" do
-      get widgets_url
+      get widgets_path
       expect(response).to have_http_status(401)
     end
   end
 
   describe "GET /widgets" do
     it "returns 200" do
-      get widgets_url, headers: auth_header
+      get widgets_path, headers: auth_header
       expect(response).to have_http_status(200)
     end
     it "returns widgets" do
-      get widgets_url, headers: auth_header
+      get widgets_path, headers: auth_header
       expect(JSON.parse(response.body)).to include("id" => an_int, "name" => "Michael's widget","description" => "Michael's widget description", "image" => nil, "user_id" => an_int)
       expect(JSON.parse(response.body)).to include("id" => an_int, "name" => "Jim's widget","description" => "Jim's widget description", "image" => nil, "user_id" => an_int)
     end
@@ -349,7 +350,7 @@ RSpec.describe "/widgets", type: :request do
 
   describe "GET /widgets/:id (no token)" do
     it "returns 401" do
-      get widgets_url(@user1)
+      get widget_path(@user1)
       expect(response).to have_http_status(401)
     end
   end
