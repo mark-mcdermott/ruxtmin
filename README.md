@@ -176,18 +176,72 @@ end
 ```
 class UsersController < ApplicationController
   before_action :set_user, only: %i[ show update destroy ]
-  # skip_before_action :require_login, only: :create
+  skip_before_action :require_login, only: :create
 
   # GET /users
   def index
-    @users = User.all
-
+    @users = User.all.map { |user| prep_raw_user(user) }
     render json: @users
   end
 
   # GET /users/1
   def show
     render json: @user
+  end
+
+  # POST /users
+  def create
+    @user = User.new(user_params)
+
+    if @user.save
+      render json: @user, status: :created, location: @user
+    else
+      render json: @user.errors, status: :unprocessable_entity
+    end
+  end
+
+  # PATCH/PUT /users/1
+  def update
+    if @user.update(user_params)
+      render json: @user
+    else
+      render json: @user.errors, status: :unprocessable_entity
+    end
+  end
+
+  # DELETE /users/1
+  def destroy
+    @user.destroy
+  end
+
+  private
+    # Use callbacks to share common setup or constraints between actions.
+    def set_user
+      @user = prep_raw_user(User.find(params[:id]))
+    end
+
+    # Only allow a list of trusted parameters through.
+    def user_params
+      params.permit(:name, :email, :avatar, :admin, :password)
+    end
+    
+end
+~
+```
+
+class UsersController < ApplicationController
+  before_action :set_user, only: %i[ show update destroy ]
+  # skip_before_action :require_login, only: :create
+
+  # GET /users
+  def index
+    @users = User.all.map { |user| prep_raw_user(user) }
+    render json: @users
+  end
+
+  # GET /users/1
+  def show
+    User.all.map { |user| prep_raw_user(user) }
   end
 
   # POST /users
@@ -691,8 +745,7 @@ class ApplicationController < ActionController::API
 
   # this is safe to send to the frontend, excludes password_digest, created_at, updated_at
   def user_from_token
-    user = current_user_raw.slice(:id,:email,:name,:admin)
-    # TODO: add avatar & widgets
+    user = prep_raw_user(current_user_raw)
     render json: { data: user, status: 200 }
   end
 
@@ -711,7 +764,7 @@ class ApplicationController < ActionController::API
   end
 
   def decoded_token
-    if auth_header
+    if auth_header and auth_header.split(' ')[0] == "Bearer"
       token = auth_header.split(' ')[1]
       begin
         JWT.decode token, SECRET_KEY_BASE, true, { algorithm: 'HS256' }
@@ -729,6 +782,24 @@ class ApplicationController < ActionController::API
     render status: 500, json: { status: 500, message: 'Internal Server Error' }
   end
 
+  def prep_raw_user(user)
+    user = trim_unsafe_attributes(user)
+    clean_avatar_url(user)
+  end
+
+  def trim_unsafe_attributes(user)
+    if user.admin
+      user = user.slice(:id,:email,:name,:admin,:avatar)
+    else
+      user = user.slice(:id,:email,:name,:avatar)
+    end
+  end
+
+  def clean_avatar_url(user)
+    user['avatar'] = user['avatar'].present? ? url_for(user['avatar']) : user
+    user
+  end
+  
   private 
   
     def auth_header
@@ -881,79 +952,56 @@ end
 - `puravida app/controllers/users_controller.rb ~`
 ```
 class UsersController < ApplicationController
+  before_action :set_user, only: %i[ show update destroy ]
   skip_before_action :require_login, only: :create
-  
+
+  # GET /users
   def index
-    @users = User.all.map do |u|
-      avatar = u.avatar.present? ? url_for(u.avatar) : nil
-      { :id => u.id, :name => u.name, :email => u.email, :avatar => avatar, :admin => u.admin }
-    end
+    @users = User.all.map { |user| prep_raw_user(user) }
     render json: @users
   end
 
+  # GET /users/1
   def show
-    @user = User.find(params[:id])
-    render json: {
-      id: @user.id,
-      name: @user.name,
-      email: @user.email,
-      avatar: url_for(@user.avatar),
-      admin: @user.admin
-    }
+    render json: @user
   end
-  
+
+  # POST /users
   def create
-    user = User.create user_params
-    attach_main_pic(user) if admin_params[:avatar].present?
-    if user.save
-      render json: user, status: 200
+    @user = User.new(user_params)
+
+    if @user.save
+      render json: @user, status: :created, location: @user
     else
-      render json: user, status: 400
+      render json: @user.errors, status: :unprocessable_entity
     end
   end
 
+  # PATCH/PUT /users/1
   def update
-    @user = User.find(params[:id])
-    if @user.update(admin_params)
-      render json: @user, status: 200
+    if @user.update(user_params)
+      render json: @user
     else
-      json render: @user, status: 400
+      render json: @user.errors, status: :unprocessable_entity
     end
   end
 
+  # DELETE /users/1
   def destroy
-    @user = User.find(params[:id])
-    @user.avatar.purge
     @user.destroy
-    render json: { status: 200, message: "user deleted successfully" }
   end
 
   private
+    # Use callbacks to share common setup or constraints between actions.
+    def set_user
+      @user = prep_raw_user(User.find(params[:id]))
+    end
 
-  def attach_main_pic(user)
-    user.avatar.attach(admin_params[:avatar])
-  end
-
-  def user_params
-    admin = admin_params[:admin].present? ? admin_params[:admin] : false
-    {
-      name: admin_params[:name],
-      email: admin_params[:email],
-      admin: admin,
-      password: admin_params[:password],
-    }
-  end
-
-  def admin_params
-    params.permit(
-      :id,
-      :name,
-      :email,
-      :avatar,
-      :admin,
-      :password
-    )
-  end
+    # Only allow a list of trusted parameters through.
+    def user_params
+      params.permit(:name, :email, :avatar, :admin, :password)
+    end
+    
 end
 ~
 ```
