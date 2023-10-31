@@ -433,100 +433,220 @@ end
 - `puravida spec/requests/users_spec.rb ~` (bak1)
 ```
 # frozen_string_literal: true
-require "rails_helper"
+require 'open-uri'
+require 'rails_helper'
+RSpec.describe "/users", type: :request do
+  let(:valid_create_user_1_params) { { name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password" } }
+  let(:user_1_attachment) { "/app/assets/images/office-avatars/michael-scott.png" }
+  let(:user_1_image) { "michael-scott.png" }
+  let(:valid_create_user_2_params) { { name: "Jim Halpert", email: "jimhalpert@dundermifflin.com", admin: "false", password: "password" } }
+  let(:user_2_attachment) { "/app/assets/images/office-avatars/jim-halpert.png" }
+  let(:user_2_image) { "jim-halpert.png" }
+  let(:invalid_create_user_1_params) { { name: "Michael Scott", email: "test", admin: "true", password: "password" } }
+  let(:invalid_create_user_2_params) { { name: "Jim Halpert", email: "test2", admin: "false", password: "password" } }
+  let(:valid_user_1_login_params) { { email: "michaelscott@dundermifflin.com",  password: "password" } }
+  let(:valid_user_2_login_params) { { email: "jimhalpert@dundermifflin.com",  password: "password" } }
+  let(:invalid_patch_params) { { email: "test" } }
 
-RSpec.describe "Users API Testing" do
-
-  describe "GET /users" do
-    it "returns 401" do
-      get("/users")
-      expect(response).to have_http_status(:unauthorized)
-    end 
-
-    it "returns users" do
-      user = User.create(name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password")
-      allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(user)
-      get("/users")
-      response_data = JSON.parse(response.body)
-      expected_user = { :id => user.id, :name => user.name, :email => user.email, :avatar => nil, :admin => user.admin }
-      expect(response).to have_http_status(:ok)
-      expect(response_data).to contain_exactly(expected_user.with_indifferent_access)
+  describe "GET /index" do
+    context "with valid auth header" do
+      it "renders a successful response" do
+        user1 = User.create! valid_create_user_1_params
+        user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
+        user1.save!
+        user2 = User.create! valid_create_user_2_params
+        header = header_from_user(user2,valid_user_2_login_params)
+        get users_url, headers: header, as: :json
+        expect(response).to be_successful
+      end
+      it "gets 2 users" do
+        user1 = User.create! valid_create_user_1_params
+        user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
+        user1.save!
+        user2 = User.create! valid_create_user_2_params
+        user2.avatar.attach(io: URI.open("#{Rails.root}" + user_2_attachment), filename: user_2_image)
+        user2.save!
+        header = header_from_user(user2,valid_user_2_login_params)
+        get users_url, headers: header, as: :json
+        expect(JSON.parse(response.body).length).to eq 2
+        expect(JSON.parse(response.body)[0]).to include("id","name","email","admin","avatar")
+        expect(JSON.parse(response.body)[1]).to include("id","name","email","avatar")
+        expect(JSON.parse(response.body)[0]).not_to include("password_digest","password")
+        expect(JSON.parse(response.body)[1]).not_to include("password_digest","password","admin")
+        expect(JSON.parse(response.body)[0]['avatar']).to be_kind_of(String)
+        expect(JSON.parse(response.body)[1]['avatar']).to be_kind_of(String)
+        expect(JSON.parse(response.body)[0]['avatar']).to match(/http.*\michael-scott\.png/)
+        expect(JSON.parse(response.body)[1]['avatar']).to match(/http.*\jim-halpert\.png/)
+      end
+    end
+    context "with invalid auth header" do
+      it "renders a 401 response" do
+        User.create! valid_create_user_1_params
+        get users_url, headers: invalid_auth_header, as: :json
+        expect(response).to have_http_status(401)
+      end
+      it "renders a 401 response" do
+        User.create! valid_create_user_1_params
+        get users_url, headers: poorly_formed_header(valid_create_user_2_params), as: :json
+        expect(response).to have_http_status(401)
+      end
     end
   end
 
-  describe "GET /users/1" do
-    it "returns 401" do
-      user = User.create(name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password")
-      url = "/users/" + user.id.to_s
-      get(url)
-      expect(response).to have_http_status(:unauthorized)
-    end 
-    it "returns user" do
-      user = User.create(name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password")
-      allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(user)
-      get "/users", params: {id: 1}
-      response_data = JSON.parse(response.body)
-      expected_user = { :id => user.id, :name => user.name, :email => user.email, :avatar => nil, :admin => user.admin }
-      expect(response).to have_http_status(:ok)
-      expect(response_data).to contain_exactly(expected_user.with_indifferent_access)
+  describe "GET /show" do
+    context "with valid auth header" do
+      it "renders a successful response" do
+        user1 = User.create! valid_create_user_1_params
+        user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
+        user1.save!
+        user2 = User.create! valid_create_user_2_params
+        header = header_from_user(user2,valid_user_2_login_params)
+        get user_url(user1), headers: header, as: :json
+        expect(response).to be_successful
+        expect(JSON.parse(response.body)).to include("id","name","email","admin","avatar")
+        expect(JSON.parse(response.body)).not_to include("password_digest","password")
+        expect(JSON.parse(response.body)['avatar']).to be_kind_of(String)
+        expect(JSON.parse(response.body)['avatar']).to match(/http.*\michael-scott\.png/)
+      end
+    end
+    context "with invalid auth header" do
+      it "renders a 401 response" do
+        user = User.create! valid_create_user_1_params
+        get user_url(user), headers: invalid_auth_header, as: :json
+        expect(response).to have_http_status(401)
+      end
+      it "renders a 401 response" do
+        user = User.create! valid_create_user_1_params
+        get user_url(user), headers: poorly_formed_header(valid_create_user_2_params), as: :json
+        expect(response).to have_http_status(401)
+      end
     end
   end
 
-  describe "POST /users" do
-    it "returns new user" do
-      user = { name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: true, password: "password" }
-      post "/users", params: user
-      response_data = JSON.parse(response.body)
-      expect(response).to have_http_status(:ok)
-      expect(response_data).to include("id","name","email","admin","password_digest","created_at","updated_at")
+  describe "POST /create" do
+    context "with valid parameters" do
+      it "creates a new User" do
+        expect { post users_url, params: valid_create_user_2_params, as: :json }
+          .to change(User, :count).by(1)
+      end
+      it "renders a JSON response with the new user" do
+        post users_url, params: valid_create_user_2_params, as: :json
+        expect(response).to have_http_status(:created)
+        expect(response.content_type).to match(a_string_including("application/json"))
+      end
+    end
+    context "with invalid parameters" do
+      it "does not create a new User" do
+        expect { post users_url, params: invalid_create_user_2_params, as: :json}
+          .to change(User, :count).by(0)
+      end
+      it "renders a JSON response with errors for the new user" do
+        post users_url, params: invalid_create_user_2_params, as: :json
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.content_type).to match(a_string_including("application/json"))
+      end
+    end
+    context "with valid auth header" do
+      it "creates a new User" do
+        user1 = User.create! valid_create_user_1_params
+        header = header_from_user(user1,valid_user_1_login_params)
+        expect { post users_url, headers: header, params: valid_create_user_2_params, as: :json }
+          .to change(User, :count).by(1)
+      end
+      it "renders a JSON response with the new user" do
+        user1 = User.create! valid_create_user_1_params
+        header = header_from_user(user1,valid_user_1_login_params)
+        post users_url, headers: header, params: valid_create_user_2_params, as: :json
+        expect(response).to have_http_status(:created)
+        expect(response.content_type).to match(a_string_including("application/json"))
+      end
     end
   end
 
-  describe "PATCH /users" do
-    it "returns 401" do
-      user = User.create(name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password")
-      url = "/users/" + user.id.to_s
-      patch url, params: {name: "Patched User!"}
-      expect(response).to have_http_status(:unauthorized)
-    end 
-    it "returns updated user" do
-      new_user_params = { name: "New User", email: "newuser@mail.com", admin: true, password: "password" }
-      post "/users", params: new_user_params
-      new_user_id = JSON.parse(response.body)['id']
+  describe "PATCH /update" do
+    context "with valid parameters" do
+      let(:new_attributes) { { name: "Updated Name!!"} }
 
-      current_user = User.create(name: "Michael Scottzzz", email: "michaelscott@dundermifflin.com", admin: "true", password: "password")
-      allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(current_user)
-      patch_url = "/users/" + new_user_id.to_s
-      patch patch_url, params: {name: "Patched User!"}
-      response_body = JSON.parse(response.body)
-      expect(response).to have_http_status(:ok)
-      expect(response_body['id']).to eq new_user_id
-      expect(response_body['name']).to eq "Patched User!"
-      expect(response_body['email']).to eq "newuser@mail.com"
+      it "updates the requested user" do
+        user1 = User.create! valid_create_user_1_params
+        user2 = User.create! valid_create_user_2_params
+        header = header_from_user(user2,valid_user_2_login_params)
+        patch user_url(user1), params: new_attributes, headers: header, as: :json
+        user1.reload
+        expect(JSON.parse(response.body)['name']).to eq "Updated Name!!"
+      end
+
+      it "renders a JSON response with the user" do
+        user1 = User.create! valid_create_user_1_params
+        user2 = User.create! valid_create_user_2_params
+        header = header_from_user(user2,valid_user_2_login_params)
+        patch user_url(user1), params: new_attributes, headers: header, as: :json
+        expect(response).to have_http_status(:ok)
+        expect(response.content_type).to match(a_string_including("application/json"))
+      end
+    end
+
+    context "with invalid parameters" do
+      it "renders a JSON response with errors for the user" do
+        user1 = User.create! valid_create_user_1_params
+        user2 = User.create! valid_create_user_2_params
+        header = header_from_user(user2,valid_user_2_login_params)
+        patch user_url(user1), params: invalid_patch_params, headers: header, as: :json
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.content_type).to match(a_string_including("application/json"))
+      end
     end
   end
 
-  describe "DELETE /users" do
-    it "returns 401" do
-      user = User.create(name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password")
-      url = "/users/" + user.id.to_s
-      delete url
-      expect(response).to have_http_status(:unauthorized)
-    end 
-    it "deletes user" do
-      current_user = User.create(name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password")
-      allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(current_user)
-
-      new_user_params = { name: "New User", email: "newuser@mail.com", admin: true, password: "password" }
-      post "/users", params: new_user_params
-      new_user_id = JSON.parse(response.body)['id']
-      expect(User.all.length).to eq 2
-
-      delete_url = "/users/" + new_user_id.to_s
-      delete delete_url
-      expect(User.all.length).to eq 1
+  describe "DELETE /destroy" do
+    it "destroys the requested user" do
+      user1 = User.create! valid_create_user_1_params
+      user2 = User.create! valid_create_user_2_params
+      header = header_from_user(user2,valid_user_2_login_params)
+      expect {
+        delete user_url(user1), headers: header, as: :json
+      }.to change(User, :count).by(-1)
     end
   end
+end
+
+def token_from_user(user,login_params)
+  post "/login", params: login_params
+  token = JSON.parse(response.body)['data']
+end
+
+def valid_token(create_user_params)
+  user = User.create(create_user_params)
+  post "/login", params: valid_user_1_login_params
+  token = JSON.parse(response.body)['data']
+end
+
+def valid_auth_header_from_token(token)
+  auth_value = "Bearer " + token
+  { Authorization: auth_value }
+end
+
+def valid_auth_header_from_user_params(create_user_params)
+  token = valid_token(create_user_params)
+  auth_value = "Bearer " + token
+  { Authorization: auth_value }
+end
+
+def header_from_user(user,login_params)
+  token = token_from_user(user,login_params)
+  auth_value = "Bearer " + token
+  { Authorization: auth_value }
+end
+
+def invalid_auth_header
+  auth_value = "Bearer " + "xyz"
+  { Authorization: auth_value }
+end
+
+def poorly_formed_header(create_user_params)
+  token = valid_token(create_user_params)
+  auth_value = "Bears " + token
+  { Authorization: auth_value }
 end
 ~
 ```
