@@ -229,7 +229,8 @@ class UsersController < ApplicationController
 end
 ~
 ```
-
+- `puravida app/controllers/application_controller.rb ~`
+```
 class UsersController < ApplicationController
   before_action :set_user, only: %i[ show update destroy ]
   # skip_before_action :require_login, only: :create
@@ -281,6 +282,7 @@ class UsersController < ApplicationController
       params.permit(:name, :email, :avatar, :admin, :password)
     end
 end
+~
 ```
 
 - `puravida spec/requests/users_spec.rb ~` (v1)
