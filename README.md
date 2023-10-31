@@ -16,6 +16,7 @@ This readme uses a small custom bash command called [puravida](#user-content-pur
   - if database already exists: `rails db:drop db:create`
 - `bundle add rack-cors bcrypt jwt pry`
 - `bundle add rspec-rails factory_bot_rails --group "development, test"`
+- `bundle`
 - `rails active_storage:install`
 - `rails generate rspec:install`
 - `rails db:migrate`
