@@ -773,15 +773,6 @@ def valid_token_but_poorly_formed_auth_header
 end
 ~
 ```
-- `puravida config/routes.rb ~`
-```
-Rails.application.routes.draw do
-  resources :users
-  get 'health/index'
-  get "me", to: "application#user_from_token"
-end
-~
-```
 
 #### /login Route (Authentications Controller)
 - `rails g controller Authentications`
@@ -802,15 +793,6 @@ class AuthenticationsController < ApplicationController
   end
 end
 ~
-```
-- `puravida config/routes.rb ~`
-```
-Rails.application.routes.draw do
-  resources :users
-  get 'health/index'
-  post "login", to: "authentications#create"
-  get "me", to: "application#user_from_token"
-end
 ```
 - `puravida spec/authentications_spec.rb ~`
 ```
@@ -851,7 +833,15 @@ RSpec.describe "/login", type: :request do
 end
 ~
 ```
-
+- `puravida config/routes.rb ~`
+```
+Rails.application.routes.draw do
+  resources :users
+  get 'health/index'
+  post "login", to: "authentications#create"
+  get "me", to: "application#user_from_token"
+end
+```
 
 
 ### Widgets (Backend)
