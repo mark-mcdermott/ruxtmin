@@ -147,7 +147,6 @@ EOF
 
 cat <<'EOF' | puravida spec/requests/users_spec.rb ~
 # frozen_string_literal: true
-
 require "rails_helper"
 
 RSpec.describe "Users API Testing" do
@@ -315,7 +314,7 @@ cat <<'EOF' | puravida spec/requests/widgets_spec.rb ~
 # frozen_string_literal: true
 require 'rails_helper'
 
-RSpec.describe "/widgets", type: :request do
+RSpec.describe "/widgets API Testing", type: :request do
   let(:user_1_params) { { name: "Michael Scott", email: SecureRandom.hex + "@mail.com", admin: true, password: "password" } }
   let(:user_2_params) { { name: "Jim Halpert", email: SecureRandom.hex + "@mail.com", admin: false, password: "password" } }
   let(:widget_1_params) { { name: "Michael's widget", description: "Michael's widget description" } }
@@ -329,39 +328,26 @@ RSpec.describe "/widgets", type: :request do
     create_users_and_widgets
   end
 
-  describe "GET /widgets (no token)" do
-    it "returns 401" do
+  describe "GET /widgets" do
+    it "without token, returns 401" do
       get widgets_path
       expect(response).to have_http_status(401)
     end
-  end
-
-  describe "GET /widgets" do
-    it "returns 200" do
+    it "returns widgets 1 & 2" do
       get widgets_path, headers: auth_header
       expect(response).to have_http_status(200)
-    end
-    it "returns widgets" do
-      get widgets_path, headers: auth_header
       expect(JSON.parse(response.body)).to include("id" => an_int, "name" => "Michael's widget","description" => "Michael's widget description", "image" => nil, "user_id" => an_int)
       expect(JSON.parse(response.body)).to include("id" => an_int, "name" => "Jim's widget","description" => "Jim's widget description", "image" => nil, "user_id" => an_int)
     end
-  end
 
-  describe "GET /widgets/:id (no token)" do
-    it "returns 401" do
+  describe "GET /widgets/:id" do
+    it "without token, returns 401" do
       get widget_path(@user1)
       expect(response).to have_http_status(401)
     end
-  end
-
-  describe "GET /widgets/:id" do
-    it "returns 200" do
-      get widget_path(@widget1), headers: auth_header
-      expect(response).to have_http_status(200)
-    end
     it "returns widget 1" do
       get widget_path(@widget1), headers: auth_header
+      expect(response).to have_http_status(200)
       expect(JSON.parse(response.body)).to include("id" => an_int, "name" => "Michael's widget","description" => "Michael's widget description", "image" => nil, "userId" => an_int)
       expect(JSON.parse(response.body)).not_to include("name" => "Jim's widget","description" => "Jim's widget description")
     end
@@ -372,33 +358,15 @@ RSpec.describe "/widgets", type: :request do
     end
   end
 
-  describe "GET /widgets" do
-    it "returns 200" do
-      get '/widgets', headers: auth_header
-      expect(response).to have_http_status(200)
-    end
-    it "returns users" do
-      get '/widgets', headers: auth_header
-      expect(JSON.parse(response.body)).to include("id" => an_int, "name" => "Michael's widget","description" => "Michael's widget description", "image" => nil, "user_id" => an_int)
-      expect(JSON.parse(response.body)).to include("id" => an_int, "name" => "Jim's widget","description" => "Jim's widget description", "image" => nil, "user_id" => an_int)
-    end
-  end
-
-  describe "POST /widgets (no token)" do
-    it "returns 401" do
+  describe "POST /widgets" do
+    it "without token, returns 401" do
       post widgets_url, params: widget_3_params
       expect(response).to have_http_status(401)
     end
-  end
-
-  describe "POST /widgets (no user_id)" do
-    it "returns 422" do
+    it "without user_id param, returns 422" do
       post widgets_path, headers: auth_header, params: valid_attributes_without_user_id
       expect(response).to have_http_status(422)
     end
-  end
-
-  describe "POST /widgets" do
     it "returns 201" do
       post widgets_path, headers: auth_header, params: valid_attributes_without_user_id.merge!(:user_id => @user1.id)
       expect(response).to have_http_status(201)
@@ -406,22 +374,16 @@ RSpec.describe "/widgets", type: :request do
     end
   end
 
-  describe "PATCH /widgets (no token)" do
-    it "returns 401" do
+  describe "PATCH /widgets" do
+    it "without token, returns 401" do
       patch widget_path(@widget1), params: widget_1_patch_params
       expect(response).to have_http_status(401)
     end
-  end
-
-  describe "PATCH /widgets (no params)" do
-    it "returns 200" do
+    it "without params, still returns 200" do
       patch widget_path(@widget1), headers: auth_header
       expect(response).to have_http_status(200)
     end
-  end
-
-  describe "PATCH /widgets" do
-    it "returns 200" do
+    it "returns updated widget" do
       patch widget_path(@widget1), headers: auth_header, params: widget_1_patch_params
       expect(response).to have_http_status(200)
       expect(JSON.parse(response.body)).to include("name" => "Michael's widget!!")

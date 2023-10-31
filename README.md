@@ -1014,7 +1014,7 @@ Rails.application.routes.draw do
 end
 ~
 ```
-- `puravida spec/application_spec.rb ~`
+- `puravida spec/requests/application_spec.rb ~`
 ```
 # frozen_string_literal: true
 require 'rails_helper'
