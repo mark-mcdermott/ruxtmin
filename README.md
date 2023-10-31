@@ -787,7 +787,7 @@ class ApplicationController < ActionController::API
 
   def prep_raw_user(user)
     avatar = user.avatar.present? ? url_for(user.avatar) : nil
-    user = user.slice(:id,:email,:name)
+    user = user.admin ? user.slice(:id,:email,:name,:admin) : user.slice(:id,:email,:name)
     user['avatar'] = avatar
     user
   end
