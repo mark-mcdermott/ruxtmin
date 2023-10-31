@@ -646,7 +646,8 @@ def valid_token_but_poorly_formed_auth_header
 end
 ~
 ```
-- **application_controller.rb**
+#### /me Route (Application Controller)
+
 - `puravida app/controllers/application_controller.rb ~`
 ```
 class ApplicationController < ActionController::API
@@ -713,17 +714,6 @@ class ApplicationController < ActionController::API
 end
 ~
 ```
-
-#### /me Route (Application Controller)
-- `puravida config/routes.rb ~`
-```
-Rails.application.routes.draw do
-  resources :users
-  get 'health/index'
-  get "me", to: "application#user_from_token"
-end
-~
-```
 - `puravida spec/requests/application_spec.rb ~`
 ```
 # frozen_string_literal: true
@@ -780,6 +770,15 @@ end
 def valid_token_but_poorly_formed_auth_header
   auth_value = "Bears " + valid_token
   { Authorization: auth_value }
+end
+~
+```
+- `puravida config/routes.rb ~`
+```
+Rails.application.routes.draw do
+  resources :users
+  get 'health/index'
+  get "me", to: "application#user_from_token"
 end
 ~
 ```
