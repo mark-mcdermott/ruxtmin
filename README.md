@@ -65,6 +65,13 @@ RSpec.describe "API Testing" do
 end
 ~
 ```
+- `puravida config/routes.rb ~`
+```
+Rails.application.routes.draw do
+  get "health", to: "health#index"
+end
+~
+```
 
 ### Users
 - `rails g scaffold user name email avatar:attachment admin:boolean password_digest`
