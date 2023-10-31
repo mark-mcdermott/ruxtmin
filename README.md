@@ -298,7 +298,7 @@ end
 - `puravida spec/requests/users_spec.rb ~`
 ```
 # frozen_string_literal: true
-rerequire 'rails_helper'
+require 'rails_helper'
 RSpec.describe "/users", type: :request do
   let(:valid_create_user_1_params) { { name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password" } }
   let(:valid_create_user_2_params) { { name: "Jim Halpert", email: "jimhalpert@dundermifflin.com", admin: "false", password: "password" } }
@@ -1204,7 +1204,7 @@ end
 - `puravida spec/requests/users_spec.rb ~`
 ```
 # frozen_string_literal: true
-rerequire 'rails_helper'
+require 'rails_helper'
 RSpec.describe "/users", type: :request do
   let(:valid_create_user_1_params) { { name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password" } }
   let(:valid_create_user_2_params) { { name: "Jim Halpert", email: "jimhalpert@dundermifflin.com", admin: "false", password: "password" } }
