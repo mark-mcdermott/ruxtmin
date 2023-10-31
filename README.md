@@ -837,10 +837,22 @@ end
 ```
 Rails.application.routes.draw do
   resources :users
-  get 'health/index'
+  get "health", to: "health#index"
   post "login", to: "authentications#create"
   get "me", to: "application#user_from_token"
 end
+```
+### Update Health Controller For Auth
+- `rails g controller health index`
+- `puravida app/controllers/health_controller.rb ~`
+```
+class HealthController < ApplicationController
+  skip_before_action :require_login
+  def index
+    render json: { status: 'online' }
+  end
+end
+~
 ```
 
 
