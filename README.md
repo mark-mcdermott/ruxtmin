@@ -20,6 +20,7 @@ This readme uses a small custom bash command called [puravida](#user-content-pur
 - `rails active_storage:install`
 - `rails generate rspec:install`
 - `rails db:migrate`
+- copy `assets` folder into `app` folder
 - `puravida config/initializers/cors.rb ~`
 ```
 Rails.application.config.middleware.insert_before 0, Rack::Cors do
@@ -856,7 +857,6 @@ end
 ```
 
 ### Seeds
-- copy `assets` folder into `app` folder
 - `puravida db/seeds.rb ~`
 ```
 user = User.create(name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password")
