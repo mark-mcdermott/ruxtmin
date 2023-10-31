@@ -187,7 +187,7 @@ class UsersController < ApplicationController
 
   # GET /users/1
   def show
-    render json: @user
+    render json: prep_raw_user(@user)
   end
 
   # POST /users
