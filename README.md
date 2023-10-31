@@ -997,52 +997,106 @@ end
 - `puravida spec/requests/users_spec.rb ~`
 ```
 # frozen_string_literal: true
-require 'rails_helper'
+rerequire 'rails_helper'
 RSpec.describe "/users", type: :request do
-  let(:valid_create_user_params) { { name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password" } }
-  let(:invalid_create_user_params) { { name: "Michael Scott", email: "test", admin: "true", password: "password" } }
-  let(:valid_login_params) { { email: "michaelscott@dundermifflin.com",  password: "password" } }
+  let(:valid_create_user_1_params) { { name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password" } }
+  let(:valid_create_user_2_params) { { name: "Jim Halpert", email: "jimhalpert@dundermifflin.com", admin: "false", password: "password" } }
+  let(:invalid_create_user_1_params) { { name: "Michael Scott", email: "test", admin: "true", password: "password" } }
+  let(:invalid_create_user_2_params) { { name: "Jim Halpert", email: "test2", admin: "false", password: "password" } }
+  let(:valid_user_1_login_params) { { email: "michaelscott@dundermifflin.com",  password: "password" } }
+  let(:valid_user_2_login_params) { { email: "jimhalpert@dundermifflin.com",  password: "password" } }
   let(:invalid_patch_params) { { email: "test" } }
 
   describe "GET /index" do
-    it "renders a successful response" do
-      User.create! valid_create_user_params
-      get users_url, headers: valid_auth_header, as: :json
-      expect(response).to be_successful
+    context "with valid auth header" do
+      it "renders a successful response" do
+        user1 = User.create! valid_create_user_1_params
+        user2 = User.create! valid_create_user_2_params
+        header = header_from_user(user2,valid_user_2_login_params)
+        get users_url, headers: header, as: :json
+        expect(response).to be_successful
+      end
+      it "gets 2 users" do
+        user1 = User.create! valid_create_user_1_params
+        user2 = User.create! valid_create_user_2_params
+        header = header_from_user(user2,valid_user_2_login_params)
+        get users_url, headers: header, as: :json
+        expect(JSON.parse(response.body).length).to eq 2
+      end
+    end
+    context "with invalid auth header" do
+      it "renders a 401 response" do
+        User.create! valid_create_user_1_params
+        get users_url, headers: invalid_auth_header, as: :json
+        expect(response).to have_http_status(401)
+      end
+      it "renders a 401 response" do
+        User.create! valid_create_user_1_params
+        get users_url, headers: poorly_formed_header(valid_create_user_2_params), as: :json
+        expect(response).to have_http_status(401)
+      end
     end
   end
 
   describe "GET /show" do
-    it "renders a successful response" do
-      user = User.create! valid_create_user_params
-      get user_url(user), headers: valid_auth_header, as: :json
-      expect(response).to be_successful
+    context "with valid auth header" do
+      it "renders a successful response" do
+        user1 = User.create! valid_create_user_1_params
+        user2 = User.create! valid_create_user_2_params
+        header = header_from_user(user2,valid_user_2_login_params)
+        get user_url(user1), headers: header, as: :json
+        expect(response).to be_successful
+      end
+    end
+    context "with invalid auth header" do
+      it "renders a 401 response" do
+        user = User.create! valid_create_user_1_params
+        get user_url(user), headers: invalid_auth_header, as: :json
+        expect(response).to have_http_status(401)
+      end
+      it "renders a 401 response" do
+        user = User.create! valid_create_user_1_params
+        get user_url(user), headers: poorly_formed_header(valid_create_user_2_params), as: :json
+        expect(response).to have_http_status(401)
+      end
     end
   end
 
   describe "POST /create" do
     context "with valid parameters" do
       it "creates a new User" do
-        expect { post users_url, params: valid_create_user_params, as: :json }
+        expect { post users_url, params: valid_create_user_2_params, as: :json }
           .to change(User, :count).by(1)
       end
-
       it "renders a JSON response with the new user" do
-        post users_url, params: valid_create_user_params, as: :json
+        post users_url, params: valid_create_user_2_params, as: :json
         expect(response).to have_http_status(:created)
         expect(response.content_type).to match(a_string_including("application/json"))
       end
     end
-
     context "with invalid parameters" do
       it "does not create a new User" do
-        expect { post users_url, params: invalid_create_user_params, as: :json}
+        expect { post users_url, params: invalid_create_user_2_params, as: :json}
           .to change(User, :count).by(0)
       end
-
       it "renders a JSON response with errors for the new user" do
-        post users_url, params: invalid_create_user_params, as: :json
+        post users_url, params: invalid_create_user_2_params, as: :json
         expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.content_type).to match(a_string_including("application/json"))
+      end
+    end
+    context "with valid auth header" do
+      it "creates a new User" do
+        user1 = User.create! valid_create_user_1_params
+        header = header_from_user(user1,valid_user_1_login_params)
+        expect { post users_url, headers: header, params: valid_create_user_2_params, as: :json }
+          .to change(User, :count).by(1)
+      end
+      it "renders a JSON response with the new user" do
+        user1 = User.create! valid_create_user_1_params
+        header = header_from_user(user1,valid_user_1_login_params)
+        post users_url, headers: header, params: valid_create_user_2_params, as: :json
+        expect(response).to have_http_status(:created)
         expect(response.content_type).to match(a_string_including("application/json"))
       end
     end
@@ -1053,16 +1107,19 @@ RSpec.describe "/users", type: :request do
       let(:new_attributes) { { name: "Updated Name!!"} }
 
       it "updates the requested user" do
-        user = User.create! valid_create_user_params
-        patch user_url(user), params: new_attributes, headers: valid_auth_header, as: :json
-        user.reload
+        user1 = User.create! valid_create_user_1_params
+        user2 = User.create! valid_create_user_2_params
+        header = header_from_user(user2,valid_user_2_login_params)
+        patch user_url(user1), params: new_attributes, headers: header, as: :json
+        user1.reload
         expect(JSON.parse(response.body)['name']).to eq "Updated Name!!"
       end
 
       it "renders a JSON response with the user" do
-        user = User.create! valid_create_user_params
-        patch user_url(user),
-              params: new_attributes, headers: valid_auth_header, as: :json
+        user1 = User.create! valid_create_user_1_params
+        user2 = User.create! valid_create_user_2_params
+        header = header_from_user(user2,valid_user_2_login_params)
+        patch user_url(user1), params: new_attributes, headers: header, as: :json
         expect(response).to have_http_status(:ok)
         expect(response.content_type).to match(a_string_including("application/json"))
       end
@@ -1070,8 +1127,10 @@ RSpec.describe "/users", type: :request do
 
     context "with invalid parameters" do
       it "renders a JSON response with errors for the user" do
-        user = User.create! valid_create_user_params
-        patch user_url(user), params: invalid_patch_params, headers: valid_auth_header, as: :json
+        user1 = User.create! valid_create_user_1_params
+        user2 = User.create! valid_create_user_2_params
+        header = header_from_user(user2,valid_user_2_login_params)
+        patch user_url(user1), params: invalid_patch_params, headers: header, as: :json
         expect(response).to have_http_status(:unprocessable_entity)
         expect(response.content_type).to match(a_string_including("application/json"))
       end
@@ -1080,27 +1139,52 @@ RSpec.describe "/users", type: :request do
 
   describe "DELETE /destroy" do
     it "destroys the requested user" do
-      user = User.create! valid_create_user_params
+      user1 = User.create! valid_create_user_1_params
+      user2 = User.create! valid_create_user_2_params
+      header = header_from_user(user2,valid_user_2_login_params)
       expect {
-        delete user_url(user), headers: valid_auth_header, as: :json
+        delete user_url(user1), headers: header, as: :json
       }.to change(User, :count).by(-1)
     end
   end
 end
 
-def valid_token
-  user = User.create(valid_create_user_params)
-  post "/login", params: valid_login_params
+def token_from_user(user,login_params)
+  post "/login", params: login_params
   token = JSON.parse(response.body)['data']
 end
 
-def valid_auth_header
-  auth_value = "Bearer " + valid_token
+def valid_token(create_user_params)
+  user = User.create(create_user_params)
+  post "/login", params: valid_user_1_login_params
+  token = JSON.parse(response.body)['data']
+end
+
+def valid_auth_header_from_token(token)
+  auth_value = "Bearer " + token
   { Authorization: auth_value }
 end
 
-def valid_token_but_poorly_formed_auth_header
-  auth_value = "Bears " + valid_token
+def valid_auth_header_from_user_params(create_user_params)
+  token = valid_token(create_user_params)
+  auth_value = "Bearer " + token
+  { Authorization: auth_value }
+end
+
+def header_from_user(user,login_params)
+  token = token_from_user(user,login_params)
+  auth_value = "Bearer " + token
+  { Authorization: auth_value }
+end
+
+def invalid_auth_header
+  auth_value = "Bearer " + "xyz"
+  { Authorization: auth_value }
+end
+
+def poorly_formed_header(create_user_params)
+  token = valid_token(create_user_params)
+  auth_value = "Bears " + token
   { Authorization: auth_value }
 end
 ```
