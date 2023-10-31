@@ -92,7 +92,63 @@ class User < ApplicationRecord
 end
 ~
 ```
-- `puravida app/controllers/users_controller.rb ~` (v1)
+- `puravida app/controllers/users_controller.rb ~` (v2)
+```
+class UsersController < ApplicationController
+  before_action :set_user, only: %i[ show update destroy ]
+  skip_before_action :require_login, only: :create
+
+  # GET /users
+  def index
+    @users = User.all.map { |user| prep_raw_user(user) }
+    render json: @users
+  end
+
+  # GET /users/1
+  def show
+    render json: prep_raw_user(@user)
+  end
+
+  # POST /users
+  def create
+    @user = User.new(user_params)
+
+    if @user.save
+      render json: @user, status: :created, location: @user
+    else
+      render json: @user.errors, status: :unprocessable_entity
+    end
+  end
+
+  # PATCH/PUT /users/1
+  def update
+    if @user.update(user_params)
+      render json: @user
+    else
+      render json: @user.errors, status: :unprocessable_entity
+    end
+  end
+
+  # DELETE /users/1
+  def destroy
+    @user.destroy
+  end
+
+  private
+    # Use callbacks to share common setup or constraints between actions.
+    def set_user
+      @user = User.find(params[:id])
+    end
+
+    # Only allow a list of trusted parameters through.
+    def user_params
+      params.permit(:name, :email, :avatar, :admin, :password)
+    end
+    
+end
+~
+```
+- `puravida app/controllers/users_controller.rb ~` (bak)
 ```
 # user controller before auth - this will have to change slightly after auth is added
 class UsersController < ApplicationController
@@ -173,114 +229,69 @@ end
 ~
 ```
 
-- `puravida app/controllers/users_controller.rb ~` (v2)
-```
-class UsersController < ApplicationController
-  before_action :set_user, only: %i[ show update destroy ]
-  skip_before_action :require_login, only: :create
-
-  # GET /users
-  def index
-    @users = User.all.map { |user| prep_raw_user(user) }
-    render json: @users
-  end
-
-  # GET /users/1
-  def show
-    render json: prep_raw_user(@user)
-  end
-
-  # POST /users
-  def create
-    @user = User.new(user_params)
-
-    if @user.save
-      render json: @user, status: :created, location: @user
-    else
-      render json: @user.errors, status: :unprocessable_entity
-    end
-  end
-
-  # PATCH/PUT /users/1
-  def update
-    if @user.update(user_params)
-      render json: @user
-    else
-      render json: @user.errors, status: :unprocessable_entity
-    end
-  end
-
-  # DELETE /users/1
-  def destroy
-    @user.destroy
-  end
-
-  private
-    # Use callbacks to share common setup or constraints between actions.
-    def set_user
-      @user = User.find(params[:id])
-    end
-
-    # Only allow a list of trusted parameters through.
-    def user_params
-      params.permit(:name, :email, :avatar, :admin, :password)
-    end
-    
-end
-~
-```
 - `puravida app/controllers/application_controller.rb ~`
 ```
-class UsersController < ApplicationController
-  before_action :set_user, only: %i[ show update destroy ]
-  # skip_before_action :require_login, only: :create
+class ApplicationController < ActionController::API
+  SECRET_KEY_BASE = Rails.application.credentials.secret_key_base
+  before_action :require_login
+  rescue_from Exception, with: :response_internal_server_error
 
-  # GET /users
-  def index
-    @users = User.all.map { |user| prep_raw_user(user) }
-    render json: @users
+  def require_login
+    response_unauthorized if current_user_raw.blank?
   end
 
-  # GET /users/1
-  def show
-    User.all.map { |user| prep_raw_user(user) }
+  # this is safe to send to the frontend, excludes password_digest, created_at, updated_at
+  def user_from_token
+    user = prep_raw_user(current_user_raw)
+    render json: { data: user, status: 200 }
   end
 
-  # POST /users
-  def create
-    @user = User.new(user_params)
-
-    if @user.save
-      render json: @user, status: :created, location: @user
+  # unsafe/internal: includes password_digest, created_at, updated_at - we don't want those going to the frontend
+  def current_user_raw
+    if decoded_token.present?
+      user_id = decoded_token[0]['user_id']
+      @user = User.find_by(id: user_id)
     else
-      render json: @user.errors, status: :unprocessable_entity
+      nil
     end
   end
 
-  # PATCH/PUT /users/1
-  def update
-    if @user.update(user_params)
-      render json: @user
-    else
-      render json: @user.errors, status: :unprocessable_entity
+  def encode_token(payload)
+    JWT.encode payload, SECRET_KEY_BASE, 'HS256'
+  end
+
+  def decoded_token
+    if auth_header and auth_header.split(' ')[0] == "Bearer"
+      token = auth_header.split(' ')[1]
+      begin
+        JWT.decode token, SECRET_KEY_BASE, true, { algorithm: 'HS256' }
+      rescue JWT::DecodeError
+        []
+      end
     end
   end
 
-  # DELETE /users/1
-  def destroy
-    @user.destroy
+  def response_unauthorized
+    render status: 401, json: { status: 401, message: 'Unauthorized' }
+  end
+  
+  def response_internal_server_error
+    render status: 500, json: { status: 500, message: 'Internal Server Error' }
   end
 
-  private
-    # Use callbacks to share common setup or constraints between actions.
-    def set_user
-      @user = User.find(params[:id])
+  def prep_raw_user(user)
+    avatar = user.avatar.present? ? url_for(user.avatar) : nil
+    user = user.admin ? user.slice(:id,:email,:name,:admin) : user.slice(:id,:email,:name)
+    user['avatar'] = avatar
+    user
+  end
+  
+  private 
+  
+    def auth_header
+      request.headers['Authorization']
     end
 
-    # Only allow a list of trusted parameters through.
-    def user_params
-      params.permit(:name, :email, :avatar, :admin, :password)
-    end
 end
 ~
 ```
