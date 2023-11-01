@@ -1509,7 +1509,6 @@ end
 - `cd front`
 - `npm install @picocss/pico @nuxtjs/auth@4.5.1 @fortawesome/fontawesome-svg-core @fortawesome/free-solid-svg-icons @fortawesome/free-brands-svg-icons @fortawesome/vue-fontawesome@latest-2`
 - `npm install --save-dev sass sass-loader@10`
-- add `"sass": "node-sass ./public/scss/main.scss ./public/css/style.css -w"` to the `scripts` section of your `package.json` file
 - `puravida assets/scss/main.scss ~`
 ```
 @import "node_modules/@picocss/pico/scss/pico.scss";
