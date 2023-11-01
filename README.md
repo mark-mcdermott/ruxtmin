@@ -83,7 +83,7 @@ class CreateUsers < ActiveRecord::Migration[7.0]
     create_table :users do |t|
       t.string :name, null: false
       t.string :email, null: false, index: { unique: true }
-      t.boolean :admin, null: false, default: false
+      t.boolean :admin, default: false
       t.string :password_digest
       t.timestamps
     end
@@ -104,6 +104,7 @@ end
 ```
 class UsersController < ApplicationController
   before_action :set_user, only: %i[ show update destroy ]
+  skip_before_action :require_login, only: :create
 
   # GET /users
   def index
@@ -119,9 +120,8 @@ class UsersController < ApplicationController
   # POST /users
   def create
     @user = User.new(user_params)
-
     if @user.save
-      render json: @user, status: :created, location: @user
+      render json: prep_raw_user(@user), status: :created, location: @user
     else
       render json: @user.errors, status: :unprocessable_entity
     end
@@ -149,89 +149,10 @@ class UsersController < ApplicationController
 
     # Only allow a list of trusted parameters through.
     def user_params
+      params['avatar'] = params['avatar'].blank? ? nil : params['avatar'] # if no avatar is chosen on signup page, params['avatar'] comes in as a blank string, which throws a 500 error at User.new(user_params). This changes any params['avatar'] blank string to nil, which is fine in User.new(user_params).
       params.permit(:name, :email, :avatar, :admin, :password)
     end
     
-end
-~
-```
-- DON'T USE THIS - FOR AVATAR CODE ONLY `puravida app/controllers/users_controller.rb ~`
-```
-# user controller before auth - this will have to change slightly after auth is added
-class UsersController < ApplicationController
-  
-  def index
-    @users = User.all.map do |u|
-      avatar = u.avatar.present? ? url_for(u.avatar) : nil
-      { :id => u.id, :name => u.name, :email => u.email, :avatar => avatar, :admin => u.admin }
-    end
-    render json: @users
-  end
-
-  def show
-    @user = User.find(params[:id])
-    avatar = @user.avatar.present? ? url_for(@user.avatar) : nil
-    render json: {
-      id: @user.id,
-      name: @user.name,
-      email: @user.email,
-      avatar: avatar,
-      admin: @user.admin
-    }
-  end
-  
-  def create
-    user = User.create user_params
-    attach_main_pic(user) if admin_params[:avatar].present?
-    if user.save
-      render json: user, status: 200
-    else
-      render json: user, status: 400
-    end
-  end
-
-  def update
-    @user = User.find(params[:id])
-    if @user.update(admin_params)
-      render json: @user, status: 200
-    else
-      json render: @user, status: 400
-    end
-  end
-
-  def destroy
-    @user = User.find(params[:id])
-    @user.avatar.purge
-    @user.destroy
-    render json: { status: 200, message: "user deleted successfully" }
-  end
-
-  private
-
-  def attach_main_pic(user)
-    user.avatar.attach(admin_params[:avatar])
-  end
-
-  def user_params
-    admin = admin_params[:admin].present? ? admin_params[:admin] : false
-    {
-      name: admin_params[:name],
-      email: admin_params[:email],
-      admin: admin,
-      password: admin_params[:password],
-    }
-  end
-
-  def admin_params
-    params.permit(
-      :id,
-      :name,
-      :email,
-      :avatar,
-      :admin,
-      :password
-    )
-  end
 end
 ~
 ```
@@ -819,6 +740,9 @@ class ApplicationController < ActionController::API
     render status: 500, json: { status: 500, message: 'Internal Server Error' }
   end
 
+  # We don't want to send the whole user record from the database to the frontend, so we only send what we need.
+  # The db user row has password_digest (unsafe) and created_at and updated_at (extraneous).
+  # We also change avatar from a weird active_storage object to just the avatar url before it gets to the frontend.
   def prep_raw_user(user)
     avatar = user.avatar.present? ? url_for(user.avatar) : nil
     user = user.admin ? user.slice(:id,:email,:name,:admin) : user.slice(:id,:email,:name)
@@ -1210,7 +1134,7 @@ end
 
 
 
-#### Updating Users Controller/Spec For Auth
+#### Updating Users Controller/Spec For Auth (TODO: DELETE/FIX THIS???)
 
 - `puravida app/controllers/users_controller.rb ~`
 ```
@@ -2084,8 +2008,10 @@ export default { middleware: 'currentUserOrAdminOnly' }
       <li v-if="isAdmin"><strong><NuxtLink to="/admin">Admin</NuxtLink></strong></li>
       <li v-if="isAuthenticated" class='dropdown'>
         <details role="list" dir="rtl">
-          <summary class='summary' aria-haspopup="listbox" role="link"><img :src="loggedInUser.avatar" /></summary>
-          <!-- <summary class='summary' aria-haspopup="listbox" role="link"><font-awesome-icon icon="circle-user" /></summary> -->
+          <summary class='summary' aria-haspopup="listbox" role="link">
+            <img v-if="loggedInUser.avatar" :src="loggedInUser.avatar" />
+            <font-awesome-icon v-else icon="circle-user" />
+          </summary>
           <ul role="listbox">
             <li><NuxtLink :to="`/users/${loggedInUser.id}`">Profile</NuxtLink></li>
             <li><NuxtLink :to="`/users/${loggedInUser.id}/edit`">Settings</NuxtLink></li>
