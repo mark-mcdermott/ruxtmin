@@ -2076,7 +2076,7 @@ export default { middleware: 'currentUserOrAdminOnly' }
 ```
 <template>
   <nav class="top-nav container-fluid">
-    <ul><li><strong><NuxtLink to="/"><Brand /></NuxtLink></strong></li></ul>
+    <ul><li><strong><NuxtLink to="/"><NavBrand /></NuxtLink></strong></li></ul>
     <input id="menu-toggle" type="checkbox" />
     <label class='menu-button-container' for="menu-toggle">
       <div class='menu-button'></div>
