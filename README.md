@@ -2299,6 +2299,8 @@ html, body
       <p><span>database:</span> Postgres</p>
       <p><span>styles:</span> Sass</p>
       <p><span>css framework:</span> Pico.css</p>
+      <p><span>frontend tests:</span> Jest</p>
+      <p><span>backend tests:</span> RSpec</p>
     </div>
 
     <h3 class="small-bottom-margin">Tools</h3>
