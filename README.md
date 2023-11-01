@@ -1868,7 +1868,7 @@ export default { middleware: 'adminOnly' }
 export default {
   middleware: 'currentUserOrAdminOnly',
   data: () => ({ user: {} }),
-  async fetch() { this.user = await this.$axios.$get(`users/${this.$route.params.id`) },
+  async fetch() { this.user = await this.$axios.$get(`users/${this.$route.params.id}`) },
   methods: {
     uploadAvatar: function() { this.avatar = this.$refs.inputFile.files[0] },
     deleteUser: function(id) {
