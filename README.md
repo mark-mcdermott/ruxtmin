@@ -1824,9 +1824,6 @@ export default {
 
 <script>
 export default {
-  component: {
-    UserCard
-  },
   data: () => ({
     users: []
   }),
