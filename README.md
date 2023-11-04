@@ -296,7 +296,7 @@ RSpec.describe "/users", type: :request do
         expect { post users_url, params: valid_create_user_1_params }
           .to change(User, :count).by(1)
       end
-      it "renders a JSON response with the new user" do  
+      it "renders a JSON response with the new user (with avatar)" do  
         file = Rack::Test::UploadedFile.new(uploaded_image_path)
         valid_create_user_1_params['avatar'] = file
         post users_url, params: valid_create_user_1_params        
@@ -343,24 +343,36 @@ RSpec.describe "/users", type: :request do
 
   describe "PATCH /update" do
     context "with valid parameters" do
-      let(:new_attributes) { { name: "Updated Name!!"} }
 
-      it "updates the requested user" do
+      it "updates the requested user's name" do
         user1 = User.create! valid_create_user_1_params
         user2 = User.create! valid_create_user_2_params
         header = header_from_user(user2,valid_user_2_login_params)
-        patch user_url(user1), params: new_attributes, headers: header, as: :json
+        patch user_url(user1), params: { name: "Updated Name!!"}, headers: header, as: :json
         user1.reload
         expect(JSON.parse(response.body)['name']).to eq "Updated Name!!"
-      end
-
-      it "renders a JSON response with the user" do
-        user1 = User.create! valid_create_user_1_params
-        user2 = User.create! valid_create_user_2_params
-        header = header_from_user(user2,valid_user_2_login_params)
-        patch user_url(user1), params: new_attributes, headers: header, as: :json
         expect(response).to have_http_status(:ok)
         expect(response.content_type).to match(a_string_including("application/json"))
+      end
+
+      it "updates the requested user's avatar" do
+        avatar = Rack::Test::UploadedFile.new(Rails.root.join 'spec/fixtures/files/michael-scott.png')
+        valid_create_user_1_params['avatar'] = avatar
+        user1 = User.create! valid_create_user_1_params   
+        user2 = User.create! valid_create_user_2_params
+        header = header_from_user(user2,valid_user_2_login_params)
+        updated_avatar = Rack::Test::UploadedFile.new(Rails.root.join 'spec/fixtures/files/jim-halpert.png')
+        patch user_url(user1), params: { avatar: updated_avatar}, headers: header, as: :json
+        user1.reload
+        expect(response).to have_http_status(:ok)
+        expect(response.content_type).to match(a_string_including("application/json"))
+        get user_url(user1), headers: header, as: :json
+        expect(JSON.parse(response.body)['name']).to eq("Michael Scott")
+        # expect(JSON.parse(response.body)['email']).to eq("michaelscott@dundermifflin.com")
+        # expect(JSON.parse(response.body)['admin']).to eq(true)
+        expect(JSON.parse(response.body)['avatar']).to be_kind_of(String)
+        expect(JSON.parse(response.body)['avatar']).to match(/http.*\jim-halpert\.png/)
+        # require 'pry'; binding.pry
       end
     end
 
