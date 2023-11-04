@@ -130,7 +130,7 @@ class UsersController < ApplicationController
   # PATCH/PUT /users/1
   def update
     if @user.update(user_params)
-      render json: @user
+      render json: prep_raw_user(@user)
     else
       render json: @user.errors, status: :unprocessable_entity
     end
@@ -292,11 +292,11 @@ RSpec.describe "/users", type: :request do
 
   describe "POST /create" do
     context "with valid parameters" do
-      it "creates a new User (with avatar)" do
+      it "creates a new User (without avatar)" do
         expect { post users_url, params: valid_create_user_1_params }
           .to change(User, :count).by(1)
       end
-      it "renders a JSON response with the new user (with avatar)" do  
+      it "renders a JSON response with new user (with avatar)" do  
         file = Rack::Test::UploadedFile.new(uploaded_image_path)
         valid_create_user_1_params['avatar'] = file
         post users_url, params: valid_create_user_1_params        
@@ -362,17 +362,13 @@ RSpec.describe "/users", type: :request do
         user2 = User.create! valid_create_user_2_params
         header = header_from_user(user2,valid_user_2_login_params)
         updated_avatar = Rack::Test::UploadedFile.new(Rails.root.join 'spec/fixtures/files/jim-halpert.png')
-        patch user_url(user1), params: { avatar: updated_avatar}, headers: header, as: :json
-        user1.reload
+        valid_create_user_1_params['avatar'] = updated_avatar
+        patch user_url(user1), params: valid_create_user_1_params, headers: header
         expect(response).to have_http_status(:ok)
         expect(response.content_type).to match(a_string_including("application/json"))
-        get user_url(user1), headers: header, as: :json
         expect(JSON.parse(response.body)['name']).to eq("Michael Scott")
-        # expect(JSON.parse(response.body)['email']).to eq("michaelscott@dundermifflin.com")
-        # expect(JSON.parse(response.body)['admin']).to eq(true)
         expect(JSON.parse(response.body)['avatar']).to be_kind_of(String)
         expect(JSON.parse(response.body)['avatar']).to match(/http.*\jim-halpert\.png/)
-        # require 'pry'; binding.pry
       end
     end
 
@@ -388,16 +384,26 @@ RSpec.describe "/users", type: :request do
     end
   end
 
-  # describe "DELETE /destroy" do
-  #   it "destroys the requested user" do
-  #     user1 = User.create! valid_create_user_1_params
-  #     user2 = User.create! valid_create_user_2_params
-  #     header = header_from_user(user2,valid_user_2_login_params)
-  #     expect {
-  #       delete user_url(user1), headers: header, as: :json
-  #     }.to change(User, :count).by(-1)
-  #   end
-  # end
+  describe "DELETE /destroy" do
+    it "destroys the requested user (without avatar)" do
+      user1 = User.create! valid_create_user_1_params
+      user2 = User.create! valid_create_user_2_params
+      header = header_from_user(user2,valid_user_2_login_params)
+      expect {
+        delete user_url(user1), headers: header, as: :json
+      }.to change(User, :count).by(-1)
+    end
+    it "destroys the requested user (with avatar)" do
+      file = Rack::Test::UploadedFile.new(uploaded_image_path)
+      valid_create_user_1_params['avatar'] = file
+      user1 = User.create! valid_create_user_1_params
+      user2 = User.create! valid_create_user_2_params
+      header = header_from_user(user2,valid_user_2_login_params)
+      expect {
+        delete user_url(user1), headers: header, as: :json
+      }.to change(User, :count).by(-1)
+    end
+  end
 end
 
 def token_from_user(user,login_params)
