@@ -2544,6 +2544,254 @@ export default {
 - you can now test the app locally at http://localhost:3001
 - kill both the frontend and backend servers by pressing `control + c` in their respective terminal tabs
 
+### Cypress
+- `cd ~/Desktop/front`
+- `npm install cypress --save-dev`
+- `npx cypress open`
+- `puravida cypress/support/commands.js ~`
+```
+Cypress.Commands.add('login', () => { 
+  cy.visit('http://localhost:3001/log-in')
+  cy.get('input').eq(1).type('jimhalpert@dundermifflin.com')
+  cy.get('input').eq(2).type('password{enter}')
+})
+
+Cypress.Commands.add('loginAdmin', () => { 
+  cy.visit('http://localhost:3001/log-in')
+  cy.get('input').eq(1).type('michaelscott@dundermifflin.com')
+  cy.get('input').eq(2).type('password{enter}')
+})
+
+Cypress.Commands.add('loginInvalid', () => { 
+  cy.visit('http://localhost:3001/log-in')
+  cy.get('input').eq(1).type('xyz@dundermifflin.com')
+  cy.get('input').eq(2).type('password{enter}')
+})
+
+Cypress.Commands.add('logout', () => { 
+  cy.get('nav .menu').find('li').eq(2).click()
+    .then(() => { cy.get('nav details ul').find('li').eq(2).click() })
+})
+~
+```
+- `puravida cypress/e2e/logged-out-page-copy.cy.js ~`
+```
+/// <reference types="cypress" />
+
+// reset the db: db:drop db:create db:migrate db:seed RAILS_ENV=test
+// run dev server with test db: CYPRESS=1 bin/rails server -p 3000
+context('Logged Out', () => {
+  describe('Homepage Copy', () => {
+    it('should find page copy', () => {
+      cy.visit('http://localhost:3001/')
+      cy.get('main.container')
+        .should('contain', 'Rails 7 Nuxt 2 Admin Boilerplate')
+        .should('contain', 'Features')
+      cy.get('ul.features')
+        .within(() => {
+          cy.get('li').eq(0).contains('Admin dashboard')
+          cy.get('li').eq(1).contains('Placeholder users')
+          cy.get('li').eq(2).contains('Placeholder user item ("widget")')
+        })
+      cy.get('h3.stack')
+        .next('div.aligned-columns')
+          .within(() => {
+            cy.get('p').eq(0).contains('frontend:')
+            cy.get('p').eq(0).contains('Nuxt 2')
+            cy.get('p').eq(1).contains('backend API:')
+            cy.get('p').eq(1).contains('Rails 7')
+            cy.get('p').eq(2).contains('database:')
+            cy.get('p').eq(2).contains('Postgres')
+            cy.get('p').eq(3).contains('styles:')
+            cy.get('p').eq(3).contains('Sass')
+            cy.get('p').eq(4).contains('css framework:')
+            cy.get('p').eq(4).contains('Pico.css')
+            cy.get('p').eq(5).contains('frontend tests:')
+            cy.get('p').eq(5).contains('Jest')
+            cy.get('p').eq(6).contains('backend tests:')
+            cy.get('p').eq(6).contains('RSpec')      
+          })
+      cy.get('h3.tools')
+        .next('div.aligned-columns')
+          .within(() => {
+            cy.get('p').eq(0).contains('user avatars:')
+            cy.get('p').eq(0).contains('local active storage')
+            cy.get('p').eq(1).contains('backend auth:')
+            cy.get('p').eq(1).contains('bcrypt & jwt')
+            cy.get('p').eq(2).contains('frontend auth:')
+            cy.get('p').eq(2).contains('nuxt auth module')
+          }) 
+    })
+  })
+
+  describe('Log In Copy', () => {
+    it('should find page copy', () => {
+      cy.visit('http://localhost:3001/log-in')
+      cy.get('main.container')
+        .should('contain', 'Email')
+        .should('contain', 'Password')
+        .should('contain', 'Log In')
+        .should('contain', "Don't have an account")
+    })
+  })
+
+  describe('Sign Up Copy', () => {
+    it('should find page copy', () => {
+      cy.visit('http://localhost:3001/sign-up')
+      cy.get('main.container')
+        .should('contain', 'Name')
+        .should('contain', 'Email')
+        .should('contain', 'Avatar')
+        .should('contain', 'Password')
+        .should('contain', 'Create User')
+    })
+  })
+})
+~
+```
+
+- `puravida cypress/e2e/sign-up.cy.js ~`
+```
+/// <reference types="cypress" />
+
+// run rails in test: rails s -e test
+// run nuxt in dev: NODE_ENV='dev' npm run dev
+describe('Sign Up Flow', () => {
+  it('Should create new user', () => {
+    cy.visit('http://localhost:3001/sign-up')
+    cy.get('p').contains('Name').next('input').type('test1')
+    cy.get('p').contains('Email').next('input').type('test1@mail.com')
+    cy.get('p').contains('Password').next('input').type('password')
+    cy.get('button').contains('Create User').click()
+  })
+})
+~
+```
+- `puravida cypress/e2e/sign-up-flow.cy.js ~`
+```
+/// <reference types="cypress" />
+
+// reset the db: db:drop db:create db:migrate db:seed RAILS_ENV=test
+// run dev server with test db: CYPRESS=1 bin/rails server -p 3000
+describe('Sign Up Flow', () => {
+  it('Should redirect to user show page', () => {
+    cy.visit('http://localhost:3001/sign-up')
+    cy.get('p').contains('Name').next('input').type('name')
+    cy.get('p').contains('Email').next('input').type('test' + Math.random().toString(36).substring(2, 15) + '@mail.com')
+    cy.get('p').contains('Password').next('input').type('password')
+    cy.get('button').contains('Create User').click()
+    cy.url().should('match', /http:\/\/localhost:3001\/users\/\d+/)
+    cy.get('h2').should('contain', 'name')
+  })
+})
+~
+```
+- `puravida cypress/e2e/log-in-flow.cy.js ~`
+```
+/// <reference types="cypress" />
+
+// reset the db: db:drop db:create db:migrate db:seed RAILS_ENV=test
+// run dev server with test db: CYPRESS=1 bin/rails server -p 3000
+
+describe('Manual Login', () => {
+  it('Should log in user', () => {
+    cy.intercept('POST', '/login').as('login')
+    cy.loginAdmin()
+    cy.wait('@login').then(({response}) => {
+      expect(response.statusCode).to.eq(200)
+    })
+    cy.url().should('eq', 'http://localhost:3001/users/1')
+    cy.get('h2').should('contain', 'Michael Scott')
+    cy.logout()
+  })
+})
+
+describe('Mocked Request Login', () => {
+  it('Should get 200 response', () => {
+    cy.visit('http://localhost:3001/log-in')
+    cy.request(
+      { url: '/login', method: 'POST', body: { email: 'michaelscott@dundermifflin.com', 
+      password: 'password' }, failOnStatusCode: false })
+      .its('status').should('equal', 200)
+        cy.get('h2').should('contain', 'Log In')
+        cy.url().should('include', '/log-in')
+  })
+
+  it('Should get 401 response', () => {
+    cy.visit('http://localhost:3001/log-in')
+    cy.request(
+      { url: '/login', method: 'POST', body: { email: 'xyz@dundermifflin.com', 
+      password: 'password' }, failOnStatusCode: false })
+      .its('status').should('equal', 401)
+    cy.get('h2').should('contain', 'Log In')
+    cy.url().should('include', '/log-in')
+  })
+})
+~
+```
+- `puravida cypress/e2e/admin.cy.js ~`
+```
+/// <reference types="cypress" />
+
+// reset the db: db:drop db:create db:migrate db:seed RAILS_ENV=test
+// run dev server with test db: CYPRESS=1 bin/rails server -p 3000
+
+describe('Admin login', () => {
+  it('Should go to admin show page', () => {
+    cy.loginAdmin()
+    cy.url().should('match', /http:\/\/localhost:3001\/users\/1/)
+    cy.get('h2').should('contain', 'Michael Scott')
+    cy.get('p').should('contain', 'id: 1')
+    cy.get('p').should('contain', 'avatar:')
+    cy.get('p').contains('avatar:').next('img').should('have.attr', 'src').should('match', /http.*michael-scott.png/)
+    cy.get('p').should('contain', 'admin: true')
+    cy.logout()
+  })
+  it('Should contain admin nav', () => {
+    cy.loginAdmin()
+    cy.get('nav').should('contain', 'Admin')
+    cy.logout()
+  })
+})
+
+describe('Admin nav', () => {
+  it('Should work', () => {
+    cy.loginAdmin()
+    cy.get('nav li a').contains('Admin').click()
+    cy.url().should('match', /http:\/\/localhost:3001\/admin/)
+  })
+})
+
+describe('Admin page', () => {
+  it('Should have correct copy', () => {
+    cy.loginAdmin()
+    cy.visit('http://localhost:3001/admin')
+    cy.get('p').eq(0).invoke('text').should('match', /Number of users: \d+/)
+    cy.get('p').eq(1).invoke('text').should('match', /Number of admins: \d+/)
+    cy.get('p').eq(2).contains('Users')
+    cy.get('p').eq(3).contains('Widgets')
+  })
+  it('Should have correct links', () => {
+    cy.loginAdmin()
+    cy.visit('http://localhost:3001/admin')
+    cy.get('p').eq(2).find('a').should('have.attr', 'href', '/users')
+    cy.get('p').eq(3).find('a').should('have.attr', 'href', '/widgets')
+  })
+  it('Should have working links', () => {
+    cy.loginAdmin()
+    cy.visit('http://localhost:3001/admin')
+    cy.get('p').eq(2).find('a').click()
+    cy.url().should('match', /http:\/\/localhost:3001\/users/)
+    cy.logout()
+  })
+})
+
+describe('Admin /users page', () => {
+  
+})
+~
+```
+
 ### DEPLOY TO FLY.IO
 
 ### Deploy Backend
