@@ -2568,8 +2568,9 @@ Cypress.Commands.add('loginInvalid', () => {
   cy.get('input').eq(2).type('password{enter}')
 })
 
-Cypress.Commands.add('logout', () => { 
-  cy.get('nav .menu').find('li').eq(2).click()
+Cypress.Commands.add('logout', (admin) => { 
+  const num = admin ? 2 : 1
+  cy.get('nav .menu').find('li').eq(num).click()
     .then(() => { cy.get('nav details ul').find('li').eq(2).click() })
 })
 ~
@@ -2650,23 +2651,6 @@ context('Logged Out', () => {
 ~
 ```
 
-- `puravida cypress/e2e/sign-up.cy.js ~`
-```
-/// <reference types="cypress" />
-
-// run rails in test: rails s -e test
-// run nuxt in dev: NODE_ENV='dev' npm run dev
-describe('Sign Up Flow', () => {
-  it('Should create new user', () => {
-    cy.visit('http://localhost:3001/sign-up')
-    cy.get('p').contains('Name').next('input').type('test1')
-    cy.get('p').contains('Email').next('input').type('test1@mail.com')
-    cy.get('p').contains('Password').next('input').type('password')
-    cy.get('button').contains('Create User').click()
-  })
-})
-~
-```
 - `puravida cypress/e2e/sign-up-flow.cy.js ~`
 ```
 /// <reference types="cypress" />
@@ -2678,10 +2662,14 @@ describe('Sign Up Flow', () => {
     cy.visit('http://localhost:3001/sign-up')
     cy.get('p').contains('Name').next('input').type('name')
     cy.get('p').contains('Email').next('input').type('test' + Math.random().toString(36).substring(2, 15) + '@mail.com')
+    cy.get('p').contains('Email').next('input').type('test' + Math.random().toString(36).substring(2, 15) + '@mail.com')
+    cy.get('input[type=file]').selectFile('cypress/fixtures/images/office-avatars/dwight-schrute.png')
     cy.get('p').contains('Password').next('input').type('password')
     cy.get('button').contains('Create User').click()
     cy.url().should('match', /http:\/\/localhost:3001\/users\/\d+/)
     cy.get('h2').should('contain', 'name')
+    // TODO: assert avatar presence
+    // cy.logout()
   })
 })
 ~
@@ -2702,7 +2690,7 @@ describe('Manual Login', () => {
     })
     cy.url().should('eq', 'http://localhost:3001/users/1')
     cy.get('h2').should('contain', 'Michael Scott')
-    cy.logout()
+    cy.logout(true)
   })
 })
 
@@ -2733,7 +2721,7 @@ describe('Mocked Request Login', () => {
 ```
 /// <reference types="cypress" />
 
-// reset the db: db:drop db:create db:migrate db:seed RAILS_ENV=test
+// reset the db: rails db:drop db:create db:migrate db:seed RAILS_ENV=test
 // run dev server with test db: CYPRESS=1 bin/rails server -p 3000
 
 describe('Admin login', () => {
@@ -2787,7 +2775,74 @@ describe('Admin page', () => {
 })
 
 describe('Admin /users page', () => {
-  
+  it('Should show three users', () => {
+    cy.loginAdmin()
+    cy.visit('http://localhost:3001/users')
+    cy.get('section').children('div').should('have.length', 3)
+    cy.logout()
+  })
+})
+~
+```
+- `puravida cyprewss/e2e/non-admin.cy.js ~`
+```
+/// <reference types="cypress" />
+
+// reset the db: rails db:drop db:create db:migrate db:seed RAILS_ENV=test
+// run dev server with test db: CYPRESS=1 bin/rails server -p 3000
+
+describe('Non-admin login', () => {
+  it('Should go to non-admin show page', () => {
+    cy.login()
+    cy.url().should('match', /http:\/\/localhost:3001\/users\/2/)
+    cy.get('h2').should('contain', 'Jim Halpert')
+    cy.get('p').should('contain', 'id: 2')
+    cy.get('p').should('contain', 'avatar:')
+    cy.get('p').contains('avatar:').next('img').should('have.attr', 'src').should('match', /http.*jim-halpert.png/)
+    cy.get('p').contains('admin').should('not.exist')
+    cy.logout()
+  })
+  it('Should not contain admin nav', () => {
+    cy.login()
+    cy.get('nav').contains('Admin').should('not.exist')
+    cy.logout()
+  })
+})
+
+describe('Accessing /users as non-admin', () => {
+  it('Should redirect to home', () => {
+    cy.login()
+    cy.visit('http://localhost:3001/users', { failOnStatusCode: false } )
+    cy.url().should('match', /^http:\/\/localhost:3001\/$/)
+    cy.logout()
+  })
+})
+
+describe('Accessing /users/1 as non-admin', () => {
+  it('Should go to non-admin show page', () => {
+    cy.login()
+    cy.visit('http://localhost:3001/users/1', { failOnStatusCode: false } )
+    cy.url().should('match', /^http:\/\/localhost:3001\/$/)
+    cy.logout()
+  })
+})
+
+describe('Accessing /users/2 as non-admin user 2', () => {
+  it('Should go to user show page', () => {
+    cy.login()
+    cy.visit('http://localhost:3001/users/2', { failOnStatusCode: false } )
+    cy.url().should('match', /^http:\/\/localhost:3001\/users\/2$/)
+    cy.logout()
+  })
+})
+
+describe('Accessing /users/3 as non-admin user 2', () => {
+  it('Should go to home', () => {
+    cy.login()
+    cy.visit('http://localhost:3001/users/3', { failOnStatusCode: false } )
+    cy.url().should('match', /^http:\/\/localhost:3001\/$/)
+    cy.logout()
+  })
 })
 ~
 ```
