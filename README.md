@@ -2774,6 +2774,41 @@ describe('Admin page', () => {
   })
 })
 
+describe('Edit user as admin', () => {
+  it('Should be successful', () => {
+    cy.loginAdmin()
+    cy.url().should('match', /http:\/\/localhost:3001\/users\/1/)
+    cy.get('h2').children().eq(1).click()
+    cy.url().should('match', /http:\/\/localhost:3001\/users\/1\/edit/)
+    cy.get('p').contains('Name').next('input').clear()
+    cy.get('p').contains('Name').next('input').type('name')
+    cy.get('p').contains('Email').next('input').clear()
+    cy.get('p').contains('Email').next('input').type('name@mail.com')
+    cy.get('input[type=file]').selectFile('cypress/fixtures/images/office-avatars/dwight-schrute.png')
+    cy.get('button').click()
+    cy.url().should('match', /http:\/\/localhost:3001\/users\/1/)
+    cy.get('h2').should('contain', 'name')
+    cy.get('p').contains('email').should('contain', 'name@mail.com')
+    cy.get('p').contains('avatar:').next('img').should('have.attr', 'src').should('match', /http.*dwight-schrute.png/)
+    cy.get('p').should('contain', 'admin: true')
+    cy.get('h2').children().eq(1).click()
+    cy.url().should('match', /http:\/\/localhost:3001\/users\/1\/edit/)
+    cy.get('p').contains('Name').next('input').clear()
+    cy.get('p').contains('Name').next('input').type('Michael Scott')
+    cy.get('p').contains('Email').next('input').clear()
+    cy.get('p').contains('Email').next('input').type('michaelscott@dundermifflin.com')
+    cy.get('input[type=file]').selectFile('cypress/fixtures/images/office-avatars/michael-scott.png')
+    cy.get('button').click()
+    cy.url().should('match', /http:\/\/localhost:3001\/users\/1/)
+    cy.get('h2').should('contain', 'Michael Scott')
+    cy.get('p').contains('email').should('contain', 'michaelscott@dundermifflin.com')
+    cy.get('p').contains('avatar:').next('img').should('have.attr', 'src').should('match', /http.*michael-scott.png/)
+    cy.get('p').should('contain', 'admin: true')
+    cy.logout()
+  })
+})
+
+
 describe('Admin /users page', () => {
   it('Should show three users', () => {
     cy.loginAdmin()
