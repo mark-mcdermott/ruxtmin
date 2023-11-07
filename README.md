@@ -2883,6 +2883,58 @@ describe('Accessing /users/3 as non-admin user 2', () => {
     cy.logout()
   })
 })
+
+describe('Accessing /users/1/edit as non-admin', () => {
+  it('Should go to non-admin show page', () => {
+    cy.login()
+    cy.visit('http://localhost:3001/users/1/edit', { failOnStatusCode: false } )
+    cy.url().should('match', /^http:\/\/localhost:3001\/$/)
+    cy.logout()
+  })
+})
+
+describe('Accessing /users/3/edit as non-admin', () => {
+  it('Should go to non-admin show page', () => {
+    cy.login()
+    cy.visit('http://localhost:3001/users/3/edit', { failOnStatusCode: false } )
+    cy.url().should('match', /^http:\/\/localhost:3001\/$/)
+    cy.logout()
+  })
+})
+
+describe('Edit self as non-admin', () => {
+  it('Edit should be successful', () => {
+    cy.login()
+    cy.url().should('match', /http:\/\/localhost:3001\/users\/2/)
+    cy.get('h2').contains('Jim Halpert').next('a').click()
+    cy.url().should('match', /http:\/\/localhost:3001\/users\/2\/edit/)
+    cy.get('p').contains('Name').next('input').clear()
+    cy.get('p').contains('Name').next('input').type('name')
+    cy.get('p').contains('Email').next('input').clear()
+    cy.get('p').contains('Email').next('input').type('name@mail.com')
+    cy.get('input[type=file]').selectFile('cypress/fixtures/images/office-avatars/dwight-schrute.png')
+    cy.get('button').click()
+    cy.url().should('match', /http:\/\/localhost:3001\/users\/2/)
+    cy.get('h2').should('contain', 'name')
+    cy.get('p').contains('email').should('contain', 'name@mail.com')
+    cy.get('p').contains('avatar:').next('img').should('have.attr', 'src').should('match', /http.*dwight-schrute.png/)
+    cy.get('p').contains('admin').should('not.exist')
+    cy.get('h2').children().eq(1).click()
+    cy.url().should('match', /http:\/\/localhost:3001\/users\/2\/edit/)
+    cy.get('p').contains('Name').next('input').clear()
+    cy.get('p').contains('Name').next('input').type('Jim Halpert')
+    cy.get('p').contains('Email').next('input').clear()
+    cy.get('p').contains('Email').next('input').type('jimhalpert@dundermifflin.com')
+    cy.get('input[type=file]').selectFile('cypress/fixtures/images/office-avatars/jim-halpert.png')
+    cy.get('button').click()
+    cy.url().should('match', /http:\/\/localhost:3001\/users\/2/)
+    cy.get('h2').should('contain', 'Jim Halpert')
+    cy.get('p').contains('email').should('contain', 'jimhalpert@dundermifflin.com')
+    cy.get('p').contains('avatar:').next('img').should('have.attr', 'src').should('match', /http.*jim-halpert.png/)
+    cy.get('p').contains('admin').should('not.exist')
+    cy.logout()
+  })
+})
 ~
 ```
 
