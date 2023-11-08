@@ -889,7 +889,7 @@ end
 ```
 
 - `puravida spec/fixtures/files`
-- copy all the The Office avatars directly into `spec/fixtures/files`
+- copy the `images` folder (containing the `office-avatars` folder) into `spec/fixtures/files`
 
 - `puravida config/routes.rb ~`
 ```
@@ -1946,6 +1946,8 @@ export default {
   - option?
 - close cypress UI
 - `rails db:drop db:create db:migrate db:seed RAILS_ENV=test`
+- `puravida cypress/fixtures/images`
+- paste the `office-avatars` folder into `cypress/fixtures/images`
 - `puravida cypress/support/commands.js ~`
 ```
 Cypress.Commands.add('login', () => { 
@@ -2131,12 +2133,12 @@ describe('Admin login', () => {
     cy.get('p').should('contain', 'avatar:')
     cy.get('p').contains('avatar:').next('img').should('have.attr', 'src').should('match', /http.*michael-scott.png/)
     cy.get('p').should('contain', 'admin: true')
-    cy.logout()
+    cy.logoutAdmin()
   })
   it('Should contain admin nav', () => {
     cy.loginAdmin()
-    cy.get('nav').should('contain', 'Admin')
-    cy.logout()
+    cy.get('nav ul.menu li a').should('contain', 'Admin')
+    cy.logoutAdmin()
   })
 })
 
@@ -2145,30 +2147,38 @@ describe('Admin nav', () => {
     cy.loginAdmin()
     cy.get('nav li a').contains('Admin').click()
     cy.url().should('match', /http:\/\/localhost:3001\/admin/)
+    cy.logoutAdmin()
   })
 })
 
 describe('Admin page', () => {
   it('Should have correct copy', () => {
     cy.loginAdmin()
+    cy.url().should('match', /http:\/\/localhost:3001\/users\/1/)
     cy.visit('http://localhost:3001/admin')
+    cy.url().should('match', /http:\/\/localhost:3001\/admin/)
     cy.get('p').eq(0).invoke('text').should('match', /Number of users: \d+/)
     cy.get('p').eq(1).invoke('text').should('match', /Number of admins: \d+/)
     cy.get('p').eq(2).contains('Users')
     cy.get('p').eq(3).contains('Widgets')
+    cy.logoutAdmin()
   })
   it('Should have correct links', () => {
     cy.loginAdmin()
+    cy.url().should('match', /http:\/\/localhost:3001\/users\/1/)
     cy.visit('http://localhost:3001/admin')
-    cy.get('p').eq(2).find('a').should('have.attr', 'href', '/users')
-    cy.get('p').eq(3).find('a').should('have.attr', 'href', '/widgets')
+    cy.url().should('match', /http:\/\/localhost:3001\/admin/)
+    cy.get('p').contains('Users').should('have.attr', 'href', '/users')
+    cy.logoutAdmin()
   })
   it('Should have working links', () => {
     cy.loginAdmin()
+    cy.url().should('match', /http:\/\/localhost:3001\/users\/1/)
     cy.visit('http://localhost:3001/admin')
-    cy.get('p').eq(2).find('a').click()
+    cy.url().should('match', /http:\/\/localhost:3001\/admin/)
+    cy.get('p a').contains('Users').click()
     cy.url().should('match', /http:\/\/localhost:3001\/users/)
-    cy.logout()
+    cy.logoutAdmin()
   })
 })
 
@@ -2205,7 +2215,6 @@ describe('Edit user as admin', () => {
     cy.logout()
   })
 })
-
 
 describe('Admin /users page', () => {
   it('Should show three users', () => {
