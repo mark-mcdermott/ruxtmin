@@ -1712,7 +1712,7 @@ html, body
       <li>Placeholder user item ("widget")</li>
     </ul>
 
-    <h3 class="small-bottom-margin">Stack</h3>
+    <h3 class="small-bottom-margin stack">Stack</h3>
     <div class="aligned-columns">
       <p><span>frontend:</span> Nuxt 2</p>
       <p><span>backend API:</span> Rails 7</p>
@@ -1723,7 +1723,7 @@ html, body
       <p><span>backend tests:</span> RSpec</p>
     </div>
 
-    <h3 class="small-bottom-margin">Tools</h3>
+    <h3 class="small-bottom-margin tools">Tools</h3>
     <div class="aligned-columns">
       <p><span>user avatars:</span> local active storage</p>
       <p><span>backend auth:</span> bcrypt & jwt</p>
