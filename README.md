@@ -706,6 +706,7 @@ user.save!
 ~
 ```
 - `rails db:seed`
+- `rspec`
 
 
 ### Widgets (Backend)
@@ -1941,7 +1942,10 @@ export default {
 ### Cypress
 - `cd ~/Desktop/front`
 - `npm install cypress --save-dev`
-- `npx cypress open`
+- `npx cypress open`  
+  - option?
+- close cypress UI
+- `rails db:drop db:create db:migrate db:seed RAILS_ENV=test`
 - `puravida cypress/support/commands.js ~`
 ```
 Cypress.Commands.add('login', () => { 
@@ -2327,6 +2331,10 @@ describe('Edit self as non-admin', () => {
 })
 ~
 ```
+- run backend for cypress: `CYPRESS=1 bin/rails server -p 3000`
+- run frontend: `npm run dev`
+- open cypress: `npx cypress open`
+
 
 ### DEPLOY TO FLY.IO
 
