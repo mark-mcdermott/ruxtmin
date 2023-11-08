@@ -884,7 +884,7 @@ end
 ~
 ```
 
-### Routes
+### Routes (uhhh this is wrong i think)
 - `puravida config/routes.rb ~`
 ```
 Rails.application.routes.draw do
