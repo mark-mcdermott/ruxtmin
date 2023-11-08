@@ -2213,7 +2213,7 @@ describe('Admin /users page', () => {
 })
 ~
 ```
-- `puravida cyprewss/e2e/non-admin.cy.js ~`
+- `puravida cypress/e2e/non-admin.cy.js ~`
 ```
 /// <reference types="cypress" />
 
