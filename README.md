@@ -405,6 +405,8 @@ RSpec.describe "/users", type: :request do
   end
 end
 
+private 
+
 def token_from_user(user,login_params)
   post "/login", params: login_params
   token = JSON.parse(response.body)['data']
@@ -553,33 +555,35 @@ RSpec.describe "/me", type: :request do
 
     context "with valid token, but poorly formed auth header" do
       it "returns http success" do
-        get "/me", headers: valid_token_but_poorly_formed_auth_header
+        get "/me", headers: _valid_token_but_poorly_formed_auth_header
         expect(response).to have_http_status(:unauthorized)
       end
     end
 
     context "with valid auth header" do
       it "returns http success" do
-        get "/me", headers: valid_auth_header
+        get "/me", headers: _valid_auth_header
         expect(response).to have_http_status(:success)
       end
     end
   end
 end
 
-def valid_token
+private
+
+def _valid_token
   user = User.create(create_user_params)
   post "/login", params: valid_login_params
   token = JSON.parse(response.body)['data']
 end
 
-def valid_auth_header
-  auth_value = "Bearer " + valid_token
+def _valid_auth_header
+  auth_value = "Bearer " + _valid_token
   { Authorization: auth_value }
 end
 
-def valid_token_but_poorly_formed_auth_header
-  auth_value = "Bears " + valid_token
+def _valid_token_but_poorly_formed_auth_header
+  auth_value = "Bears " + _valid_token
   { Authorization: auth_value }
 end
 ~
