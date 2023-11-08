@@ -1968,6 +1968,14 @@ Cypress.Commands.add('loginInvalid', () => {
   cy.get('input').eq(2).type('password{enter}')
 })
 
+Cypress.Commands.add('logoutNonAdmin', (admin) => { 
+  cy.logout();
+})
+
+Cypress.Commands.add('logoutAdmin', (admin) => { 
+  cy.logout(true);
+})
+
 Cypress.Commands.add('logout', (admin) => { 
   const num = admin ? 2 : 1
   cy.get('nav .menu').find('li').eq(num).click()
@@ -2212,16 +2220,18 @@ describe('Edit user as admin', () => {
     cy.get('p').contains('email').should('contain', 'michaelscott@dundermifflin.com')
     cy.get('p').contains('avatar:').next('img').should('have.attr', 'src').should('match', /http.*michael-scott.png/)
     cy.get('p').should('contain', 'admin: true')
-    cy.logout()
+    cy.logoutAdmin()
   })
 })
 
 describe('Admin /users page', () => {
   it('Should show three users', () => {
     cy.loginAdmin()
+    cy.url().should('match', /http:\/\/localhost:3001\/users\/1/)
     cy.visit('http://localhost:3001/users')
+    cy.url().should('match', /http:\/\/localhost:3001\/users/)
     cy.get('section').children('div').should('have.length', 3)
-    cy.logout()
+    cy.logoutAdmin()
   })
 })
 ~
