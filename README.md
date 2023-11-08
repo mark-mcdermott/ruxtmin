@@ -161,7 +161,6 @@ end
 ```
 # frozen_string_literal: true
 require 'open-uri'
-require 'net/http/post/multipart'
 require 'rails_helper'
 RSpec.describe "/users", type: :request do
   let(:valid_create_user_1_params) { { name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password" } }
@@ -883,6 +882,9 @@ def an_int
 end
 ~
 ```
+
+- `puravida spec/fixtures/files`
+- copy all the The Office avatars directly into `spec/fixtures/files`
 
 - `puravida config/routes.rb ~`
 ```
