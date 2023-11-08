@@ -1956,6 +1956,12 @@ Cypress.Commands.add('login', () => {
   cy.get('input').eq(2).type('password{enter}')
 })
 
+Cypress.Commands.add('loginNonAdmin', () => { 
+  cy.visit('http://localhost:3001/log-in')
+  cy.get('input').eq(1).type('jimhalpert@dundermifflin.com')
+  cy.get('input').eq(2).type('password{enter}')
+})
+
 Cypress.Commands.add('loginAdmin', () => { 
   cy.visit('http://localhost:3001/log-in')
   cy.get('input').eq(1).type('michaelscott@dundermifflin.com')
@@ -1969,7 +1975,7 @@ Cypress.Commands.add('loginInvalid', () => {
 })
 
 Cypress.Commands.add('logoutNonAdmin', (admin) => { 
-  cy.logout();
+  cy.logout(false);
 })
 
 Cypress.Commands.add('logoutAdmin', (admin) => { 
@@ -1978,7 +1984,7 @@ Cypress.Commands.add('logoutAdmin', (admin) => {
 
 Cypress.Commands.add('logout', (admin) => { 
   const num = admin ? 2 : 1
-  cy.get('nav .menu').find('li').eq(num).click()
+  cy.get('nav ul.menu').find('li').eq(num).click()
     .then(() => { cy.get('nav details ul').find('li').eq(2).click() })
 })
 ~
@@ -2249,79 +2255,86 @@ describe('Admin /users page', () => {
 
 describe('Non-admin login', () => {
   it('Should go to non-admin show page', () => {
-    cy.login()
+    cy.loginNonAdmin()
     cy.url().should('match', /http:\/\/localhost:3001\/users\/2/)
     cy.get('h2').should('contain', 'Jim Halpert')
     cy.get('p').should('contain', 'id: 2')
     cy.get('p').should('contain', 'avatar:')
     cy.get('p').contains('avatar:').next('img').should('have.attr', 'src').should('match', /http.*jim-halpert.png/)
     cy.get('p').contains('admin').should('not.exist')
-    cy.logout()
+    cy.logoutNonAdmin()
   })
   it('Should not contain admin nav', () => {
-    cy.login()
-    cy.get('nav').contains('Admin').should('not.exist')
-    cy.logout()
+    cy.loginNonAdmin()
+    cy.url().should('match', /http:\/\/localhost:3001\/users\/2/)
+    cy.get('nav ul.menu li a').contains('Admin').should('not.exist')
+    cy.logoutNonAdmin()
   })
 })
 
 describe('Accessing /users as non-admin', () => {
   it('Should redirect to home', () => {
-    cy.login()
+    cy.loginNonAdmin()
+    cy.url().should('match', /http:\/\/localhost:3001\/users\/2/)
     cy.visit('http://localhost:3001/users', { failOnStatusCode: false } )
     cy.url().should('match', /^http:\/\/localhost:3001\/$/)
-    cy.logout()
+    cy.logoutNonAdmin()
   })
 })
 
 describe('Accessing /users/1 as non-admin', () => {
   it('Should go to non-admin show page', () => {
-    cy.login()
+    cy.loginNonAdmin()
+    cy.url().should('match', /http:\/\/localhost:3001\/users\/2/)
     cy.visit('http://localhost:3001/users/1', { failOnStatusCode: false } )
     cy.url().should('match', /^http:\/\/localhost:3001\/$/)
-    cy.logout()
+    cy.logoutNonAdmin()
   })
 })
 
 describe('Accessing /users/2 as non-admin user 2', () => {
   it('Should go to user show page', () => {
-    cy.login()
+    cy.loginNonAdmin()
+    cy.url().should('match', /http:\/\/localhost:3001\/users\/2/)
     cy.visit('http://localhost:3001/users/2', { failOnStatusCode: false } )
     cy.url().should('match', /^http:\/\/localhost:3001\/users\/2$/)
-    cy.logout()
+    cy.logoutNonAdmin()
   })
 })
 
 describe('Accessing /users/3 as non-admin user 2', () => {
   it('Should go to home', () => {
-    cy.login()
+    cy.loginNonAdmin()
+    cy.url().should('match', /http:\/\/localhost:3001\/users\/2/)
     cy.visit('http://localhost:3001/users/3', { failOnStatusCode: false } )
     cy.url().should('match', /^http:\/\/localhost:3001\/$/)
-    cy.logout()
+    cy.logoutNonAdmin()
   })
 })
 
 describe('Accessing /users/1/edit as non-admin', () => {
   it('Should go to non-admin show page', () => {
-    cy.login()
+    cy.loginNonAdmin()
+    cy.url().should('match', /http:\/\/localhost:3001\/users\/2/)
     cy.visit('http://localhost:3001/users/1/edit', { failOnStatusCode: false } )
     cy.url().should('match', /^http:\/\/localhost:3001\/$/)
-    cy.logout()
+    cy.logoutNonAdmin()
   })
 })
 
 describe('Accessing /users/3/edit as non-admin', () => {
   it('Should go to non-admin show page', () => {
-    cy.login()
+    cy.loginNonAdmin()
+    cy.url().should('match', /http:\/\/localhost:3001\/users\/2/)
     cy.visit('http://localhost:3001/users/3/edit', { failOnStatusCode: false } )
     cy.url().should('match', /^http:\/\/localhost:3001\/$/)
-    cy.logout()
+    cy.logoutNonAdmin()
   })
 })
 
 describe('Edit self as non-admin', () => {
   it('Edit should be successful', () => {
-    cy.login()
+    cy.loginNonAdmin()
     cy.url().should('match', /http:\/\/localhost:3001\/users\/2/)
     cy.get('h2').contains('Jim Halpert').next('a').click()
     cy.url().should('match', /http:\/\/localhost:3001\/users\/2\/edit/)
@@ -2349,7 +2362,7 @@ describe('Edit self as non-admin', () => {
     cy.get('p').contains('email').should('contain', 'jimhalpert@dundermifflin.com')
     cy.get('p').contains('avatar:').next('img').should('have.attr', 'src').should('match', /http.*jim-halpert.png/)
     cy.get('p').contains('admin').should('not.exist')
-    cy.logout()
+    cy.logoutNonAdmin()
   })
 })
 ~
