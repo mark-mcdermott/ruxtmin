@@ -911,7 +911,7 @@ end
 ### Setup
 - (in a separate terminal tab)
 - `cd ~/Desktop`
-- `(sleep 0.5; printf "\n"; sleep 0.5; printf "\n"; sleep 0.5; echo -n $'\033[1B'; printf "\n"; sleep 0.5; printf "\n"; sleep 0.5; printf "\n"; sleep 0.1; echo -n $'\x20'; sleep 0.1; printf "\n"; sleep 0.5; printf "\n"; sleep 0.5; printf "\n"; sleep 0.5; echo -n $'\033[1B'; printf "\n"; sleep 0.5; printf "\n"; sleep 0.5; printf "\n"; sleep 0.5; printf "\n"; sleep 0.5; echo -n $'\033[1B'; printf "\n";) | npx create-nuxt-app front`
+- `npx create-nuxt-app front`
   - Project name: `front`
   - Programming language: JavaScript
   - Package manager: Npm
@@ -919,7 +919,7 @@ end
   - Template engine: HTML
   - Nuxt.js modules: Axios
   - Linting tools: none
-  - Testing framework: Jest
+  - Testing framework: none
   - Rendering mode: Single Page App
   - Deployment target: Server
   - Development tools: none
