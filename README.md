@@ -732,7 +732,7 @@ class WidgetsController < ApplicationController
 end
 ~
 ```
-- puravida spec/requests/widgets_spec.rb ~
+- `puravida spec/requests/widgets_spec.rb ~`
 ```
 # frozen_string_literal: true
 require 'rails_helper'
