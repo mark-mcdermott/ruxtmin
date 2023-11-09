@@ -574,7 +574,7 @@ class AuthenticationsController < ApplicationController
 end
 ~
 EOF
-cat <<'EOF' | puravida spec/authentications_spec.rb ~
+cat <<'EOF' | puravida spec/requests/authentications_spec.rb ~
 # frozen_string_literal: true
 require 'rails_helper'
 

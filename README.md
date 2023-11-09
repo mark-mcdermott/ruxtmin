@@ -611,7 +611,7 @@ class AuthenticationsController < ApplicationController
 end
 ~
 ```
-- `puravida spec/authentications_spec.rb ~`
+- `puravida spec/requests/authentications_spec.rb ~`
 ```
 # frozen_string_literal: true
 require 'rails_helper'
