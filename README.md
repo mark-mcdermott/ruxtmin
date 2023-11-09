@@ -1948,6 +1948,7 @@ export default {
   - `E2E Testing`
   - `Continue`
   - close the cypress UI window
+  - press `control + c`
 - close cypress UI
 - `rails db:drop db:create db:migrate db:seed RAILS_ENV=test`
 - `puravida cypress/fixtures/images`
