@@ -2374,7 +2374,7 @@ describe('Edit self as non-admin', () => {
 ```
 - run backend for cypress: `CYPRESS=1 bin/rails server -p 3000`
 - run frontend: `npm run dev`
-- open cypress: `npx cypress open`
+- open cypress: `npx cypress run`
 
 
 ### DEPLOY TO FLY.IO
