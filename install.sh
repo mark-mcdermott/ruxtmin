@@ -854,15 +854,9 @@ echo -e "\n\n🦄 Setup\n\n"
 
 cd ~/Desktop
 npx create-nuxt-app front
-# sleep 5
-# (sleep 2; printf "\n"; sleep 0.5; printf "\n"; sleep 0.5; echo -n $'\033[1B'; printf "\n"; sleep 0.5; printf "\n"; sleep 0.5; printf "\n"; sleep 0.1; echo -n $'\x20'; sleep 0.1; printf "\n"; sleep 0.5; printf "\n"; sleep 0.5; printf "\n"; sleep 0.5; echo -n $'\033[1B'; printf "\n"; sleep 0.5; printf "\n"; sleep 0.5; printf "\n"; sleep 0.5; printf "\n"; sleep 0.5; echo -n $'\033[1B'; printf "\n";) | npx create-nuxt-app front
 cd front
-npm install @picocss/pico @fortawesome/fontawesome-svg-core @fortawesome/free-solid-svg-icons @fortawesome/free-brands-svg-icons @fortawesome/vue-fontawesome@latest-2
-npm install @nuxtjs/auth@4.5.1
-# npm install --save-exact @nuxtjs/auth-next
+npm install @picocss/pico @nuxtjs/auth@4.5.1 @fortawesome/fontawesome-svg-core @fortawesome/free-solid-svg-icons @fortawesome/free-brands-svg-icons @fortawesome/vue-fontawesome@latest-2
 npm install --save-dev sass sass-loader@10
-sed -i '' "s/\"generate\": \"nuxt generate\"/\"generate\": \"nuxt generate\",/" /Users/mmcdermott/Desktop/front/package.json
-awk 'NR==10{print "\t\t\"sass\": \"node-sass ./public/scss/main.scss ./public/css/style.css -w\""}1' /Users/mmcdermott/Desktop/front/package.json > temp.txt && mv temp.txt /Users/mmcdermott/Desktop/front/package.json
 cat <<'EOF' | puravida assets/scss/main.scss ~
 @import "node_modules/@picocss/pico/scss/pico.scss";
 
@@ -970,14 +964,18 @@ cat <<'EOF' | puravida middleware/currentUserOrAdminOnly.js ~
 import { mapGetters } from 'vuex'
 export default function ({ route, store, redirect }) {
   const { isAdmin, loggedInUser } = store.getters
-  const splitPath = route.fullPath.split('/')
-  const idParam = parseInt(splitPath[splitPath.length-1])
+  const url = route.fullPath;
+  const splitPath = url.split('/')
+  let idParam = null;
+  if (url.includes("edit")) {
+    idParam = parseInt(splitPath[splitPath.length-2])
+  } else {
+    idParam = parseInt(splitPath[splitPath.length-1])
+  }
   const isUserCurrentUser = idParam === loggedInUser.id
-
   if (!isAdmin && !isUserCurrentUser) {
     return redirect('/')
   }
-
 }
 ~
 EOF
@@ -1165,8 +1163,12 @@ cat <<'EOF' | puravida components/user/Set.vue ~
 
 <script>
 export default {
-  data: () => ({ users: [] }),
-  async fetch() { this.users = await this.$axios.$get('users') }
+  data: () => ({
+    users: []
+  }),
+  async fetch() {
+    this.users = await this.$axios.$get('users')
+  }
 }
 </script>
 ~
@@ -1182,9 +1184,7 @@ cat <<'EOF' | puravida pages/users/index.vue ~
 </template>
 
 <script>
-export default {
-  middleware: 'adminOnly'
-}
+export default { middleware: 'adminOnly' }
 </script>
 ~
 EOF
@@ -1202,16 +1202,10 @@ cat <<'EOF' | puravida pages/users/_id/index.vue ~
 <script>
 export default {
   middleware: 'currentUserOrAdminOnly',
-  data: () => ({
-    user: {},
-  }),
-  async fetch() {
-    this.user = await this.$axios.$get(`users/${this.$route.params.id}`)
-  },
+  data: () => ({ user: {} }),
+  async fetch() { this.user = await this.$axios.$get(`users/${this.$route.params.id}`) },
   methods: {
-    uploadAvatar: function() {
-      this.avatar = this.$refs.inputFile.files[0];
-    },
+    uploadAvatar: function() { this.avatar = this.$refs.inputFile.files[0] },
     deleteUser: function(id) {
       this.$axios.$delete(`users/${this.$route.params.id}`)
       this.$router.push('/users')
@@ -1236,178 +1230,168 @@ export default { middleware: 'currentUserOrAdminOnly' }
 ~
 EOF
 
-echo -e "\n\n🦄 Widgets\n\n"
-cat <<'EOF' | puravida components/widget/Card.vue ~
-<template>
-  <article>
-    <h2>
-      <NuxtLink :to="`/widgets/${widget.id}`">{{ widget.name }}</NuxtLink> 
-      <NuxtLink :to="`/widgets/${widget.id}/edit`"><font-awesome-icon icon="pencil" /></NuxtLink>
-      <a @click.prevent=deleteWidget(widget.id) href="#"><font-awesome-icon icon="trash" /></a>
-    </h2>
-    <p>id: {{ widget.id }}</p>
-    <p>name: {{ widget.name }}</p>
-    <p>description: {{ widget.description }}</p>
-    <p>user: {{ widget.userId }}</p>
-    <p v-if="widget.image !== null" class="no-margin">image:</p>
-    <img v-if="widget.image !== null" :src="widget.image" />
-  </article>
-</template>
+# echo -e "\n\n🦄 Widgets\n\n"
+# cat <<'EOF' | puravida components/widget/Card.vue ~
+# <template>
+#   <article>
+#     <h2>
+#       <NuxtLink :to="`/widgets/${widget.id}`">{{ widget.name }}</NuxtLink> 
+#       <NuxtLink :to="`/widgets/${widget.id}/edit`"><font-awesome-icon icon="pencil" /></NuxtLink>
+#       <a @click.prevent=deleteWidget(widget.id) href="#"><font-awesome-icon icon="trash" /></a>
+#     </h2>
+#     <p>id: {{ widget.id }}</p>
+#     <p>name: {{ widget.name }}</p>
+#     <p>description: {{ widget.description }}</p>
+#     <p>user: {{ widget.userId }}</p>
+#     <p v-if="widget.image !== null" class="no-margin">image:</p>
+#     <img v-if="widget.image !== null" :src="widget.image" />
+#   </article>
+# </template>
 
-<script>
-import { mapGetters } from 'vuex'
-export default {
-  computed: { ...mapGetters(['isAdmin']) },
-  props: {
-    widget: { type: Object, default: () => ({}) },
-    widgets: { type: Array, default: () => ([]) },
-  },
-  methods: {
-    uploadImage: function() {
-      this.image = this.$refs.inputFile.files[0];
-    },
-    deleteWidget: function(id) {
-      this.$axios.$delete(`widgets/${id}`)
-      const index = this.widgets.findIndex((i) => { return i.id === id })
-      this.widgets.splice(index, 1);
-      this.$router.push('/widgets')
-    }
-  }
-}
-</script>
-~
-EOF
-cat <<'EOF' | puravida components/widget/Set.vue ~
-<template>
-  <section>
-    <div v-for="widget in userWidgets" :key="widget.id">
-      <WidgetCard :widget="widget" :widgets="widgets" />
-    </div>
-  </section>
-</template>
+# <script>
+# import { mapGetters } from 'vuex'
+# export default {
+#   computed: { ...mapGetters(['isAdmin']) },
+#   props: {
+#     widget: { type: Object, default: () => ({}) },
+#     widgets: { type: Array, default: () => ([]) },
+#   },
+#   methods: {
+#     uploadImage: function() {
+#       this.image = this.$refs.inputFile.files[0];
+#     },
+#     deleteWidget: function(id) {
+#       this.$axios.$delete(`widgets/${id}`)
+#       const index = this.widgets.findIndex((i) => { return i.id === id })
+#       this.widgets.splice(index, 1);
+#       this.$router.push('/widgets')
+#     }
+#   }
+# }
+# </script>
+# ~
+# EOF
+# cat <<'EOF' | puravida components/widget/Set.vue ~
+# <template>
+#   <section>
+#     <div v-for="widget in userWidgets" :key="widget.id">
+#       <WidgetCard :widget="widget" :widgets="widgets" />
+#     </div>
+#   </section>
+# </template>
 
-<script>
-export default {
-  data: () => ({ userWidgets: [], allWidgets: [] }),
-  async fetch() { 
-    this.userWidgets = this.$store.getters.loggedInUser.widgets
-    this.allWidgets = await this.$axios.$get('widgets') 
-    // console.log(this.widgets)
-  }
-}
-</script>
-~
-EOF
+# <script>
+# export default {
+#   data: () => ({ userWidgets: [], allWidgets: [] }),
+#   async fetch() { 
+#     this.userWidgets = this.$store.getters.loggedInUser.widgets
+#     this.allWidgets = await this.$axios.$get('widgets') 
+#     // console.log(this.widgets)
+#   }
+# }
+# </script>
+# ~
+# EOF
 
+# cat <<'EOF' | puravida components/widget/Form.vue ~
+# <template>
+#   <article>
+#     <h2>
+#       <NuxtLink :to="`/widgets/${widget.id}`">{{ widget.name }}</NuxtLink> 
+#       <NuxtLink :to="`/widgets/${widget.id}/edit`"><font-awesome-icon icon="pencil" /></NuxtLink>
+#       <a @click.prevent=deleteWidget(widget.id) href="#"><font-awesome-icon icon="trash" /></a>
+#     </h2>
+#     <p>id: {{ widget.id }}</p>
+#     <p>name: {{ widget.name }}</p>
+#     <p>description: {{ widget.description }}</p>
+#     <p>user: <NuxtLink :to="`/users/${widget.userId}`">{{ widget.userName }}</NuxtLink></p>
+#     <p v-if="widget.image !== null" class="no-margin">image:</p>
+#     <img v-if="widget.image !== null" :src="widget.image" />
+#   </article>
+# </template>
 
-
-
-
-
-cat <<'EOF' | puravida components/widget/Form.vue ~
-<template>
-  <article>
-    <h2>
-      <NuxtLink :to="`/widgets/${widget.id}`">{{ widget.name }}</NuxtLink> 
-      <NuxtLink :to="`/widgets/${widget.id}/edit`"><font-awesome-icon icon="pencil" /></NuxtLink>
-      <a @click.prevent=deleteWidget(widget.id) href="#"><font-awesome-icon icon="trash" /></a>
-    </h2>
-    <p>id: {{ widget.id }}</p>
-    <p>name: {{ widget.name }}</p>
-    <p>description: {{ widget.description }}</p>
-    <p>user: <NuxtLink :to="`/users/${widget.userId}`">{{ widget.userName }}</NuxtLink></p>
-    <p v-if="widget.image !== null" class="no-margin">image:</p>
-    <img v-if="widget.image !== null" :src="widget.image" />
-  </article>
-</template>
-
-<script>
-import { mapGetters } from 'vuex'
-export default {
-  computed: { ...mapGetters(['isAdmin']) },
-  props: {
-    widget: { type: Object, default: () => ({}) },
-    widgets: { type: Array, default: () => ([]) },
-  },
-  methods: {
-    uploadImage: function() {
-      this.image = this.$refs.inputFile.files[0];
-    },
-    deleteWidget: function(id) {
-      this.$axios.$delete(`widgets/${id}`)
-      const index = this.widgets.findIndex((i) => { return i.id === id })
-      this.widgets.splice(index, 1);
-    }
-  }
-}
-</script>
-~
-EOF
+# <script>
+# import { mapGetters } from 'vuex'
+# export default {
+#   computed: { ...mapGetters(['isAdmin']) },
+#   props: {
+#     widget: { type: Object, default: () => ({}) },
+#     widgets: { type: Array, default: () => ([]) },
+#   },
+#   methods: {
+#     uploadImage: function() {
+#       this.image = this.$refs.inputFile.files[0];
+#     },
+#     deleteWidget: function(id) {
+#       this.$axios.$delete(`widgets/${id}`)
+#       const index = this.widgets.findIndex((i) => { return i.id === id })
+#       this.widgets.splice(index, 1);
+#     }
+#   }
+# }
+# </script>
+# ~
+# EOF
 
 
+# cat <<'EOF' | puravida pages/widgets/index.vue ~
+# <template>
+#   <main class="container">
+#     <h1>Widgets</h1>
+#     <NuxtLink to="/widgets/new" role="button">Add Widget</NuxtLink>
+#     <WidgetSet />
+#   </main>
+# </template>
+# ~
+# EOF
 
+# cat <<'EOF' | puravida pages/widgets/new.vue ~
+# <template>
+#   <main class="container">
+#     <WidgetForm />
+#   </main>
+# </template>
+# ~
+# EOF
 
+# cat <<'EOF' | puravida pages/widgets/_id/index.vue ~
+# <template>
+#   <main class="container">
+#     <section>
+#       <WidgetCard :widget="widget" />
+#     </section>
+#   </main>
+# </template>
 
+# <script>
+# export default {
+#   middleware: 'currentUserOrAdminOnly',
+#   data: () => ({ widget: {} }),
+#   async fetch() { this.widget = await this.$axios.$get(`widgets/${this.$route.params.id}`) },
+#   methods: {
+#     uploadImage: function() { this.image = this.$refs.inputFile.files[0]; },
+#     deleteWidget: function(id) {
+#       this.$axios.$delete(`widgets/${this.$route.params.id}`)
+#       this.$router.push('/widgets')
+#     }
+#   }
+# }
+# </script>
+# ~
+# EOF
 
+# cat <<'EOF' | puravida pages/widgets/_id/edit.vue ~
+# <template>
+#   <main class="container">
+#     <WidgetForm />
+#   </main>
+# </template>
 
-cat <<'EOF' | puravida pages/widgets/index.vue ~
-<template>
-  <main class="container">
-    <h1>Widgets</h1>
-    <NuxtLink to="/widgets/new" role="button">Add Widget</NuxtLink>
-    <WidgetSet />
-  </main>
-</template>
-~
-EOF
-
-cat <<'EOF' | puravida pages/widgets/new.vue ~
-<template>
-  <main class="container">
-    <WidgetForm />
-  </main>
-</template>
-~
-EOF
-
-cat <<'EOF' | puravida pages/widgets/_id/index.vue ~
-<template>
-  <main class="container">
-    <section>
-      <WidgetCard :widget="widget" />
-    </section>
-  </main>
-</template>
-
-<script>
-export default {
-  middleware: 'currentUserOrAdminOnly',
-  data: () => ({ widget: {} }),
-  async fetch() { this.widget = await this.$axios.$get(`widgets/${this.$route.params.id}`) },
-  methods: {
-    uploadImage: function() { this.image = this.$refs.inputFile.files[0]; },
-    deleteWidget: function(id) {
-      this.$axios.$delete(`widgets/${this.$route.params.id}`)
-      this.$router.push('/widgets')
-    }
-  }
-}
-</script>
-~
-EOF
-
-cat <<'EOF' | puravida pages/widgets/_id/edit.vue ~
-<template>
-  <main class="container">
-    <WidgetForm />
-  </main>
-</template>
-
-<script>
-export default { middleware: 'currentUserOrAdminOnly' }
-</script>
-~
-EOF
+# <script>
+# export default { middleware: 'currentUserOrAdminOnly' }
+# </script>
+# ~
+# EOF
 
 
 echo -e "\n\n🦄 Nav\n\n"
@@ -1422,7 +1406,7 @@ EOF
 cat <<'EOF' | puravida components/nav/Default.vue ~
 <template>
   <nav class="top-nav container-fluid">
-    <ul><li><strong><NuxtLink to="/"><font-awesome-icon icon="laptop-code" /> Ruxtmin</NuxtLink></strong></li></ul>
+    <ul><li><strong><NuxtLink to="/"><NavBrand /></NuxtLink></strong></li></ul>
     <input id="menu-toggle" type="checkbox" />
     <label class='menu-button-container' for="menu-toggle">
       <div class='menu-button'></div>
@@ -1434,8 +1418,10 @@ cat <<'EOF' | puravida components/nav/Default.vue ~
       <li v-if="isAdmin"><strong><NuxtLink to="/admin">Admin</NuxtLink></strong></li>
       <li v-if="isAuthenticated" class='dropdown'>
         <details role="list" dir="rtl">
-          <summary class='summary' aria-haspopup="listbox" role="link"><img :src="loggedInUser.avatar" /></summary>
-          <!-- <summary class='summary' aria-haspopup="listbox" role="link"><font-awesome-icon icon="circle-user" /></summary> -->
+          <summary class='summary' aria-haspopup="listbox" role="link">
+            <img v-if="loggedInUser.avatar" :src="loggedInUser.avatar" />
+            <font-awesome-icon v-else icon="circle-user" />
+          </summary>
           <ul role="listbox">
             <li><NuxtLink :to="`/users/${loggedInUser.id}`">Profile</NuxtLink></li>
             <li><NuxtLink :to="`/users/${loggedInUser.id}/edit`">Settings</NuxtLink></li>
@@ -1452,13 +1438,8 @@ cat <<'EOF' | puravida components/nav/Default.vue ~
 <script>
 import { mapGetters } from 'vuex'
 export default {
-  computed: {
-    ...mapGetters(['isAuthenticated', 'isAdmin', 'loggedInUser']),
-  }, methods: {
-    logOut() {
-      this.$auth.logout()
-    },
-  }
+  computed: { ...mapGetters(['isAuthenticated', 'isAdmin', 'loggedInUser']) }, 
+  methods: { logOut() { this.$auth.logout() } }
 }
 </script>
 
@@ -1636,19 +1617,21 @@ cat <<'EOF' | puravida pages/index.vue ~
     <ul class="features">
       <li>Admin dashboard</li>
       <li>Placeholder users</li>
-      <li>Placeholder user item</li>
+      <li>Placeholder user item ("widget")</li>
     </ul>
 
-    <h3 class="small-bottom-margin">Stack</h3>
+    <h3 class="small-bottom-margin stack">Stack</h3>
     <div class="aligned-columns">
       <p><span>frontend:</span> Nuxt 2</p>
       <p><span>backend API:</span> Rails 7</p>
       <p><span>database:</span> Postgres</p>
       <p><span>styles:</span> Sass</p>
       <p><span>css framework:</span> Pico.css</p>
+      <p><span>frontend tests:</span> Jest</p>
+      <p><span>backend tests:</span> RSpec</p>
     </div>
 
-    <h3 class="small-bottom-margin">Tools</h3>
+    <h3 class="small-bottom-margin tools">Tools</h3>
     <div class="aligned-columns">
       <p><span>user avatars:</span> local active storage</p>
       <p><span>backend auth:</span> bcrypt & jwt</p>
@@ -1770,9 +1753,7 @@ cat <<'EOF' | puravida pages/sign-up.vue ~
 </template>
 
 <script>
-export default {
-  auth: false
-}
+export default { auth: false }
 </script>
 ~
 EOF
@@ -1792,10 +1773,6 @@ export const getters = {
 
   loggedInUser(state) {
     return state.auth.user
-  },
-
-  editOrNew(state) {
-    console.log('hi')
   }
 }
 ~
@@ -1809,7 +1786,7 @@ cat <<'EOF' | puravida pages/admin/index.vue ~
     <h1>Admin</h1>
     <p>Number of users: {{ this.users.length }}</p>
     <p>Number of admins: {{ (this.users.filter((obj) => obj.admin === true)).length }}</p>
-    <p><NuxtLink to="/admin/users">Users</NuxtLink></p>
+    <p><NuxtLink to="/users">Users</NuxtLink></p>
     <p><NuxtLink to="/admin/widgets">Widgets</NuxtLink></p>
   </main>
 </template>
@@ -1817,6 +1794,7 @@ cat <<'EOF' | puravida pages/admin/index.vue ~
 <script>
 export default { 
   middleware: 'adminOnly',
+  layout: 'admin',
   data: () => ({ users: [] }),
   async fetch() { this.users = await this.$axios.$get('users') }
 }
@@ -1824,8 +1802,6 @@ export default {
 ~
 EOF
 
-
-echo -e "\n\n🦄 Admin\n\n"
 cat <<'EOF' | puravida pages/admin/users.vue ~
 <template>
   <main class="container">
@@ -1842,24 +1818,25 @@ export default {
 </script>
 ~
 EOF
-cat <<'EOF' | puravida pages/admin/widgets.vue ~
-<template>
-  <main class="container">
-    <h1>Widgets</h1>
-    <NuxtLink to="/users/new" role="button">Add Widgets</NuxtLink>
-    <WidgetSet />
-  </main>
-</template>
+# cat <<'EOF' | puravida pages/admin/widgets.vue ~
+# <template>
+#   <main class="container">
+#     <h1>Widgets</h1>
+#     <NuxtLink to="/users/new" role="button">Add Widgets</NuxtLink>
+#     <WidgetSet />
+#   </main>
+# </template>
 
-<script>
-export default {
-  middleware: 'adminOnly'
-}
-</script>
-~
-EOF
+# <script>
+# export default {
+#   middleware: 'adminOnly'
+# }
+# </script>
+# ~
+# EOF
 
 
+echo -e "\n\n🦄 Cypress\n\n"
 
 
 
