@@ -29,6 +29,7 @@ echo -e "\n\n🦄 Health Controller\n\n"
 rails g controller health index
 cat <<'EOF' | puravida app/controllers/health_controller.rb ~
 class HealthController < ApplicationController
+  skip_before_action :require_login
   def index
     render json: { status: 'online' }
   end
@@ -424,6 +425,194 @@ end
 ~
 EOF
 
+echo -e "\n\n🦄  /me Route (Application Controller)\n\n"
+cat <<'EOF' | puravida app/controllers/application_controller.rb ~
+class ApplicationController < ActionController::API
+  SECRET_KEY_BASE = Rails.application.credentials.secret_key_base
+  before_action :require_login
+  rescue_from Exception, with: :response_internal_server_error
+
+  def require_login
+    response_unauthorized if current_user_raw.blank?
+  end
+
+  # this is safe to send to the frontend, excludes password_digest, created_at, updated_at
+  def user_from_token
+    user = prep_raw_user(current_user_raw)
+    render json: { data: user, status: 200 }
+  end
+
+  # unsafe/internal: includes password_digest, created_at, updated_at - we don't want those going to the frontend
+  def current_user_raw
+    if decoded_token.present?
+      user_id = decoded_token[0]['user_id']
+      @user = User.find_by(id: user_id)
+    else
+      nil
+    end
+  end
+
+  def encode_token(payload)
+    JWT.encode payload, SECRET_KEY_BASE, 'HS256'
+  end
+
+  def decoded_token
+    if auth_header and auth_header.split(' ')[0] == "Bearer"
+      token = auth_header.split(' ')[1]
+      begin
+        JWT.decode token, SECRET_KEY_BASE, true, { algorithm: 'HS256' }
+      rescue JWT::DecodeError
+        []
+      end
+    end
+  end
+
+  def response_unauthorized
+    render status: 401, json: { status: 401, message: 'Unauthorized' }
+  end
+  
+  def response_internal_server_error
+    render status: 500, json: { status: 500, message: 'Internal Server Error' }
+  end
+
+  # We don't want to send the whole user record from the database to the frontend, so we only send what we need.
+  # The db user row has password_digest (unsafe) and created_at and updated_at (extraneous).
+  # We also change avatar from a weird active_storage object to just the avatar url before it gets to the frontend.
+  def prep_raw_user(user)
+    avatar = user.avatar.present? ? url_for(user.avatar) : nil
+    user = user.admin ? user.slice(:id,:email,:name,:admin) : user.slice(:id,:email,:name)
+    user['avatar'] = avatar
+    user
+  end
+  
+  private 
+  
+    def auth_header
+      request.headers['Authorization']
+    end
+
+end
+~
+EOF
+cat <<'EOF' | puravida spec/requests/application_spec.rb ~
+# frozen_string_literal: true
+require 'rails_helper'
+
+RSpec.describe "/me", type: :request do
+  let(:valid_login_params) { { email: "michaelscott@dundermifflin.com",  password: "password" } }
+  let(:invalid_login_params) { { email: "michaelscott@dundermifflin.com",  password: "testing" } }
+  let(:create_user_params) { { name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password" }}
+  let(:invalid_token_header) { { Authorization: "Bearer xyz123"}}
+  describe "GET /me" do
+
+    context "without auth header" do
+      it "returns http success" do
+        get "/me"
+        expect(response).to have_http_status(:unauthorized)
+      end
+    end
+    
+    context "with invalid token header" do
+      it "returns http success" do
+        get "/me", headers: invalid_token_header
+        expect(response).to have_http_status(:unauthorized)
+      end
+    end
+
+    context "with valid token, but poorly formed auth header" do
+      it "returns http success" do
+        get "/me", headers: _valid_token_but_poorly_formed_auth_header
+        expect(response).to have_http_status(:unauthorized)
+      end
+    end
+
+    context "with valid auth header" do
+      it "returns http success" do
+        get "/me", headers: _valid_auth_header
+        expect(response).to have_http_status(:success)
+      end
+    end
+  end
+end
+
+private
+
+def _valid_token
+  user = User.create(create_user_params)
+  post "/login", params: valid_login_params
+  token = JSON.parse(response.body)['data']
+end
+
+def _valid_auth_header
+  auth_value = "Bearer " + _valid_token
+  { Authorization: auth_value }
+end
+
+def _valid_token_but_poorly_formed_auth_header
+  auth_value = "Bears " + _valid_token
+  { Authorization: auth_value }
+end
+~
+EOF
+
+echo -e "\n\n🦄  /login Route (Authentications Controller)\n\n"
+rails g controller Authentications
+cat <<'EOF' | puravida app/controllers/authentications_controller.rb ~
+class AuthenticationsController < ApplicationController
+  skip_before_action :require_login
+  
+  def create
+    user = User.find_by(email: params[:email])
+    if user && user.authenticate(params[:password])
+      payload = { user_id: user.id, email: user.email }
+      token = encode_token(payload)
+      render json: { data: token, status: 200, message: 'You are logged in successfully' }
+    else
+      response_unauthorized
+    end
+  end
+end
+~
+EOF
+cat <<'EOF' | puravida spec/authentications_spec.rb ~
+# frozen_string_literal: true
+require 'rails_helper'
+
+RSpec.describe "/login", type: :request do
+  let(:valid_login_params) { { email: "michaelscott@dundermifflin.com",  password: "password" } }
+  let(:invalid_login_params) { { email: "michaelscott@dundermifflin.com",  password: "testing" } }
+  let(:create_user_params) { { name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password" }}
+  describe "POST /login" do
+    context "without params" do
+      it "returns unauthorized" do
+        post "/login"
+        expect(response).to have_http_status(:unauthorized)
+      end
+    end
+  end
+  describe "POST /login" do
+    context "with invalid params" do
+      it "returns unauthorized" do
+        post "/login", params: invalid_login_params
+        expect(response).to have_http_status(:unauthorized)
+      end
+    end
+  end
+  describe "POST /login" do
+    context "with valid params" do
+      it "returns unauthorized" do
+        user = User.create(create_user_params)
+        post "/login", params: valid_login_params
+        expect(response).to have_http_status(:success)
+        expect(JSON.parse(response.body)['message']).to eq "You are logged in successfully"
+        expect(JSON.parse(response.body)['data']).to match(/^(?:[\w-]*\.){2}[\w-]*$/)
+      end
+    end
+  end
+end
+~
+EOF
+
 echo -e "\n\n🦄  Widgets\n\n"
 rails g scaffold widget name description image:attachment user:references
 rails db:migrate
@@ -609,9 +798,10 @@ EOF
 echo -e "\n\n🦄  Routes\n\n"
 cat <<'EOF' | puravida config/routes.rb ~
 Rails.application.routes.draw do
-  resources :widgets
   resources :users
   get "health", to: "health#index"
+  post "login", to: "authentications#create"
+  get "me", to: "application#user_from_token"
 end
 ~
 EOF
@@ -627,211 +817,35 @@ user.save!
 user = User.create(name: "Pam Beesly", email: "pambeesly@dundermifflin.com", admin: "false", password: "password")
 user.avatar.attach(io: URI.open("#{Rails.root}/app/assets/images/office-avatars/pam-beesly.png"), filename: "jim-halpert.png")
 user.save!
-widget = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: 1)
-widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
-widget.save!
-widget = Widget.create(name: "Bolts", description: "Michael's bolts", user_id: 1)
-widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/bolts.jpg"), filename: "bolts.jpg")
-widget.save!
-widget = Widget.create(name: "Brackets", description: "Jim's brackets", user_id: 2)
-widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/brackets.png"), filename: "brackets.png")
-widget.save!
-widget = Widget.create(name: "Nuts", description: "Jim's nuts", user_id: 2)
-widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/nuts.jpg"), filename: "nuts.jpg")
-widget.save!
-widget = Widget.create(name: "Pipes", description: "Jim's pipes", user_id: 2)
-widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/pipes.jpg"), filename: "pipes.jpg")
-widget.save!
-widget = Widget.create(name: "Screws", description: "Pam's screws", user_id: 3)
-widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/screws.jpg"), filename: "screws.jpg")
-widget.save!
-widget = Widget.create(name: "Washers", description: "Pam's washers", user_id: 3)
-widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/washers.jpg"), filename: "washers.jpg")
-widget.save!
+# widget = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: 1)
+# widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
+# widget.save!
+# widget = Widget.create(name: "Bolts", description: "Michael's bolts", user_id: 1)
+# widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/bolts.jpg"), filename: "bolts.jpg")
+# widget.save!
+# widget = Widget.create(name: "Brackets", description: "Jim's brackets", user_id: 2)
+# widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/brackets.png"), filename: "brackets.png")
+# widget.save!
+# widget = Widget.create(name: "Nuts", description: "Jim's nuts", user_id: 2)
+# widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/nuts.jpg"), filename: "nuts.jpg")
+# widget.save!
+# widget = Widget.create(name: "Pipes", description: "Jim's pipes", user_id: 2)
+# widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/pipes.jpg"), filename: "pipes.jpg")
+# widget.save!
+# widget = Widget.create(name: "Screws", description: "Pam's screws", user_id: 3)
+# widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/screws.jpg"), filename: "screws.jpg")
+# widget.save!
+# widget = Widget.create(name: "Washers", description: "Pam's washers", user_id: 3)
+# widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/washers.jpg"), filename: "washers.jpg")
+# widget.save!
 ~
 EOF
 rails db:seed
-echo -e "\n\n🦄  Backend Auth\n\n"
+rm -rf spec/factories
+rm -rf spec/models
+rm -rf spec/routing
 
-rails g controller Authentications
-cat <<'EOF' | puravida app/controllers/authentications_controller.rb ~
-class AuthenticationsController < ApplicationController
-  skip_before_action :require_login
-  
-  def create
-    user = User.find_by(email: params[:email])
-    if user && user.authenticate(params[:password])
-      payload = { user_id: user.id, email: user.email }
-      token = encode_token(payload)
-      render json: { data: token, status: 200, message: 'You are logged in successfully' }
-    else
-      response_unauthorized
-    end
-  end
-end
-~
-EOF
-cat <<'EOF' | puravida app/controllers/users_controller.rb ~
-class UsersController < ApplicationController
-  skip_before_action :require_login, only: :create
-  
-  def index
-    @users = User.all.map do |u|
-      avatar = u.avatar.present? ? url_for(u.avatar) : nil
-      { :id => u.id, :name => u.name, :email => u.email, :avatar => avatar, :admin => u.admin }
-    end
-    render json: @users
-  end
 
-  def show
-    @user = User.find(params[:id])
-    render json: {
-      id: @user.id,
-      name: @user.name,
-      email: @user.email,
-      avatar: url_for(@user.avatar),
-      admin: @user.admin
-    }
-  end
-  
-  def create
-    user = User.create user_params
-    attach_main_pic(user) if admin_params[:avatar].present?
-    if user.save
-      render json: user, status: 200
-    else
-      render json: user, status: 400
-    end
-  end
-
-  def update
-    @user = User.find(params[:id])
-    if @user.update(admin_params)
-      render json: @user, status: 200
-    else
-      json render: @user, status: 400
-    end
-  end
-
-  def destroy
-    @user = User.find(params[:id])
-    @user.avatar.purge
-    @user.destroy
-    render json: { status: 200, message: "user deleted successfully" }
-  end
-
-  private
-
-  def attach_main_pic(user)
-    user.avatar.attach(admin_params[:avatar])
-  end
-
-  def user_params
-    admin = admin_params[:admin].present? ? admin_params[:admin] : false
-    {
-      name: admin_params[:name],
-      email: admin_params[:email],
-      admin: admin,
-      password: admin_params[:password],
-    }
-  end
-
-  def admin_params
-    params.permit(
-      :id,
-      :name,
-      :email,
-      :avatar,
-      :admin,
-      :password
-    )
-  end
-end
-~
-EOF
-cat <<'EOF' | puravida app/controllers/health_controller.rb ~
-class HealthController < ApplicationController
-  skip_before_action :require_login
-  def index
-    render json: { status: 'online' }
-  end
-end
-~
-EOF
-cat <<'EOF' | puravida app/controllers/application_controller.rb ~
-class ApplicationController < ActionController::API
-  SECRET_KEY_BASE = Rails.application.credentials.secret_key_base
-  before_action :require_login
-  rescue_from Exception, with: :response_internal_server_error
-  
-  def user_from_token
-    avatar = current_user.avatar.present? ? url_for(current_user.avatar) : nil
-    user = current_user.slice(:id,:email,:name,:admin)
-    widgets = Widget.where(user_id: user['id'])
-    widgets = widgets.map do |w|
-      image = w.image.present? ? url_for(w.image) : nil
-      user_name = User.find(w.user_id).name
-      { :id => w.id, :name => w.name, :description => w.description, :image => image, :userId => w.user_id, :userName => user_name }
-    end
-    user[:avatar] = avatar
-    user[:widgets] = widgets
-    render json: { data: user, status: 200 }
-  end
-
-  def require_login
-    response_unauthorized if current_user.blank?
-  end
-  
-  def current_user
-    if decoded_token.present?
-      user_id = decoded_token[0]['user_id']
-      @user = User.find_by(id: user_id)
-    else
-      nil
-    end
-  end
-  
-  def encode_token(payload)
-    JWT.encode payload, SECRET_KEY_BASE, 'HS256'
-  end
-  
-  def decoded_token
-    if auth_header
-      token = auth_header.split(' ')[1]
-      begin
-        JWT.decode token, SECRET_KEY_BASE, true, { algorithm: 'HS256' }
-      rescue JWT::DecodeError
-        []
-      end
-    end
-  end
-  
-  def response_unauthorized
-    render status: 401, json: { status: 401, message: 'Unauthorized' }
-  end
-  
-  def response_internal_server_error
-    render status: 500, json: { status: 500, message: 'Internal Server Error' }
-  end
-  
-  private 
-  
-    def auth_header
-      request.headers['Authorization']
-    end
-end
-~
-EOF
-cat <<'EOF' | puravida config/routes.rb ~
-Rails.application.routes.draw do
-  resources :widgets
-  resources :users
-  get "health", to: "health#index"
-  post "login", to: "authentications#create"
-  get "me", to: "application#user_from_token"
-end
-~
-EOF
 
 
 echo -e "\n\n🦄 FRONTEND\n\n"
