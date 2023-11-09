@@ -17,6 +17,7 @@ export default {
   axios: { baseURL: development ? 'http://localhost:3000' : 'https://ruxtmin-back.fly.dev/' },
   server: { port: development ? 3001 : 3000 },
   auth: {
+    redirect: { login: '/' },
     strategies: {
       local: {
         endpoints: {

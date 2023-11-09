@@ -50,6 +50,10 @@ end
 gem "rack-cors", "~> 2.0"
 gem "bcrypt", "~> 3.1"
 gem "jwt", "~> 2.7"
+gem "pry", "~> 0.14.2"
+
+gem "rspec-rails", "~> 6.0", :groups => [:development, :test]
+gem "factory_bot_rails", "~> 6.2", :groups => [:development, :test]
 
 gem "dockerfile-rails", ">= 1.5", :group => :development
 

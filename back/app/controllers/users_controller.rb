@@ -1,75 +1,52 @@
 class UsersController < ApplicationController
+  before_action :set_user, only: %i[ show update destroy ]
   skip_before_action :require_login, only: :create
-  
+
+  # GET /users
   def index
-    @users = User.all.map do |u|
-      avatar = u.avatar.present? ? url_for(u.avatar) : nil
-      { :id => u.id, :name => u.name, :email => u.email, :avatar => avatar, :admin => u.admin }
-    end
+    @users = User.all.map { |user| prep_raw_user(user) }
     render json: @users
   end
 
+  # GET /users/1
   def show
-    @user = User.find(params[:id])
-    render json: {
-      id: @user.id,
-      name: @user.name,
-      email: @user.email,
-      avatar: url_for(@user.avatar),
-      admin: @user.admin
-    }
+    render json: prep_raw_user(@user)
   end
-  
+
+  # POST /users
   def create
-    user = User.create user_params
-    attach_main_pic(user) if admin_params[:avatar].present?
-    if user.save
-      render json: user, status: 200
+    @user = User.new(user_params)
+    if @user.save
+      render json: prep_raw_user(@user), status: :created, location: @user
     else
-      render json: user, status: 400
+      render json: @user.errors, status: :unprocessable_entity
     end
   end
 
+  # PATCH/PUT /users/1
   def update
-    @user = User.find(params[:id])
-    if @user.update(admin_params)
-      render json: @user, status: 200
+    if @user.update(user_params)
+      render json: prep_raw_user(@user)
     else
-      json render: @user, status: 400
+      render json: @user.errors, status: :unprocessable_entity
     end
   end
 
+  # DELETE /users/1
   def destroy
-    @user = User.find(params[:id])
-    @user.avatar.purge
     @user.destroy
-    render json: { status: 200, message: "user deleted successfully" }
   end
 
   private
+    # Use callbacks to share common setup or constraints between actions.
+    def set_user
+      @user = User.find(params[:id])
+    end
 
-  def attach_main_pic(user)
-    user.avatar.attach(admin_params[:avatar])
-  end
-
-  def user_params
-    admin = admin_params[:admin].present? ? admin_params[:admin] : false
-    {
-      name: admin_params[:name],
-      email: admin_params[:email],
-      admin: admin,
-      password: admin_params[:password],
-    }
-  end
-
-  def admin_params
-    params.permit(
-      :id,
-      :name,
-      :email,
-      :avatar,
-      :admin,
-      :password
-    )
-  end
+    # Only allow a list of trusted parameters through.
+    def user_params
+      params['avatar'] = params['avatar'].blank? ? nil : params['avatar'] # if no avatar is chosen on signup page, params['avatar'] comes in as a blank string, which throws a 500 error at User.new(user_params). This changes any params['avatar'] blank string to nil, which is fine in User.new(user_params).
+      params.permit(:name, :email, :avatar, :admin, :password)
+    end
+    
 end

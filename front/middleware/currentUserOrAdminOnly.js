@@ -1,9 +1,16 @@
+import { mapGetters } from 'vuex'
 export default function ({ route, store, redirect }) {
-  const splitPath = route.fullPath.split('/')
-  const idParam = splitPath[splitPath.length-1]
-  const currentUserId = store.state.auth.user.id
-  const isAdmin = store.state.auth.user.admin
-  if (!isAdmin && idParam != currentUserId) {
+  const { isAdmin, loggedInUser } = store.getters
+  const url = route.fullPath;
+  const splitPath = url.split('/')
+  let idParam = null;
+  if (url.includes("edit")) {
+    idParam = parseInt(splitPath[splitPath.length-2])
+  } else {
+    idParam = parseInt(splitPath[splitPath.length-1])
+  }
+  const isUserCurrentUser = idParam === loggedInUser.id
+  if (!isAdmin && !isUserCurrentUser) {
     return redirect('/')
   }
 }
