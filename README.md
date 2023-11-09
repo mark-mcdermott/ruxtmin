@@ -166,17 +166,17 @@ require 'open-uri'
 require 'rails_helper'
 RSpec.describe "/users", type: :request do
   let(:valid_create_user_1_params) { { name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password" } }
-  let(:user_1_attachment) { "/app/assets/images/office-avatars/michael-scott.png" }
+  let(:user_1_attachment) { "/spec/fixtures/files/images/office-avatars/michael-scott.png" }
   let(:user_1_image) { "michael-scott.png" }
   let(:valid_create_user_2_params) { { name: "Jim Halpert", email: "jimhalpert@dundermifflin.com", admin: "false", password: "password" } }
-  let(:user_2_attachment) { "/app/assets/images/office-avatars/jim-halpert.png" }
+  let(:user_2_attachment) { "/spec/fixtures/files/images/office-avatars//jim-halpert.png" }
   let(:user_2_image) { "jim-halpert.png" }
   let(:invalid_create_user_1_params) { { name: "Michael Scott", email: "test", admin: "true", password: "password" } }
   let(:invalid_create_user_2_params) { { name: "Jim Halpert", email: "test2", admin: "false", password: "password" } }
   let(:valid_user_1_login_params) { { email: "michaelscott@dundermifflin.com",  password: "password" } }
   let(:valid_user_2_login_params) { { email: "jimhalpert@dundermifflin.com",  password: "password" } }
   let(:invalid_patch_params) { { email: "test" } }
-  let(:uploaded_image_path) { Rails.root.join 'spec/fixtures/files/michael-scott.png' }
+  let(:uploaded_image_path) { Rails.root.join '/spec/fixtures/files/images/office-avatars/michael-scott.png' }
   let(:uploaded_image) { Rack::Test::UploadedFile.new uploaded_image_path, 'image/png' }
 
   describe "GET /index" do
@@ -298,7 +298,7 @@ RSpec.describe "/users", type: :request do
           .to change(User, :count).by(1)
       end
       it "renders a JSON response with new user (with avatar)" do  
-        file = Rack::Test::UploadedFile.new(uploaded_image_path)
+        file = Rack::Test::UploadedFile.new(Rails.root.join("spec/fixtures/files/images/office-avatars/michael-scott.png"))
         valid_create_user_1_params['avatar'] = file
         post users_url, params: valid_create_user_1_params        
         expect(response).to have_http_status(:created)
@@ -357,12 +357,12 @@ RSpec.describe "/users", type: :request do
       end
 
       it "updates the requested user's avatar" do
-        avatar = Rack::Test::UploadedFile.new(Rails.root.join 'spec/fixtures/files/michael-scott.png')
+        avatar = Rack::Test::UploadedFile.new(Rails.root.join("spec/fixtures/files/images/office-avatars/michael-scott.png"))
         valid_create_user_1_params['avatar'] = avatar
         user1 = User.create! valid_create_user_1_params   
         user2 = User.create! valid_create_user_2_params
         header = header_from_user(user2,valid_user_2_login_params)
-        updated_avatar = Rack::Test::UploadedFile.new(Rails.root.join 'spec/fixtures/files/jim-halpert.png')
+        updated_avatar = Rack::Test::UploadedFile.new(Rails.root.join('spec/fixtures/files/images/office-avatars/jim-halpert.png'))
         valid_create_user_1_params['avatar'] = updated_avatar
         patch user_url(user1), params: valid_create_user_1_params, headers: header
         expect(response).to have_http_status(:ok)
@@ -395,7 +395,7 @@ RSpec.describe "/users", type: :request do
       }.to change(User, :count).by(-1)
     end
     it "destroys the requested user (with avatar)" do
-      file = Rack::Test::UploadedFile.new(uploaded_image_path)
+      file = Rack::Test::UploadedFile.new(Rails.root.join("spec/fixtures/files/images/office-avatars/michael-scott.png"))
       valid_create_user_1_params['avatar'] = file
       user1 = User.create! valid_create_user_1_params
       user2 = User.create! valid_create_user_2_params
