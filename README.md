@@ -21,8 +21,8 @@ This readme uses a small custom bash command called [puravida](#user-content-pur
 - `rails generate rspec:install`
 - `rails db:migrate`
 - copy `assets` folder into `app` folder
-- `puravida spec/fixtures/images`
-- copy the `office-avatars` folder into `spec/fixtures/images` folder
+- `puravida spec/fixtures/files/images`
+- copy the `office-avatars` folder into `spec/fixtures/files/images` folder
 - `puravida config/initializers/cors.rb ~`
 ```
 Rails.application.config.middleware.insert_before 0, Rack::Cors do
