@@ -1721,8 +1721,8 @@ html, body
       <p><span>database:</span> Postgres</p>
       <p><span>styles:</span> Sass</p>
       <p><span>css framework:</span> Pico.css</p>
-      <p><span>frontend tests:</span> Jest</p>
-      <p><span>backend tests:</span> RSpec</p>
+      <p><span>e2d tests:</span> Cypress</p>
+      <p><span>api tests:</span> RSpec</p>
     </div>
 
     <h3 class="small-bottom-margin tools">Tools</h3>
@@ -2026,9 +2026,9 @@ context('Logged Out', () => {
             cy.get('p').eq(3).contains('Sass')
             cy.get('p').eq(4).contains('css framework:')
             cy.get('p').eq(4).contains('Pico.css')
-            cy.get('p').eq(5).contains('frontend tests:')
-            cy.get('p').eq(5).contains('Jest')
-            cy.get('p').eq(6).contains('backend tests:')
+            cy.get('p').eq(5).contains('e2e tests:')
+            cy.get('p').eq(5).contains('Cypress')
+            cy.get('p').eq(6).contains('api tests:')
             cy.get('p').eq(6).contains('RSpec')      
           })
       cy.get('h3.tools')
