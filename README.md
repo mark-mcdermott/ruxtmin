@@ -660,7 +660,6 @@ Rails.application.routes.draw do
 end
 ```
 ### Update Health Controller For Auth
-- `rails g controller health index`
 - `puravida app/controllers/health_controller.rb ~`
 ```
 class HealthController < ApplicationController
