@@ -1945,7 +1945,9 @@ export default {
 - `cd ~/Desktop/front`
 - `npm install cypress --save-dev`
 - `npx cypress open`  
-  - option?
+  - `E2E Testing`
+  - `Continue`
+  - close the cypress UI window
 - close cypress UI
 - `rails db:drop db:create db:migrate db:seed RAILS_ENV=test`
 - `puravida cypress/fixtures/images`
