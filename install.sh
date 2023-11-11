@@ -1170,7 +1170,7 @@ export default function ({ store, redirect }) {
 }
 ~
 EOF
-cat <<'EOF' | puravida middleware/currentUserOrAdminOnly.js ~
+cat <<'EOF' | puravida middleware/currentOrAdmin-ShowEdit.js ~
 import { mapGetters } from 'vuex'
 export default function ({ route, store, redirect }) {
   const { isAdmin, loggedInUser } = store.getters
@@ -1186,6 +1186,15 @@ export default function ({ route, store, redirect }) {
   if (!isAdmin && !isUserCurrentUser) {
     return redirect('/')
   }
+}
+
+function isEditPage(url) {
+  return url.includes("edit") ? true : false
+}
+
+function isShowPage(url) {
+  const splitUrl = url.split('/')
+  return (!isNaN(splitUrl[splitUrl.length]) && !isEditPage) ? true : false
 }
 ~
 EOF
@@ -1411,7 +1420,7 @@ cat <<'EOF' | puravida pages/users/_id/index.vue ~
 
 <script>
 export default {
-  middleware: 'currentUserOrAdminOnly',
+  middleware: 'currentOrAdmin-ShowEdit',
   data: () => ({ user: {} }),
   async fetch() { this.user = await this.$axios.$get(`users/${this.$route.params.id}`) },
   methods: {
@@ -1435,7 +1444,7 @@ cat <<'EOF' | puravida pages/users/_id/edit.vue ~
 </template>
 
 <script>
-export default { middleware: 'currentUserOrAdminOnly' }
+export default { middleware: 'currentOrAdmin-ShowEdit' }
 </script>
 ~
 EOF
@@ -1636,7 +1645,7 @@ cat <<'EOF' | puravida pages/widgets/_id/index.vue ~
 
 <script>
 export default {
-  middleware: 'currentUserOrAdminOnly',
+  middleware: 'currentOrAdmin-ShowEdit',
   data: () => ({ widget: {} }),
   async fetch() { this.widget = await this.$axios.$get(`widgets/${this.$route.params.id}`) },
   methods: {
@@ -1659,7 +1668,7 @@ cat <<'EOF' | puravida pages/widgets/_id/edit.vue ~
 </template>
 
 <script>
-export default { middleware: 'currentUserOrAdminOnly' }
+export default { middleware: 'currentOrAdmin-ShowEdit' }
 </script>
 ~
 EOF
