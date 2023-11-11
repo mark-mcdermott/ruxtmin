@@ -682,227 +682,8 @@ end
 ~
 ```
 
-### Widgets
-- `rails g scaffold widget name description image:attachment user:references`
-- `puravida app/controllers/widgets_controller.rb ~`
-```
-class WidgetsController < ApplicationController
-  before_action :set_widget, only: %i[ show update destroy ]
-
-  # GET /widgets
-  def index
-    @widgets = Widget.all.map do |w|
-      image = w.image.present? ? url_for(w.image) : nil
-      { :id => w.id, :name => w.name, :description => w.description, :image => image, :user_id => w.user_id }
-    end
-    render json: @widgets
-  end
-
-  # GET /widgets/1
-  def show
-    image = @widget.image.present? ? url_for(@widget.image) : nil
-    user_name = User.find(@widget.user_id).name
-    render json: { id: @widget.id, name: @widget.name, description: @widget.description, image: image, userId: @widget.user_id, userName: user_name }
-  end
-
-  # POST /widgets
-  def create
-    @widget = Widget.new(widget_params)
-
-    if @widget.save
-      render json: @widget, status: :created, location: @widget
-    else
-      render json: @widget.errors, status: :unprocessable_entity
-    end
-  end
-
-  # PATCH/PUT /widgets/1
-  def update
-    if @widget.update(widget_params)
-      render json: @widget
-    else
-      render json: @widget.errors, status: :unprocessable_entity
-    end
-  end
-
-  # DELETE /widgets/1
-  def destroy
-    @widget.destroy
-  end
-
-  private
-    # Use callbacks to share common setup or constraints between actions.
-    def set_widget
-      @widget = Widget.find(params[:id])
-    end
-
-    # Only allow a list of trusted parameters through.
-    def widget_params
-      params['image'] = params['image'].blank? ? nil : params['image'] # if no image is chosen on new widget page, params['image'] comes in as a blank string, which throws a 500 error at User.new(user_params). This changes any params['avatar'] blank string to nil, which is fine in User.new(user_params).
-      params.permit(:name, :description, :image, :user_id)
-    end
-end
-~
-```
-- `puravida spec/requests/widgets_spec.rb ~`
-```
-# frozen_string_literal: true
-require 'rails_helper'
-
-RSpec.describe "/widgets API Testing", type: :request do
-  let(:user_1_params) { { name: "Michael Scott", email: SecureRandom.hex + "@mail.com", admin: true, password: "password" } }
-  let(:user_2_params) { { name: "Jim Halpert", email: SecureRandom.hex + "@mail.com", admin: false, password: "password" } }
-  let(:widget_1_params) { { name: "Michael's widget", description: "Michael's widget description" } }
-  let(:widget_1_patch_params) { { name: "Michael's widget!!" } }
-  let(:widget_2_params) { { name: "Jim's widget", description: "Jim's widget description" } }
-  let(:widget_3_params) { { name: "Pam's widget", description: "Pam's widget description" } }
-  let(:valid_attributes_without_user_id) { { name: "name", description: "description" } }
-  let(:invalid_attributes) { { name: "name", test: "test" } }
-
-  before :each do
-    create_users_and_widgets
-  end
-
-  describe "GET /widgets" do
-    it "without token, returns 401" do
-      get widgets_path
-      expect(response).to have_http_status(401)
-    end
-    it "returns widgets 1 & 2" do
-      get widgets_path, headers: auth_header
-      expect(response).to have_http_status(200)
-      expect(JSON.parse(response.body)).to include("id" => an_int, "name" => "Michael's widget","description" => "Michael's widget description", "image" => nil, "user_id" => an_int)
-      expect(JSON.parse(response.body)).to include("id" => an_int, "name" => "Jim's widget","description" => "Jim's widget description", "image" => nil, "user_id" => an_int)
-    end
-
-  describe "GET /widgets/:id" do
-    it "without token, returns 401" do
-      get widget_path(@user1)
-      expect(response).to have_http_status(401)
-    end
-    it "returns widget 1" do
-      get widget_path(@widget1), headers: auth_header
-      expect(response).to have_http_status(200)
-      expect(JSON.parse(response.body)).to include("id" => an_int, "name" => "Michael's widget","description" => "Michael's widget description", "image" => nil, "userId" => an_int)
-      expect(JSON.parse(response.body)).not_to include("name" => "Jim's widget","description" => "Jim's widget description")
-    end
-    it "returns widget 2" do
-      get widget_path(@widget2), headers: auth_header
-      expect(JSON.parse(response.body)).to include("id" => an_int, "name" => "Jim's widget","description" => "Jim's widget description", "image" => nil, "userId" => an_int)
-      expect(JSON.parse(response.body)).not_to include("name" => "Michaels's widget","description" => "Michaels's widget description")
-    end
-  end
-
-  describe "POST /widgets" do
-    it "without token, returns 401" do
-      post widgets_url, params: widget_3_params
-      expect(response).to have_http_status(401)
-    end
-    it "without user_id param, returns 422" do
-      post widgets_path, headers: auth_header, params: valid_attributes_without_user_id
-      expect(response).to have_http_status(422)
-    end
-    it "returns 201" do
-      post widgets_path, headers: auth_header, params: valid_attributes_without_user_id.merge!(:user_id => @user1.id)
-      expect(response).to have_http_status(201)
-      expect(JSON.parse(response.body)).to include("id" => an_int, "name" => "name","description" => "description", "user_id" => an_int)
-    end
-  end
-
-  describe "PATCH /widgets" do
-    it "without token, returns 401" do
-      patch widget_path(@widget1), params: widget_1_patch_params
-      expect(response).to have_http_status(401)
-    end
-    it "without params, still returns 200" do
-      patch widget_path(@widget1), headers: auth_header
-      expect(response).to have_http_status(200)
-    end
-    it "returns updated widget" do
-      patch widget_path(@widget1), headers: auth_header, params: widget_1_patch_params
-      expect(response).to have_http_status(200)
-      expect(JSON.parse(response.body)).to include("name" => "Michael's widget!!")
-    end
-  end
-
-  describe "DELETE /widgets/:id" do
-    it "destroys requested widget" do
-      new_widget = Widget.create! valid_attributes_without_user_id.merge!(:user_id => @user1.id)
-      expect {
-        delete widget_url(new_widget), headers: auth_header, as: :json
-      }.to change(Widget, :count).by(-1)
-    end
-  end
-end
-
-def create_users
-  @user1 = User.create(name: user_1_params[:name], email: user_1_params[:email], admin: user_1_params[:admin], password: user_1_params[:password])
-  @user2 = User.create(name: user_2_params[:name], email: user_2_params[:email], admin: user_2_params[:admin], password: user_2_params[:password])
-end
-
-def create_widgets
-  @widget1 = Widget.create! widget_1_params.merge!(:user_id => @user1.id)
-  @widget2 = Widget.create! widget_2_params.merge!(:user_id => @user2.id)
-end
-
-def create_users_and_widgets
-  create_users
-  create_widgets
-end
-
-def auth_header
-  post ("/login"), params: { email: user_1_params[:email], password: user_1_params[:password] }
-  { Authorization: "Token " + (JSON.parse(response.body))['data'] }
-end
-
-def an_int
-  be_a_kind_of(Integer)
-end
-~
-```
-
-### Seeds
-- `puravida db/seeds.rb ~`
-```
-user = User.create(name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password")
-user.avatar.attach(io: URI.open("#{Rails.root}/app/assets/images/office-avatars/michael-scott.png"), filename: "michael-scott.png")
-user.save!
-user = User.create(name: "Jim Halpert", email: "jimhalpert@dundermifflin.com", admin: "false", password: "password")
-user.avatar.attach(io: URI.open("#{Rails.root}/app/assets/images/office-avatars/jim-halpert.png"), filename: "jim-halpert.png")
-user.save!
-user = User.create(name: "Pam Beesly", email: "pambeesly@dundermifflin.com", admin: "false", password: "password")
-user.avatar.attach(io: URI.open("#{Rails.root}/app/assets/images/office-avatars/pam-beesly.png"), filename: "jim-halpert.png")
-user.save!
-widget = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: 1)
-widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
-widget.save!
-widget = Widget.create(name: "Bolts", description: "Michael's bolts", user_id: 1)
-widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/bolts.jpg"), filename: "bolts.jpg")
-widget.save!
-widget = Widget.create(name: "Brackets", description: "Jim's brackets", user_id: 2)
-widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/brackets.png"), filename: "brackets.png")
-widget.save!
-widget = Widget.create(name: "Nuts", description: "Jim's nuts", user_id: 2)
-widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/nuts.jpg"), filename: "nuts.jpg")
-widget.save!
-widget = Widget.create(name: "Pipes", description: "Jim's pipes", user_id: 2)
-widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/pipes.jpg"), filename: "pipes.jpg")
-widget.save!
-widget = Widget.create(name: "Screws", description: "Pam's screws", user_id: 3)
-widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/screws.jpg"), filename: "screws.jpg")
-widget.save!
-widget = Widget.create(name: "Washers", description: "Pam's washers", user_id: 3)
-widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/washers.jpg"), filename: "washers.jpg")
-widget.save!
-~
-```
-- `rails db:seed`
-- `rspec`
-
-
 ### Widgets (Backend)
 - `rails g scaffold widget name description image:attachment user:references`
-- `rails db:migrate`
 - `puravida app/controllers/widgets_controller.rb ~`
 ```
 class WidgetsController < ApplicationController
@@ -910,7 +691,11 @@ class WidgetsController < ApplicationController
 
   # GET /widgets
   def index
-    @widgets = Widget.all.map { |widget| prep_raw_widget(widget) }
+    if params['user_id'].present?
+      @widgets = Widget.where(user_id: params['user_id']) { |widget| prep_raw_widget(widget) }
+    else
+      @widgets = Widget.all.map { |widget| prep_raw_widget(widget) }
+    end
     render json: @widgets
   end
 
@@ -951,6 +736,7 @@ class WidgetsController < ApplicationController
 
     # Only allow a list of trusted parameters through.
     def widget_params
+      params['image'] = params['image'].blank? ? nil : params['image'] # if no image is chosen on new widget page, params['image'] comes in as a blank string, which throws a 500 error at User.new(user_params). This changes any params['avatar'] blank string to nil, which is fine in User.new(user_params).
       params.permit(:name, :description, :image, :user_id)
     end
 end
@@ -1275,6 +1061,44 @@ def blob_for(name)
 end
 ~
 ```
+
+### Seeds
+- `puravida db/seeds.rb ~`
+```
+user = User.create(name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password")
+user.avatar.attach(io: URI.open("#{Rails.root}/app/assets/images/office-avatars/michael-scott.png"), filename: "michael-scott.png")
+user.save!
+user = User.create(name: "Jim Halpert", email: "jimhalpert@dundermifflin.com", admin: "false", password: "password")
+user.avatar.attach(io: URI.open("#{Rails.root}/app/assets/images/office-avatars/jim-halpert.png"), filename: "jim-halpert.png")
+user.save!
+user = User.create(name: "Pam Beesly", email: "pambeesly@dundermifflin.com", admin: "false", password: "password")
+user.avatar.attach(io: URI.open("#{Rails.root}/app/assets/images/office-avatars/pam-beesly.png"), filename: "jim-halpert.png")
+user.save!
+widget = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: 1)
+widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
+widget.save!
+widget = Widget.create(name: "Bolts", description: "Michael's bolts", user_id: 1)
+widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/bolts.jpg"), filename: "bolts.jpg")
+widget.save!
+widget = Widget.create(name: "Brackets", description: "Jim's brackets", user_id: 2)
+widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/brackets.png"), filename: "brackets.png")
+widget.save!
+widget = Widget.create(name: "Nuts", description: "Jim's nuts", user_id: 2)
+widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/nuts.jpg"), filename: "nuts.jpg")
+widget.save!
+widget = Widget.create(name: "Pipes", description: "Jim's pipes", user_id: 2)
+widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/pipes.jpg"), filename: "pipes.jpg")
+widget.save!
+widget = Widget.create(name: "Screws", description: "Pam's screws", user_id: 3)
+widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/screws.jpg"), filename: "screws.jpg")
+widget.save!
+widget = Widget.create(name: "Washers", description: "Pam's washers", user_id: 3)
+widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/washers.jpg"), filename: "washers.jpg")
+widget.save!
+~
+```
+- `rails db:seed`
+- `rspec`
 
 - `rm -rf spec/factories`
 - `rm -rf spec/models`

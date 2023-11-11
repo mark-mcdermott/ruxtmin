@@ -1441,7 +1441,7 @@ export default { middleware: 'currentUserOrAdminOnly' }
 EOF
 
 
-echo -e "\n\n🦄 Widgets\n\n"
+echo -e "\n\n🦄 Widgets (frontend)\n\n"
 cat <<'EOF' | puravida components/widget/Card.vue ~
 <template>
   <article>
