@@ -1716,9 +1716,7 @@ export default { middleware: 'currentUserOrAdminOnly' }
       <a @click.prevent=deleteWidget(widget.id) href="#"><font-awesome-icon icon="trash" /></a>
     </h2>
     <p>id: {{ widget.id }}</p>
-    <p>name: {{ widget.name }}</p>
     <p>description: {{ widget.description }}</p>
-    <p>user: {{ widget.userId }}</p>
     <p v-if="widget.image !== null" class="no-margin">image:</p>
     <img v-if="widget.image !== null" :src="widget.image" />
   </article>
@@ -1727,10 +1725,17 @@ export default { middleware: 'currentUserOrAdminOnly' }
 <script>
 import { mapGetters } from 'vuex'
 export default {
+  name: 'WidgetCard',
   computed: { ...mapGetters(['isAdmin']) },
   props: {
-    widget: { type: Object, default: () => ({}) },
-    widgets: { type: Array, default: () => ([]) },
+    widget: {
+      type: Object,
+      default: () => ({}),
+    },
+    widgets: {
+      type: Array,
+      default: () => ([]),
+    },
   },
   methods: {
     uploadImage: function() {
@@ -1740,7 +1745,6 @@ export default {
       this.$axios.$delete(`widgets/${id}`)
       const index = this.widgets.findIndex((i) => { return i.id === id })
       this.widgets.splice(index, 1);
-      this.$router.push('/widgets')
     }
   }
 }
@@ -1752,7 +1756,7 @@ export default {
 ```
 <template>
   <section>
-    <div v-for="widget in userWidgets" :key="widget.id">
+    <div v-for="widget in widgets" :key="widget.id">
       <WidgetCard :widget="widget" :widgets="widgets" />
     </div>
   </section>
@@ -1760,11 +1764,11 @@ export default {
 
 <script>
 export default {
-  data: () => ({ userWidgets: [], allWidgets: [] }),
-  async fetch() { 
-    this.userWidgets = this.$store.getters.loggedInUser.widgets
-    this.allWidgets = await this.$axios.$get('widgets') 
-    // console.log(this.widgets)
+  data: () => ({
+    widgets: []
+  }),
+  async fetch() {
+    this.widgets = await this.$axios.$get('widgets')
   }
 }
 </script>
@@ -1773,38 +1777,94 @@ export default {
 - `puravida components/widget/Form.vue ~`
 ```
 <template>
-  <article>
-    <h2>
-      <NuxtLink :to="`/widgets/${widget.id}`">{{ widget.name }}</NuxtLink> 
-      <NuxtLink :to="`/widgets/${widget.id}/edit`"><font-awesome-icon icon="pencil" /></NuxtLink>
-      <a @click.prevent=deleteWidget(widget.id) href="#"><font-awesome-icon icon="trash" /></a>
-    </h2>
-    <p>id: {{ widget.id }}</p>
-    <p>name: {{ widget.name }}</p>
-    <p>description: {{ widget.description }}</p>
-    <p>user: <NuxtLink :to="`/users/${widget.userId}`">{{ widget.userName }}</NuxtLink></p>
-    <p v-if="widget.image !== null" class="no-margin">image:</p>
-    <img v-if="widget.image !== null" :src="widget.image" />
-  </article>
+  <section>
+    <h1 v-if="editOrNew === 'edit'">Edit Widget</h1>
+    <h1 v-else-if="editOrNew === 'new'">Add Widget</h1>
+    <article>
+      <form enctype="multipart/form-data">
+        <p v-if="editOrNew === 'edit'">id: {{ $route.params.id }}</p>
+        <p>Name: </p><input v-model="name">
+        <p>Description: </p><input v-model="description">
+        <p class="no-margin">Image: </p>
+        <img v-if="!hideImage && editOrNew === 'edit'" :src="image" />    
+        <input type="file" ref="inputFile" @change=uploadImage()>
+        <button v-if="editOrNew !== 'edit'" @click.prevent=createWidget>Create Widget</button>
+        <button v-else-if="editOrNew == 'edit'" @click.prevent=editWidget>Edit Widget</button>
+      </form>
+    </article>
+  </section>
 </template>
 
 <script>
 import { mapGetters } from 'vuex'
 export default {
-  computed: { ...mapGetters(['isAdmin']) },
-  props: {
-    widget: { type: Object, default: () => ({}) },
-    widgets: { type: Array, default: () => ([]) },
+  data () {
+    return {
+      name: "",
+      description: "",
+      image: "",
+      editOrNew: "",
+      hideImage: false
+    }
+  },
+  mounted() {
+    const splitPath = $nuxt.$route.path.split('/')
+    this.editOrNew = splitPath[splitPath.length-1]
+  },
+  computed: {
+    ...mapGetters(['isAuthenticated', 'isAdmin', 'loggedInUser`']),
+  },
+  async fetch() {
+    const splitPath = $nuxt.$route.path.split('/')
+    this.editOrNew = $nuxt.$route.path.split('/')[$nuxt.$route.path.split('/').length-1]
+    if ($nuxt.$route.path.split('/')[$nuxt.$route.path.split('/').length-1]=='edit') {
+      const widget = await this.$axios.$get(`widgets/${this.$route.params.id}`)
+      this.name = widget.name
+      this.description = widget.description,
+      this.image = widget.image  
+    }
   },
   methods: {
     uploadImage: function() {
-      this.image = this.$refs.inputFile.files[0];
+      this.image = this.$refs.inputFile.files[0]
+      this.hideImage = true
     },
-    deleteWidget: function(id) {
-      this.$axios.$delete(`widgets/${id}`)
-      const index = this.widgets.findIndex((i) => { return i.id === id })
-      this.widgets.splice(index, 1);
-    }
+    createWidget: function() {
+      const userId = this.$auth.$state.user.id
+      const params = {
+        'name': this.name,
+        'description': this.description,
+        'image': this.image,
+        'user_id': userId
+      }
+      let payload = new FormData()
+      Object.entries(params).forEach(
+        ([key, value]) => payload.append(key, value)
+      )
+      this.$axios.$post('widgets', payload)
+        .then((res) => {
+          const widgetId = res.id
+          this.$router.push(`/widgets/${widgetId}`)
+        })
+    },
+    editWidget: function() {
+      let params = {}
+      const filePickerFile = this.$refs.inputFile.files[0]
+      if (!filePickerFile) {
+        params = { 'name': this.name, 'description': this.description }
+      } else {
+        params = { 'name': this.name, 'description': this.description, 'image': this.image }
+      }
+    
+      let payload = new FormData()
+      Object.entries(params).forEach(
+        ([key, value]) => payload.append(key, value)
+      )
+      this.$axios.$patch(`/widgets/${this.$route.params.id}`, payload)
+        .then(() => {
+          this.$router.push(`/widgets/${this.$route.params.id}`)
+        })
+    },
   }
 }
 </script>
@@ -1819,6 +1879,10 @@ export default {
     <WidgetSet />
   </main>
 </template>
+
+<script>
+export default { middleware: 'adminOnly' }
+</script>
 ~
 ```
 - `puravida pages/widgets/new.vue ~`
@@ -1846,7 +1910,7 @@ export default {
   data: () => ({ widget: {} }),
   async fetch() { this.widget = await this.$axios.$get(`widgets/${this.$route.params.id}`) },
   methods: {
-    uploadImage: function() { this.image = this.$refs.inputFile.files[0]; },
+    uploadImage: function() { this.image = this.$refs.inputFile.files[0] },
     deleteWidget: function(id) {
       this.$axios.$delete(`widgets/${this.$route.params.id}`)
       this.$router.push('/widgets')

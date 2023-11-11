@@ -624,7 +624,7 @@ end
 ~
 EOF
 
-echo -e "\n\n🦄  Widgets\n\n"
+echo -e "\n\n🦄  Widgets (Backend)\n\n"
 rails g scaffold widget name description image:attachment user:references
 rails db:migrate
 
@@ -1027,27 +1027,27 @@ user.save!
 user = User.create(name: "Pam Beesly", email: "pambeesly@dundermifflin.com", admin: "false", password: "password")
 user.avatar.attach(io: URI.open("#{Rails.root}/app/assets/images/office-avatars/pam-beesly.png"), filename: "jim-halpert.png")
 user.save!
-# widget = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: 1)
-# widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
-# widget.save!
-# widget = Widget.create(name: "Bolts", description: "Michael's bolts", user_id: 1)
-# widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/bolts.jpg"), filename: "bolts.jpg")
-# widget.save!
-# widget = Widget.create(name: "Brackets", description: "Jim's brackets", user_id: 2)
-# widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/brackets.png"), filename: "brackets.png")
-# widget.save!
-# widget = Widget.create(name: "Nuts", description: "Jim's nuts", user_id: 2)
-# widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/nuts.jpg"), filename: "nuts.jpg")
-# widget.save!
-# widget = Widget.create(name: "Pipes", description: "Jim's pipes", user_id: 2)
-# widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/pipes.jpg"), filename: "pipes.jpg")
-# widget.save!
-# widget = Widget.create(name: "Screws", description: "Pam's screws", user_id: 3)
-# widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/screws.jpg"), filename: "screws.jpg")
-# widget.save!
-# widget = Widget.create(name: "Washers", description: "Pam's washers", user_id: 3)
-# widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/washers.jpg"), filename: "washers.jpg")
-# widget.save!
+widget = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: 1)
+widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
+widget.save!
+widget = Widget.create(name: "Bolts", description: "Michael's bolts", user_id: 1)
+widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/bolts.jpg"), filename: "bolts.jpg")
+widget.save!
+widget = Widget.create(name: "Brackets", description: "Jim's brackets", user_id: 2)
+widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/brackets.png"), filename: "brackets.png")
+widget.save!
+widget = Widget.create(name: "Nuts", description: "Jim's nuts", user_id: 2)
+widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/nuts.jpg"), filename: "nuts.jpg")
+widget.save!
+widget = Widget.create(name: "Pipes", description: "Jim's pipes", user_id: 2)
+widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/pipes.jpg"), filename: "pipes.jpg")
+widget.save!
+widget = Widget.create(name: "Screws", description: "Pam's screws", user_id: 3)
+widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/screws.jpg"), filename: "screws.jpg")
+widget.save!
+widget = Widget.create(name: "Washers", description: "Pam's washers", user_id: 3)
+widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/washers.jpg"), filename: "washers.jpg")
+widget.save!
 ~
 EOF
 rails db:seed
@@ -1440,168 +1440,233 @@ export default { middleware: 'currentUserOrAdminOnly' }
 ~
 EOF
 
-# echo -e "\n\n🦄 Widgets\n\n"
-# cat <<'EOF' | puravida components/widget/Card.vue ~
-# <template>
-#   <article>
-#     <h2>
-#       <NuxtLink :to="`/widgets/${widget.id}`">{{ widget.name }}</NuxtLink> 
-#       <NuxtLink :to="`/widgets/${widget.id}/edit`"><font-awesome-icon icon="pencil" /></NuxtLink>
-#       <a @click.prevent=deleteWidget(widget.id) href="#"><font-awesome-icon icon="trash" /></a>
-#     </h2>
-#     <p>id: {{ widget.id }}</p>
-#     <p>name: {{ widget.name }}</p>
-#     <p>description: {{ widget.description }}</p>
-#     <p>user: {{ widget.userId }}</p>
-#     <p v-if="widget.image !== null" class="no-margin">image:</p>
-#     <img v-if="widget.image !== null" :src="widget.image" />
-#   </article>
-# </template>
 
-# <script>
-# import { mapGetters } from 'vuex'
-# export default {
-#   computed: { ...mapGetters(['isAdmin']) },
-#   props: {
-#     widget: { type: Object, default: () => ({}) },
-#     widgets: { type: Array, default: () => ([]) },
-#   },
-#   methods: {
-#     uploadImage: function() {
-#       this.image = this.$refs.inputFile.files[0];
-#     },
-#     deleteWidget: function(id) {
-#       this.$axios.$delete(`widgets/${id}`)
-#       const index = this.widgets.findIndex((i) => { return i.id === id })
-#       this.widgets.splice(index, 1);
-#       this.$router.push('/widgets')
-#     }
-#   }
-# }
-# </script>
-# ~
-# EOF
-# cat <<'EOF' | puravida components/widget/Set.vue ~
-# <template>
-#   <section>
-#     <div v-for="widget in userWidgets" :key="widget.id">
-#       <WidgetCard :widget="widget" :widgets="widgets" />
-#     </div>
-#   </section>
-# </template>
+echo -e "\n\n🦄 Widgets\n\n"
+cat <<'EOF' | puravida components/widget/Card.vue ~
+<template>
+  <article>
+    <h2>
+      <NuxtLink :to="`/widgets/${widget.id}`">{{ widget.name }}</NuxtLink> 
+      <NuxtLink :to="`/widgets/${widget.id}/edit`"><font-awesome-icon icon="pencil" /></NuxtLink>
+      <a @click.prevent=deleteWidget(widget.id) href="#"><font-awesome-icon icon="trash" /></a>
+    </h2>
+    <p>id: {{ widget.id }}</p>
+    <p>description: {{ widget.description }}</p>
+    <p v-if="widget.image !== null" class="no-margin">image:</p>
+    <img v-if="widget.image !== null" :src="widget.image" />
+  </article>
+</template>
 
-# <script>
-# export default {
-#   data: () => ({ userWidgets: [], allWidgets: [] }),
-#   async fetch() { 
-#     this.userWidgets = this.$store.getters.loggedInUser.widgets
-#     this.allWidgets = await this.$axios.$get('widgets') 
-#     // console.log(this.widgets)
-#   }
-# }
-# </script>
-# ~
-# EOF
+<script>
+import { mapGetters } from 'vuex'
+export default {
+  name: 'WidgetCard',
+  computed: { ...mapGetters(['isAdmin']) },
+  props: {
+    widget: {
+      type: Object,
+      default: () => ({}),
+    },
+    widgets: {
+      type: Array,
+      default: () => ([]),
+    },
+  },
+  methods: {
+    uploadImage: function() {
+      this.image = this.$refs.inputFile.files[0];
+    },
+    deleteWidget: function(id) {
+      this.$axios.$delete(`widgets/${id}`)
+      const index = this.widgets.findIndex((i) => { return i.id === id })
+      this.widgets.splice(index, 1);
+    }
+  }
+}
+</script>
+~
+EOF
+cat <<'EOF' | puravida components/widget/Set.vue ~
+<template>
+  <section>
+    <div v-for="widget in widgets" :key="widget.id">
+      <WidgetCard :widget="widget" :widgets="widgets" />
+    </div>
+  </section>
+</template>
 
-# cat <<'EOF' | puravida components/widget/Form.vue ~
-# <template>
-#   <article>
-#     <h2>
-#       <NuxtLink :to="`/widgets/${widget.id}`">{{ widget.name }}</NuxtLink> 
-#       <NuxtLink :to="`/widgets/${widget.id}/edit`"><font-awesome-icon icon="pencil" /></NuxtLink>
-#       <a @click.prevent=deleteWidget(widget.id) href="#"><font-awesome-icon icon="trash" /></a>
-#     </h2>
-#     <p>id: {{ widget.id }}</p>
-#     <p>name: {{ widget.name }}</p>
-#     <p>description: {{ widget.description }}</p>
-#     <p>user: <NuxtLink :to="`/users/${widget.userId}`">{{ widget.userName }}</NuxtLink></p>
-#     <p v-if="widget.image !== null" class="no-margin">image:</p>
-#     <img v-if="widget.image !== null" :src="widget.image" />
-#   </article>
-# </template>
+<script>
+export default {
+  data: () => ({
+    widgets: []
+  }),
+  async fetch() {
+    this.widgets = await this.$axios.$get('widgets')
+  }
+}
+</script>
+~
+EOF
 
-# <script>
-# import { mapGetters } from 'vuex'
-# export default {
-#   computed: { ...mapGetters(['isAdmin']) },
-#   props: {
-#     widget: { type: Object, default: () => ({}) },
-#     widgets: { type: Array, default: () => ([]) },
-#   },
-#   methods: {
-#     uploadImage: function() {
-#       this.image = this.$refs.inputFile.files[0];
-#     },
-#     deleteWidget: function(id) {
-#       this.$axios.$delete(`widgets/${id}`)
-#       const index = this.widgets.findIndex((i) => { return i.id === id })
-#       this.widgets.splice(index, 1);
-#     }
-#   }
-# }
-# </script>
-# ~
-# EOF
+cat <<'EOF' | puravida components/widget/Form.vue ~
+<template>
+  <section>
+    <h1 v-if="editOrNew === 'edit'">Edit Widget</h1>
+    <h1 v-else-if="editOrNew === 'new'">Add Widget</h1>
+    <article>
+      <form enctype="multipart/form-data">
+        <p v-if="editOrNew === 'edit'">id: {{ $route.params.id }}</p>
+        <p>Name: </p><input v-model="name">
+        <p>Description: </p><input v-model="description">
+        <p class="no-margin">Image: </p>
+        <img v-if="!hideImage && editOrNew === 'edit'" :src="image" />    
+        <input type="file" ref="inputFile" @change=uploadImage()>
+        <button v-if="editOrNew !== 'edit'" @click.prevent=createWidget>Create Widget</button>
+        <button v-else-if="editOrNew == 'edit'" @click.prevent=editWidget>Edit Widget</button>
+      </form>
+    </article>
+  </section>
+</template>
+
+<script>
+import { mapGetters } from 'vuex'
+export default {
+  data () {
+    return {
+      name: "",
+      description: "",
+      image: "",
+      editOrNew: "",
+      hideImage: false
+    }
+  },
+  mounted() {
+    const splitPath = $nuxt.$route.path.split('/')
+    this.editOrNew = splitPath[splitPath.length-1]
+  },
+  computed: {
+    ...mapGetters(['isAuthenticated', 'isAdmin', 'loggedInUser`']),
+  },
+  async fetch() {
+    const splitPath = $nuxt.$route.path.split('/')
+    this.editOrNew = $nuxt.$route.path.split('/')[$nuxt.$route.path.split('/').length-1]
+    if ($nuxt.$route.path.split('/')[$nuxt.$route.path.split('/').length-1]=='edit') {
+      const widget = await this.$axios.$get(`widgets/${this.$route.params.id}`)
+      this.name = widget.name
+      this.description = widget.description,
+      this.image = widget.image  
+    }
+  },
+  methods: {
+    uploadImage: function() {
+      this.image = this.$refs.inputFile.files[0]
+      this.hideImage = true
+    },
+    createWidget: function() {
+      const userId = this.$auth.$state.user.id
+      const params = {
+        'name': this.name,
+        'description': this.description,
+        'image': this.image,
+        'user_id': userId
+      }
+      let payload = new FormData()
+      Object.entries(params).forEach(
+        ([key, value]) => payload.append(key, value)
+      )
+      this.$axios.$post('widgets', payload)
+        .then((res) => {
+          const widgetId = res.id
+          this.$router.push(`/widgets/${widgetId}`)
+        })
+    },
+    editWidget: function() {
+      let params = {}
+      const filePickerFile = this.$refs.inputFile.files[0]
+      if (!filePickerFile) {
+        params = { 'name': this.name, 'description': this.description }
+      } else {
+        params = { 'name': this.name, 'description': this.description, 'image': this.image }
+      }
+    
+      let payload = new FormData()
+      Object.entries(params).forEach(
+        ([key, value]) => payload.append(key, value)
+      )
+      this.$axios.$patch(`/widgets/${this.$route.params.id}`, payload)
+        .then(() => {
+          this.$router.push(`/widgets/${this.$route.params.id}`)
+        })
+    },
+  }
+}
+</script>
+~
+EOF
 
 
-# cat <<'EOF' | puravida pages/widgets/index.vue ~
-# <template>
-#   <main class="container">
-#     <h1>Widgets</h1>
-#     <NuxtLink to="/widgets/new" role="button">Add Widget</NuxtLink>
-#     <WidgetSet />
-#   </main>
-# </template>
-# ~
-# EOF
+cat <<'EOF' | puravida pages/widgets/index.vue ~
+<template>
+  <main class="container">
+    <h1>Widgets</h1>
+    <NuxtLink to="/widgets/new" role="button">Add Widget</NuxtLink>
+    <WidgetSet />
+  </main>
+</template>
 
-# cat <<'EOF' | puravida pages/widgets/new.vue ~
-# <template>
-#   <main class="container">
-#     <WidgetForm />
-#   </main>
-# </template>
-# ~
-# EOF
+<script>
+export default { middleware: 'adminOnly' }
+</script>
+~
+EOF
 
-# cat <<'EOF' | puravida pages/widgets/_id/index.vue ~
-# <template>
-#   <main class="container">
-#     <section>
-#       <WidgetCard :widget="widget" />
-#     </section>
-#   </main>
-# </template>
+cat <<'EOF' | puravida pages/widgets/new.vue ~
+<template>
+  <main class="container">
+    <WidgetForm />
+  </main>
+</template>
+~
+EOF
 
-# <script>
-# export default {
-#   middleware: 'currentUserOrAdminOnly',
-#   data: () => ({ widget: {} }),
-#   async fetch() { this.widget = await this.$axios.$get(`widgets/${this.$route.params.id}`) },
-#   methods: {
-#     uploadImage: function() { this.image = this.$refs.inputFile.files[0]; },
-#     deleteWidget: function(id) {
-#       this.$axios.$delete(`widgets/${this.$route.params.id}`)
-#       this.$router.push('/widgets')
-#     }
-#   }
-# }
-# </script>
-# ~
-# EOF
+cat <<'EOF' | puravida pages/widgets/_id/index.vue ~
+<template>
+  <main class="container">
+    <section>
+      <WidgetCard :widget="widget" />
+    </section>
+  </main>
+</template>
 
-# cat <<'EOF' | puravida pages/widgets/_id/edit.vue ~
-# <template>
-#   <main class="container">
-#     <WidgetForm />
-#   </main>
-# </template>
+<script>
+export default {
+  middleware: 'currentUserOrAdminOnly',
+  data: () => ({ widget: {} }),
+  async fetch() { this.widget = await this.$axios.$get(`widgets/${this.$route.params.id}`) },
+  methods: {
+    uploadImage: function() { this.image = this.$refs.inputFile.files[0] },
+    deleteWidget: function(id) {
+      this.$axios.$delete(`widgets/${this.$route.params.id}`)
+      this.$router.push('/widgets')
+    }
+  }
+}
+</script>
+~
+EOF
 
-# <script>
-# export default { middleware: 'currentUserOrAdminOnly' }
-# </script>
-# ~
-# EOF
+cat <<'EOF' | puravida pages/widgets/_id/edit.vue ~
+<template>
+  <main class="container">
+    <WidgetForm />
+  </main>
+</template>
+
+<script>
+export default { middleware: 'currentUserOrAdminOnly' }
+</script>
+~
+EOF
 
 
 echo -e "\n\n🦄 Nav\n\n"
