@@ -1331,6 +1331,27 @@ function isShowPage(url) {
 }
 ~
 ```
+- `puravida middleware/widgets.js ~`
+```
+export default function ({ route, store, redirect }) {
+  const { isAdmin, loggedInUser } = store.getters
+
+  const query = route.query
+  const isAdminRequest = query['admin'] ? true : false
+  const isUserIdRequest = query['user_id'] ? true : false
+  const isQueryEmpty = Object.keys(query).length === 0 ? true : false
+  const userIdRequestButNotAdmin = isUserIdRequest && !isAdmin
+  const isCurrentUsersWidgets = parseInt(query['user_id']) === loggedInUser.id ? true : false
+
+  if (isAdminRequest || isQueryEmpty && !isAdmin) {
+    return redirect('/')
+  } else if (userIdRequestButNotAdmin && !isCurrentUsersWidgets) {
+    return redirect('/widgets?user_id=' + loggedInUser.id)
+  }
+
+}
+~
+```
 - `puravida plugins/fontawesome.js ~`
 ```
 import Vue from 'vue'
@@ -1658,8 +1679,16 @@ export default {
     widgets: []
   }),
   async fetch() {
-    if (this.isAdmin) {
+    const query = this.$store.$auth.ctx.query
+    const adminQuery = query.admin
+    const idQuery = query.user_id
+    
+    if (this.isAdmin && adminQuery) {
       this.widgets = await this.$axios.$get('widgets')
+    } else if (idQuery) {
+      this.widgets = await this.$axios.$get('widgets', {
+        params: { user_id: idQuery }
+      })
     } else {
       this.widgets = await this.$axios.$get('widgets', {
         params: { user_id: this.loggedInUser.id }
@@ -1775,6 +1804,9 @@ export default {
     <WidgetSet />
   </main>
 </template>
+<script>
+export default { middleware: 'widgets' }
+</script>
 ~
 ```
 - `puravida pages/widgets/new.vue ~`
@@ -1848,7 +1880,7 @@ export default { middleware: 'currentOrAdmin-ShowEdit' }
     <ul class="menu">
       <li v-if="!isAuthenticated"><strong><NuxtLink to="/log-in">Log In</NuxtLink></strong></li>
       <li v-if="!isAuthenticated"><strong><NuxtLink to="/sign-up">Sign Up</NuxtLink></strong></li>
-      <li v-if="isAuthenticated"><strong><NuxtLink to="/widgets">Widgets</NuxtLink></strong></li>
+      <li v-if="isAuthenticated"><strong><NuxtLink :to="`/widgets?user_id=${loggedInUser.id}`">Widgets</NuxtLink></strong></li>
       <li v-if="isAdmin"><strong><NuxtLink to="/admin">Admin</NuxtLink></strong></li>
       <li v-if="isAuthenticated" class='dropdown'>
         <details role="list" dir="rtl">
@@ -2230,7 +2262,7 @@ export const getters = {
     <p>Number of users: {{ this.users.length }}</p>
     <p>Number of admins: {{ (this.users.filter((obj) => obj.admin === true)).length }}</p>
     <p><NuxtLink to="/users">Users</NuxtLink></p>
-    <p><NuxtLink to="/admin/widgets">Widgets</NuxtLink></p>
+    <p><NuxtLink to="/widgets?admin=true">Widgets</NuxtLink></p>
   </main>
 </template>
 
