@@ -1879,10 +1879,6 @@ export default {
     <WidgetSet />
   </main>
 </template>
-
-<script>
-export default { middleware: 'adminOnly' }
-</script>
 ~
 ```
 - `puravida pages/widgets/new.vue ~`

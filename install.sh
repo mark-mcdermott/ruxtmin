@@ -1613,10 +1613,6 @@ cat <<'EOF' | puravida pages/widgets/index.vue ~
     <WidgetSet />
   </main>
 </template>
-
-<script>
-export default { middleware: 'adminOnly' }
-</script>
 ~
 EOF
 
