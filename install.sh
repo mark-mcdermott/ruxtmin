@@ -1268,7 +1268,7 @@ export default function ({ route, store, redirect }) {
   const userIdRequestButNotAdmin = isUserIdRequest && !isAdmin
   const isCurrentUsersWidgets = parseInt(query['user_id']) === loggedInUser.id ? true : false
 
-  if (isAdminRequest || isQueryEmpty && !isAdmin) {
+  if ((isAdminRequest || isQueryEmpty) && !isAdmin) {
     return redirect('/')
   } else if (userIdRequestButNotAdmin && !isCurrentUsersWidgets) {
     return redirect('/widgets?user_id=' + loggedInUser.id)
@@ -2513,15 +2513,62 @@ describe('Admin /users page', () => {
   })
 })
 
-describe('Admin /widgets page', () => {
-  it('Should show three users', () => {
-    cy.loginAdmin()
-    cy.url().should('match', /http:\/\/localhost:3001\/users\/1/)
-    cy.visit('http://localhost:3001/widgets')
-    cy.url().should('match', /http:\/\/localhost:3001\/widgets/)
-    cy.get('section').children('div').should('have.length', 7)
-    cy.logoutAdmin()
+describe('Admin visiting /widgets', () => {
+
+  context('No query string', () => {
+    it("Should show admin's two widgets", () => {
+      cy.loginAdmin()
+      cy.url().should('match', /http:\/\/localhost:3001\/users\/1/)
+      cy.visit('http://localhost:3001/widgets')
+      cy.url().should('match', /http:\/\/localhost:3001\/widgets/)
+      cy.get('section').children('div').should('have.length', 2)
+      cy.get('article').eq(0).find('h2').should('contain', 'Wrenches')
+      cy.get('article').eq(0).should('contain', "Michael's wrenches")
+      cy.get('article').eq(1).find('h2').should('contain', 'Bolts')
+      cy.get('article').eq(1).should('contain', "Michael's bolts")
+      cy.logoutAdmin()
+    })
   })
+
+
+  context('?admin=true query string', () => {
+    it("Should show all widgets", () => {
+      cy.loginAdmin()
+      cy.url().should('match', /http:\/\/localhost:3001\/users\/1/)
+      cy.visit('http://localhost:3001/widgets?admin=true')
+      cy.url().should('match', /http:\/\/localhost:3001\/widgets\?admin=true/)
+      cy.get('section').children('div').should('have.length', 7)
+      cy.logoutAdmin()
+    })
+  })
+
+  context('user_id=1 query string', () => {
+    it("Should show user one's two widgets", () => {
+      cy.loginAdmin()
+      cy.url().should('match', /http:\/\/localhost:3001\/users\/1/)
+      cy.visit('http://localhost:3001/widgets?user_id=1')
+      cy.url().should('match', /http:\/\/localhost:3001\/widgets\?user_id=1/)
+      cy.get('section').children('div').should('have.length', 2)
+      cy.get('article').eq(0).should('contain', "Michael's wrenches")
+      cy.get('article').eq(1).should('contain', "Michael's bolts")
+      cy.logoutAdmin()
+    })
+  })
+
+  context('user_id=2 query string', () => {
+    it("Should show user two's three widgets", () => {
+      cy.loginAdmin()
+      cy.url().should('match', /http:\/\/localhost:3001\/users\/1/)
+      cy.visit('http://localhost:3001/widgets?user_id=2')
+      cy.url().should('match', /http:\/\/localhost:3001\/widgets\?user_id=2/)
+      cy.get('section').children('div').should('have.length', 3)
+      cy.get('article').eq(0).should('contain', "Jim's brackets")
+      cy.get('article').eq(1).should('contain', "Jim's nuts")
+      cy.get('article').eq(2).should('contain', "Jim's pipes")
+      cy.logoutAdmin()
+    })
+  })
+  
 })
 ~
 EOF
@@ -2641,6 +2688,66 @@ describe('Edit self as non-admin', () => {
     cy.get('p').contains('avatar:').next('img').should('have.attr', 'src').should('match', /http.*jim-halpert.png/)
     cy.get('p').contains('admin').should('not.exist')
     cy.logoutNonAdmin()
+  })
+})
+
+describe('Non-admin visiting /widgets', () => {
+  context('No query string', () => {
+    it("Should redirect to home", () => {
+      cy.loginNonAdmin()
+      cy.url().should('match', /http:\/\/localhost:3001\/users\/2/)
+      cy.visit('http://localhost:3001/widgets')
+      cy.url().should('match', /http:\/\/localhost:3001\//)
+      cy.logoutNonAdmin()
+    })
+  })
+  context('?admin=true query string', () => {
+    it("Should redirect to home", () => {
+      cy.loginNonAdmin()
+      cy.url().should('match', /http:\/\/localhost:3001\/users\/2/)
+      cy.visit('http://localhost:3001/widgets?admin=true')
+      cy.url().should('match', /http:\/\/localhost:3001\//)
+      cy.logoutNonAdmin()
+    })
+  })
+  context('?user_id=1 query string', () => {
+    it("Should redirect to to ?user_id=2", () => {
+      cy.loginNonAdmin()
+      cy.url().should('match', /http:\/\/localhost:3001\/users\/2/)
+      cy.visit('http://localhost:3001/widgets?user_id=1')
+      cy.url().should('match', /http:\/\/localhost:3001\/widgets\?user_id=2/)
+      cy.get('article').should('have.length', 3)
+      cy.get('article').eq(0).should('contain', "Jim's brackets")
+      cy.get('article').eq(1).should('contain', "Jim's nuts")
+      cy.get('article').eq(2).should('contain', "Jim's pipes")
+      cy.logoutNonAdmin()
+    })
+  })
+  context('?user_id=2 query string', () => {
+    it("Should show user's three widgets", () => {
+      cy.loginNonAdmin()
+      cy.url().should('match', /http:\/\/localhost:3001\/users\/2/)
+      cy.visit('http://localhost:3001/widgets?user_id=2')
+      cy.url().should('match', /http:\/\/localhost:3001\/widgets\?user_id=2/)
+      cy.get('article').should('have.length', 3)
+      cy.get('article').eq(0).should('contain', "Jim's brackets")
+      cy.get('article').eq(1).should('contain', "Jim's nuts")
+      cy.get('article').eq(2).should('contain', "Jim's pipes")
+      cy.logoutNonAdmin()
+    })
+  })
+  context('?user_id=3 query string', () => {
+    it("Should redirect to to ?user_id=2", () => {
+      cy.loginNonAdmin()
+      cy.url().should('match', /http:\/\/localhost:3001\/users\/2/)
+      cy.visit('http://localhost:3001/widgets?user_id=3')
+      cy.url().should('match', /http:\/\/localhost:3001\/widgets\?user_id=2/)
+      cy.get('article').should('have.length', 3)
+      cy.get('article').eq(0).should('contain', "Jim's brackets")
+      cy.get('article').eq(1).should('contain', "Jim's nuts")
+      cy.get('article').eq(2).should('contain', "Jim's pipes")
+      cy.logoutNonAdmin()
+    })
   })
 })
 ~
