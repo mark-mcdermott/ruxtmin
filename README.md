@@ -2593,6 +2593,17 @@ describe('Admin /users page', () => {
     cy.logoutAdmin()
   })
 })
+
+describe('Admin /widgets page', () => {
+  it('Should show three users', () => {
+    cy.loginAdmin()
+    cy.url().should('match', /http:\/\/localhost:3001\/users\/1/)
+    cy.visit('http://localhost:3001/widgets')
+    cy.url().should('match', /http:\/\/localhost:3001\/widgets/)
+    cy.get('section').children('div').should('have.length', 7)
+    cy.logoutAdmin()
+  })
+})
 ~
 ```
 - `puravida cypress/e2e/non-admin.cy.js ~`
