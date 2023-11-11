@@ -763,7 +763,7 @@ RSpec.describe "/widgets", type: :request do
   let(:uploaded_image) { Rack::Test::UploadedFile.new uploaded_image_path, 'image/png' }
 
   describe "GET /index" do
-    context "with valid auth header" do
+    context "with valid auth header (non-admin user)" do
       it "renders a successful response" do
         user1 = User.create! valid_create_user_1_params
         user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
@@ -807,6 +807,61 @@ RSpec.describe "/widgets", type: :request do
         expect(JSON.parse(response.body)[1]['image']).to eq(nil)
         expect(JSON.parse(response.body)[1]['userId']).to eq(user1.id)
       end
+
+      it "gets user one's widgets" do
+        user1 = User.create! valid_create_user_1_params
+        user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
+        user1.save!
+        user2 = User.create! valid_create_user_2_params
+        widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
+        widget1.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
+        widget1.save!
+        widget2 = Widget.create(name: "Bolts", description: "Michael's bolts", user_id: user1.id)
+        widget3 = Widget.create(name: "test3", description: "test3", user_id: user2.id)
+        widget3 = Widget.create(name: "test4", description: "test4", user_id: user2.id)
+        header = header_from_user(user2,valid_user_2_login_params)
+        get widgets_url, params: { user_id: user1.id }, headers: header
+        expect(response).to be_successful
+        expect(JSON.parse(response.body).length).to eq 2
+        expect(JSON.parse(response.body)[0]).to include("id","name","description","image","userId")
+        expect(JSON.parse(response.body)[0]['name']).to eq("Wrenches")
+        expect(JSON.parse(response.body)[0]['description']).to eq("Michael's wrenches")
+        expect(JSON.parse(response.body)[0]['image']).to match(/http.*\/allen-wrenches\.jpg/)
+        expect(JSON.parse(response.body)[0]['userId']).to eq(user1.id)
+        expect(JSON.parse(response.body)[1]).to include("id","name","description","image","userId")
+        expect(JSON.parse(response.body)[1]['name']).to eq("Bolts")
+        expect(JSON.parse(response.body)[1]['description']).to eq("Michael's bolts")
+        expect(JSON.parse(response.body)[1]['image']).to eq(nil)
+        expect(JSON.parse(response.body)[1]['userId']).to eq(user1.id)
+      end
+
+      it "gets user two's widgets" do
+        user1 = User.create! valid_create_user_1_params
+        user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
+        user1.save!
+        user2 = User.create! valid_create_user_2_params
+        widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
+        widget1.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
+        widget1.save!
+        widget2 = Widget.create(name: "Bolts", description: "Michael's bolts", user_id: user1.id)
+        widget3 = Widget.create(name: "test3", description: "test3", user_id: user2.id)
+        widget3 = Widget.create(name: "test4", description: "test4", user_id: user2.id)
+        header = header_from_user(user2,valid_user_2_login_params)
+        get widgets_url, params: { user_id: user2.id }, headers: header
+        expect(response).to be_successful
+        expect(JSON.parse(response.body).length).to eq 2
+        expect(JSON.parse(response.body)[0]).to include("id","name","description","image","userId")
+        expect(JSON.parse(response.body)[0]['name']).to eq("test3")
+        expect(JSON.parse(response.body)[0]['description']).to eq("test3")
+        expect(JSON.parse(response.body)[0]['userId']).to eq(user2.id)
+        expect(JSON.parse(response.body)[0]['image']).to eq(nil)
+        expect(JSON.parse(response.body)[1]).to include("id","name","description","image","userId")
+        expect(JSON.parse(response.body)[1]['name']).to eq("test4")
+        expect(JSON.parse(response.body)[1]['description']).to eq("test4")
+        expect(JSON.parse(response.body)[1]['image']).to eq(nil)
+        expect(JSON.parse(response.body)[1]['userId']).to eq(user2.id)
+      end
+
     end
 
     context "with invalid auth header" do
