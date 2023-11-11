@@ -692,7 +692,7 @@ class WidgetsController < ApplicationController
   # GET /widgets
   def index
     if params['user_id'].present?
-      @widgets = Widget.where(user_id: params['user_id']) { |widget| prep_raw_widget(widget) }
+      @widgets = Widget.where(user_id: params['user_id']).map { |widget| prep_raw_widget(widget) }
     else
       @widgets = Widget.all.map { |widget| prep_raw_widget(widget) }
     end
