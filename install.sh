@@ -1505,12 +1505,20 @@ cat <<'EOF' | puravida components/widget/Set.vue ~
 </template>
 
 <script>
+import { mapGetters } from 'vuex'
 export default {
+  computed: { ...mapGetters(['isAuthenticated', 'isAdmin', 'loggedInUser']) }, 
   data: () => ({
     widgets: []
   }),
   async fetch() {
-    this.widgets = await this.$axios.$get('widgets')
+    if (this.isAdmin) {
+      this.widgets = await this.$axios.$get('widgets')
+    } else {
+      this.widgets = await this.$axios.$get('widgets', {
+        params: { user_id: this.loggedInUser.id }
+      })
+    }
   }
 }
 </script>
