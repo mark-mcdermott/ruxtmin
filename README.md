@@ -2326,7 +2326,6 @@ export default {
   - close the cypress UI window
   - press `control + c`
 - close cypress UI
-- `rails db:drop db:create db:migrate db:seed RAILS_ENV=test`
 - `puravida cypress/fixtures/images`
 - paste the `office-avatars` folder into `cypress/fixtures/images`
 - `puravida cypress/support/commands.js ~`
