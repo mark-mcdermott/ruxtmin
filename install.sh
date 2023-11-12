@@ -1110,6 +1110,7 @@ widget.save!
 ~
 EOF
 rails db:seed
+
 rm -rf spec/factories
 rm -rf spec/models
 rm -rf spec/routing
@@ -1834,16 +1835,7 @@ html, body
   height: 100%
 
 .top-nav 
-  // display: flex
-  // flex-direction: row
-  // align-items: center
-  // justify-content: space-between
-  // background-color: #00BAF0
-  // background: linear-gradient(to left, #f46b45, #eea849)
-  /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
-  // color: #FFF
   height: 50px
-  // padding: 1em
 
 .top-nav > ul 
   margin-top: 15px
@@ -2196,29 +2188,12 @@ export default {
 </script>
 ~
 EOF
-# cat <<'EOF' | puravida pages/admin/widgets.vue ~
-# <template>
-#   <main class="container">
-#     <h1>Widgets</h1>
-#     <NuxtLink to="/users/new" role="button">Add Widgets</NuxtLink>
-#     <WidgetSet />
-#   </main>
-# </template>
-
-# <script>
-# export default {
-#   middleware: 'adminOnly'
-# }
-# </script>
-# ~
-# EOF
 
 
 echo -e "\n\n🦄 Cypress\n\n"
 cd ~/Desktop/front
 npm install cypress --save-dev
 npx cypress open
-rails db:drop db:create db:migrate db:seed RAILS_ENV=test
 puravida cypress/fixtures/images
 cp -a ~/Desktop/ruxtmin/assets/images/office-avatars ~/Desktop/front/cypress/fixtures/images
 
