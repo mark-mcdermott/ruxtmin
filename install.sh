@@ -1072,57 +1072,57 @@ echo -e "\n\n🦄  Subwidgets (Backend)\n\n"
 rails g scaffold subwidget name description image:attachment widget:references
 rails db:migrate
 cat <<'EOF' | puravida app/controllers/subwidgets_controller.rb ~
-class WidgetsController < ApplicationController
-  before_action :set_widget, only: %i[ show update destroy ]
+class SubwidgetsController < ApplicationController
+  before_action :set_subwidget, only: %i[ show update destroy ]
 
-  # GET /widgets
+  # GET /subwidgets
   def index
     if params['user_id'].present?
-      @widgets = Widget.where(user_id: params['user_id']).map { |widget| prep_raw_widget(widget) }
+      @subwidgets = Subwidget.where(user_id: params['user_id']).map { |subwidget| prep_raw_subwidget(subwidget) }
     else
-      @widgets = Widget.all.map { |widget| prep_raw_widget(widget) }
+      @subwidgets = Subwidget.all.map { |subwidget| prep_raw_subwidget(subwidget) }
     end
-    render json: @widgets
+    render json: @subwidget
   end
 
-  # GET /widgets/1
+  # GET /subwidgets/1
   def show
-    render json: prep_raw_widget(@widget)
+    render json: prep_raw_subwidget(@subwidget)
   end
 
-  # POST /widgets
+  # POST /subwidgets
   def create
-    @widget = Widget.new(widget_params)
-    if @widget.save
-      render json: prep_raw_widget(@widget), status: :created, location: @widget
+    @subwidget = Subwidget.new(subwidget_params)
+    if @subwidgets.save
+      render json: prep_raw_subwidget(@subwidget), status: :created, location: @subwidget
     else
-      render json: @widget.errors, status: :unprocessable_entity
+      render json: @subwidget.errors, status: :unprocessable_entity
     end
   end
 
-  # PATCH/PUT /widgets/1
+  # PATCH/PUT /subwidgets/1
   def update
-    if @widget.update(widget_params)
-      render json: prep_raw_widget(@widget)
+    if @subwidget.update(subwidget_params)
+      render json: prep_raw_subwidget(@subwidget)
     else
-      render json: @widget.errors, status: :unprocessable_entity
+      render json: @subwidget.errors, status: :unprocessable_entity
     end
   end
 
-  # DELETE /widgets/1
+  # DELETE /subwidgets/1
   def destroy
-    @widget.destroy
+    @subwidget.destroy
   end
 
   private
     # Use callbacks to share common setup or constraints between actions.
-    def set_widget
-      @widget = Widget.find(params[:id])
+    def set_subwidget
+      @subwidget = Subwidget.find(params[:id])
     end
 
     # Only allow a list of trusted parameters through.
-    def widget_params
-      params['image'] = params['image'].blank? ? nil : params['image'] # if no image is chosen on new widget page, params['image'] comes in as a blank string, which throws a 500 error at User.new(user_params). This changes any params['avatar'] blank string to nil, which is fine in User.new(user_params).
+    def subwidget_params
+      params['image'] = params['image'].blank? ? nil : params['image'] # if no image is chosen on new subwidget page, params['image'] comes in as a blank string, which throws a 500 error at User.new(user_params). This changes any params['avatar'] blank string to nil, which is fine in User.new(user_params).
       params.permit(:name, :description, :image, :user_id)
     end
 end
