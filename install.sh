@@ -1554,7 +1554,7 @@ subwidget = Subwidget.create(name: "Sub-Buzzer", description: "Michael's bolt's 
 subwidget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/subwidgets/buzzer.jpg"), filename: "buzzer.jpg")
 subwidget.save!
 subwidget = Subwidget.create(name: "Sub-Capacitor", description: "Jim's bracket's capacitor", widget_id: 3)
-subwidget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/subwidgets/capacitor.png"), filename: "capacitor.png")
+subwidget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/subwidgets/capacitor.jpg"), filename: "capacitor.jpg")
 subwidget.save!
 subwidget = Subwidget.create(name: "Sub-Dipswitch", description: "Jim's nut's dipswitch", widget_id: 4)
 subwidget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/subwidgets/dip.jpg"), filename: "dip.jpg")
@@ -1563,7 +1563,7 @@ subwidget = Subwidget.create(name: "Sub-Led", description: "Jim's pipe's led", w
 subwidget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/subwidgets/led.jpg"), filename: "led.jpg")
 subwidget.save!
 subwidget = Subwidget.create(name: "Sub-Relay", description: "Pam's screw's relay", widget_id: 6)
-subwidget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/subwidgets/relay.jpg"), filename: "relay.jpg")
+subwidget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/subwidgets/relay.png"), filename: "relay.png")
 subwidget.save!
 subwidget = Subwidget.create(name: "Sub-Resistor", description: "Pam's washer's resistor", widget_id: 7)
 subwidget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/subwidgets/resistor.jpg"), filename: "resistor.jpg")
