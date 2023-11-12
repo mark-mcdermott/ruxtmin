@@ -2592,6 +2592,7 @@ export default { middleware: 'currentOrAdmin-ShowEdit' }
       <li v-if="!isAuthenticated"><strong><NuxtLink to="/log-in">Log In</NuxtLink></strong></li>
       <li v-if="!isAuthenticated"><strong><NuxtLink to="/sign-up">Sign Up</NuxtLink></strong></li>
       <li v-if="isAuthenticated"><strong><NuxtLink :to="`/widgets?user_id=${loggedInUser.id}`">Widgets</NuxtLink></strong></li>
+      <li v-if="isAuthenticated"><strong><NuxtLink to="/subwidgets">Subwidgets</NuxtLink></strong></li>
       <li v-if="isAdmin"><strong><NuxtLink to="/admin">Admin</NuxtLink></strong></li>
       <li v-if="isAuthenticated" class='dropdown'>
         <details role="list" dir="rtl">
