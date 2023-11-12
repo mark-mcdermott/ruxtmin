@@ -2097,7 +2097,7 @@ html, body
       <p><span>database:</span> Postgres</p>
       <p><span>styles:</span> Sass</p>
       <p><span>css framework:</span> Pico.css</p>
-      <p><span>e2d tests:</span> Cypress</p>
+      <p><span>e2e tests:</span> Cypress</p>
       <p><span>api tests:</span> RSpec</p>
     </div>
 
