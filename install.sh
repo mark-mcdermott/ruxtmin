@@ -1526,27 +1526,57 @@ user.save!
 user = User.create(name: "Pam Beesly", email: "pambeesly@dundermifflin.com", admin: "false", password: "password")
 user.avatar.attach(io: URI.open("#{Rails.root}/app/assets/images/office-avatars/pam-beesly.png"), filename: "jim-halpert.png")
 user.save!
-widget = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: 1)
+widget = Widget.create(name: "Wrenches", description: "Michael's wrench", user_id: 1)
 widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
 widget.save!
-widget = Widget.create(name: "Bolts", description: "Michael's bolts", user_id: 1)
+widget = Widget.create(name: "Bolts", description: "Michael's bolt", user_id: 1)
 widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/bolts.jpg"), filename: "bolts.jpg")
 widget.save!
-widget = Widget.create(name: "Brackets", description: "Jim's brackets", user_id: 2)
+widget = Widget.create(name: "Brackets", description: "Jim's bracket", user_id: 2)
 widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/brackets.png"), filename: "brackets.png")
 widget.save!
-widget = Widget.create(name: "Nuts", description: "Jim's nuts", user_id: 2)
+widget = Widget.create(name: "Nuts", description: "Jim's nut", user_id: 2)
 widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/nuts.jpg"), filename: "nuts.jpg")
 widget.save!
-widget = Widget.create(name: "Pipes", description: "Jim's pipes", user_id: 2)
+widget = Widget.create(name: "Pipes", description: "Jim's pipe", user_id: 2)
 widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/pipes.jpg"), filename: "pipes.jpg")
 widget.save!
-widget = Widget.create(name: "Screws", description: "Pam's screws", user_id: 3)
+widget = Widget.create(name: "Screws", description: "Pam's screw", user_id: 3)
 widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/screws.jpg"), filename: "screws.jpg")
 widget.save!
-widget = Widget.create(name: "Washers", description: "Pam's washers", user_id: 3)
+widget = Widget.create(name: "Washers", description: "Pam's washer", user_id: 3)
 widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/washers.jpg"), filename: "washers.jpg")
 widget.save!
+subwidget = Subwidget.create(name: "Sub-Button", description: "Michael's wrench's button", widget_id: 1)
+subwidget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/subwidgets/button.jpg"), filename: "button.jpg")
+subwidget.save!
+subwidget = Subwidget.create(name: "Sub-Buzzer", description: "Michael's bolt's buzzer", widget_id: 2)
+subwidget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/subwidgets/buzzer.jpg"), filename: "buzzer.jpg")
+subwidget.save!
+subwidget = Subwidget.create(name: "Sub-Capacitor", description: "Jim's bracket's capacitor", widget_id: 3)
+subwidget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/subwidgets/capacitor.png"), filename: "capacitor.png")
+subwidget.save!
+subwidget = Subwidget.create(name: "Sub-Dipswitch", description: "Jim's nut's dipswitch", widget_id: 4)
+subwidget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/subwidgets/dip.jpg"), filename: "dip.jpg")
+subwidget.save!
+subwidget = Subwidget.create(name: "Sub-Led", description: "Jim's pipe's led", widget_id: 5)
+subwidget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/subwidgets/led.jpg"), filename: "led.jpg")
+subwidget.save!
+subwidget = Subwidget.create(name: "Sub-Relay", description: "Pam's screw's relay", widget_id: 6)
+subwidget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/subwidgets/relay.jpg"), filename: "relay.jpg")
+subwidget.save!
+subwidget = Subwidget.create(name: "Sub-Resistor", description: "Pam's washer's resistor", widget_id: 7)
+subwidget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/subwidgets/resistor.jpg"), filename: "resistor.jpg")
+subwidget.save!
+subwidget = Subwidget.create(name: "Sub-Semiconductor", description: "Pam's washer's semiconductor", widget_id: 7)
+subwidget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/subwidgets/semiconductor.jpg"), filename: "semiconductor.jpg")
+subwidget.save!
+subwidget = Subwidget.create(name: "Sub-Toggle", description: "Michel's wrench's toggle", widget_id: 1)
+subwidget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/subwidgets/toggle.jpg"), filename: "toggle.jpg")
+subwidget.save!
+subwidget = Subwidget.create(name: "Sub-Tube", description: "Jim's bracket's tube", widget_id: 3)
+subwidget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/subwidgets/tube.jpg"), filename: "tube.jpg")
+subwidget.save!
 ~
 EOF
 rails db:seed
