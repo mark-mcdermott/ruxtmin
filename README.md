@@ -684,6 +684,7 @@ end
 
 ### Widgets (Backend)
 - `rails g scaffold widget name description image:attachment user:references`
+- `rails db:migrate`
 - `puravida app/controllers/widgets_controller.rb ~`
 ```
 class WidgetsController < ApplicationController
@@ -1153,8 +1154,7 @@ widget.save!
 ~
 ```
 - `rails db:seed`
-- `rspec`
-
+- `rails db:drop db:create db:migrate db:seed RAILS_ENV=test`
 - `rm -rf spec/factories`
 - `rm -rf spec/models`
 - `rm -rf spec/routing`
