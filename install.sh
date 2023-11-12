@@ -495,6 +495,20 @@ class ApplicationController < ActionController::API
     widget['image'] = image
     widget
   end
+
+  def prep_raw_subwidget(subwidget)
+    widget_id = subwidget.widget_id
+    widget = Widget.find(widget_id)
+    user = User.find(widget.user_id)
+    image = subwidget.image.present? ? url_for(subwidget.image) : nil
+    subwidget = subwidget.slice(:id,:name,:description)
+    subwidget['widgetId'] = widget_id
+    subwidget['widgetName'] = widget.name
+    subwidget['userId'] = user.id
+    subwidget['userName'] = user.name
+    subwidget['image'] = image
+    subwidget
+  end
   
   private 
   
@@ -1077,12 +1091,8 @@ class SubwidgetsController < ApplicationController
 
   # GET /subwidgets
   def index
-    if params['user_id'].present?
-      @subwidgets = Subwidget.where(user_id: params['user_id']).map { |subwidget| prep_raw_subwidget(subwidget) }
-    else
-      @subwidgets = Subwidget.all.map { |subwidget| prep_raw_subwidget(subwidget) }
-    end
-    render json: @subwidget
+    @subwidgets = Subwidget.all.map { |subwidget| prep_raw_subwidget(subwidget) }
+    render json: @subwidgets
   end
 
   # GET /subwidgets/1
@@ -2242,6 +2252,230 @@ export default { middleware: 'currentOrAdmin-ShowEdit' }
 ~
 EOF
 
+echo -e "\n\n🦄 Subwidgets (frontend)\n\n"
+cat <<'EOF' | puravida components/subwidget/Card.vue ~
+<template>
+  <article>
+    <h2>
+      <NuxtLink :to="`/subwidgets/${subwidget.id}`">{{ subwidget.name }}</NuxtLink> 
+      <NuxtLink :to="`/subwidgets/${subwidget.id}/edit`"><font-awesome-icon icon="pencil" /></NuxtLink>
+      <a @click.prevent=deleteWidget(subwidget.id) href="#"><font-awesome-icon icon="trash" /></a>
+    </h2>
+    <p>id: {{ subwidget.id }}</p>
+    <p>description: {{ subwidget.description }}</p>
+    <p v-if="subwidget.image !== null" class="no-margin">image:</p>
+    <img v-if="subwidget.image !== null" :src="subwidget.image" />
+  </article>
+</template>
+
+<script>
+import { mapGetters } from 'vuex'
+export default {
+  name: 'SubwidgetCard',
+  computed: { ...mapGetters(['isAdmin']) },
+  props: {
+    subwidget: {
+      type: Object,
+      default: () => ({}),
+    },
+    subwidgets: {
+      type: Array,
+      default: () => ([]),
+    },
+  },
+  methods: {
+    uploadImage: function() {
+      this.image = this.$refs.inputFile.files[0];
+    },
+    deleteSubwidget: function(id) {
+      this.$axios.$delete(`subwidgets/${id}`)
+      const index = this.subwidgets.findIndex((i) => { return i.id === id })
+      this.subwidgets.splice(index, 1);
+    }
+  }
+}
+</script>
+~
+EOF
+cat <<'EOF' | puravida components/subwidget/Set.vue ~
+<template>
+  <section>
+    <div v-for= "subwidget in subwidgets" :key= "subwidget.id">
+      <WidgetCard :widget= "subwidget" :subwidgets= "subwidgets" />
+    </div>
+  </section>
+</template>
+
+<script>
+import { mapGetters } from 'vuex'
+export default {
+  computed: { ...mapGetters(['isAuthenticated', 'isAdmin', 'loggedInUser']) }, 
+  data: () => ({
+    subwidgets: []
+  }),
+  async fetch() {
+    const query = this.$store.$auth.ctx.query
+    const adminQuery = query.admin
+    const idQuery = query.user_id
+    this.subwidgets = await this.$axios.$get('subwidgets')
+  }
+}
+</script>
+~
+EOF
+cat <<'EOF' | puravida components/subwidget/Form.vue ~
+<template>
+  <section>
+    <h1 v-if="editOrNew === 'edit'">Edit Subwidget</h1>
+    <h1 v-else-if="editOrNew === 'new'">Add Subwidget</h1>
+    <article>
+      <form enctype="multipart/form-data">
+        <p v-if="editOrNew === 'edit'">id: {{ $route.params.id }}</p>
+        <p>Name: </p><input v-model="name">
+        <p>Description: </p><input v-model="description">
+        <p class="no-margin">Image: </p>
+        <img v-if="!hideImage && editOrNew === 'edit'" :src="image" />    
+        <input type="file" ref="inputFile" @change=uploadImage()>
+        <button v-if="editOrNew !== 'edit'" @click.prevent=createWidget>Create Widget</button>
+        <button v-else-if="editOrNew == 'edit'" @click.prevent=editWidget>Edit Widget</button>
+      </form>
+    </article>
+  </section>
+</template>
+
+<script>
+import { mapGetters } from 'vuex'
+export default {
+  data () {
+    return {
+      name: "",
+      description: "",
+      image: "",
+      editOrNew: "",
+      hideImage: false
+    }
+  },
+  mounted() {
+    const splitPath = $nuxt.$route.path.split('/')
+    this.editOrNew = splitPath[splitPath.length-1]
+  },
+  computed: {
+    ...mapGetters(['isAuthenticated', 'isAdmin', 'loggedInUser`']),
+  },
+  async fetch() {
+    const splitPath = $nuxt.$route.path.split('/')
+    this.editOrNew = $nuxt.$route.path.split('/')[$nuxt.$route.path.split('/').length-1]
+    if ($nuxt.$route.path.split('/')[$nuxt.$route.path.split('/').length-1]=='edit') {
+      const subwidget = await this.$axios.$get(`subwidgets/${this.$route.params.id}`)
+      this.name = subwidget.name
+      this.description = subwidget.description,
+      this.image = subwidget.image  
+    }
+  },
+  methods: {
+    uploadImage: function() {
+      this.image = this.$refs.inputFile.files[0]
+      this.hideImage = true
+    },
+    createSubwidget: function() {
+      const userId = this.$auth.$state.user.id
+      const params = {
+        'name': this.name,
+        'description': this.description,
+        'image': this.image,
+        'user_id': userId
+      }
+      let payload = new FormData()
+      Object.entries(params).forEach(
+        ([key, value]) => payload.append(key, value)
+      )
+      this.$axios.$post('subwidgets', payload)
+        .then((res) => {
+          const subwidgetId = res.id
+          this.$router.push(`/subwidgets/${widgetId}`)
+        })
+    },
+    editWidget: function() {
+      let params = {}
+      const filePickerFile = this.$refs.inputFile.files[0]
+      if (!filePickerFile) {
+        params = { 'name': this.name, 'description': this.description }
+      } else {
+        params = { 'name': this.name, 'description': this.description, 'image': this.image }
+      }
+    
+      let payload = new FormData()
+      Object.entries(params).forEach(
+        ([key, value]) => payload.append(key, value)
+      )
+      this.$axios.$patch(`/subwidgets/${this.$route.params.id}`, payload)
+        .then(() => {
+          this.$router.push(`/subwidgets/${this.$route.params.id}`)
+        })
+    },
+  }
+}
+</script>
+~
+EOF
+cat <<'EOF' | puravida pages/subwidgets/index.vue ~
+<template>
+  <main class="container">
+    <h1>Subwidgets</h1>
+    <NuxtLink to="/subwidgets/new" role="button">Add Subwidget</NuxtLink>
+    <SubwidgetSet />
+  </main>
+</template>
+<script>
+export default { middleware: 'widgets' }
+</script>
+~
+EOF
+cat <<'EOF' | puravida pages/subwidgets/new.vue ~
+<template>
+  <main class="container">
+    <SubwidgetForm />
+  </main>
+</template>
+~
+EOF
+cat <<'EOF' | puravida pages/widgets/_id/index.vue ~
+<template>
+  <main class="container">
+    <section>
+      <SubwidgetCard :subwidget="subwidget" />
+    </section>
+  </main>
+</template>
+
+<script>
+export default {
+  middleware: 'currentOrAdmin-ShowEdit',
+  data: () => ({ subwidget: {} }),
+  async fetch() { this.subwidget = await this.$axios.$get(`subwidgets/${this.$route.params.id}`) },
+  methods: {
+    uploadImage: function() { this.image = this.$refs.inputFile.files[0] },
+    deleteSubwidget: function(id) {
+      this.$axios.$delete(`subwidgets/${this.$route.params.id}`)
+      this.$router.push('/subwidgets')
+    }
+  }
+}
+</script>
+~
+EOF
+cat <<'EOF' | puravida pages/widgets/_id/edit.vue ~
+<template>
+  <main class="container">
+    <WidgetForm />
+  </main>
+</template>
+
+<script>
+export default { middleware: 'currentOrAdmin-ShowEdit' }
+</script>
+~
+EOF
 
 echo -e "\n\n🦄 Nav\n\n"
 cat <<'EOF' | puravida components/nav/Brand.vue ~
