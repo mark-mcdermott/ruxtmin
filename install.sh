@@ -488,11 +488,14 @@ class ApplicationController < ActionController::API
   def prep_raw_widget(widget)
     user_id = widget.user_id
     user_name = User.find(widget.user_id).name
+    subwidgets = Subwidget.where(widget_id: widget.id)
+    subwidgets = subwidgets.map { |subwidget| subwidget.slice(:id,:name,:description,:widget_id) }
     image = widget.image.present? ? url_for(widget.image) : nil
     widget = widget.slice(:id,:name,:description)
     widget['userId'] = user_id
     widget['userName'] = user_name
     widget['image'] = image
+    widget['subwidgets'] = subwidgets
     widget
   end
 
