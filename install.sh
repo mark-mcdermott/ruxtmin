@@ -2513,7 +2513,7 @@ cat <<'EOF' | puravida pages/subwidgets/_id/index.vue ~
 
 <script>
 export default {
-  middleware: 'currentOrAdmin-ShowEdit',
+  middleware: 'subwidgets',
   data: () => ({ subwidget: {} }),
   async fetch() { this.subwidget = await this.$axios.$get(`subwidgets/${this.$route.params.id}`) },
   methods: {
