@@ -2378,7 +2378,7 @@ export default { middleware: 'currentOrAdmin-ShowEdit' }
   <article>
     <h2>
       <NuxtLink :to="`/subwidgets/${subwidget.id}`">{{ subwidget.name }}</NuxtLink> 
-      <NuxtLink :to="`/subwidgets/${subwidget.id}/edit`"><font-awesome-icon icon="pencil" /></NuxtLink>
+      <NuxtLink :to="`/subwidgets/${subwidget.id}/edit?user_id=${this.$auth.$state.user.id}`"><font-awesome-icon icon="pencil" /></NuxtLink>
       <a @click.prevent=deleteWidget(subwidget.id) href="#"><font-awesome-icon icon="trash" /></a>
     </h2>
     <p>id: {{ subwidget.id }}</p>
@@ -2623,7 +2623,7 @@ export default {
 </template>
 
 <script>
-export default { middleware: 'currentOrAdmin-ShowEdit' }
+export default { middleware: 'subwidgets' }
 </script>
 ~
 ```
