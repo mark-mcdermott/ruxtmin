@@ -507,6 +507,7 @@ class ApplicationController < ActionController::API
     subwidget = subwidget.slice(:id,:name,:description)
     subwidget['widgetId'] = widget_id
     subwidget['widgetName'] = widget.name
+    subwidget['widgetDescription'] = widget.description
     subwidget['userId'] = user.id
     subwidget['userName'] = user.name
     subwidget['image'] = image
@@ -666,7 +667,9 @@ class WidgetsController < ApplicationController
 
   # POST /widgets
   def create
-    @widget = Widget.new(widget_params)
+    create_params = widget_params
+    create_params['image'] = params['image'].blank? ? nil : params['image'] # if no image is chosen on new widget page, params['image'] comes in as a blank string, which throws a 500 error at User.new(user_params). This changes any params['avatar'] blank string to nil, which is fine in User.new(user_params).
+    @widget = Widget.new(create_params)
     if @widget.save
       render json: prep_raw_widget(@widget), status: :created, location: @widget
     else
@@ -696,8 +699,7 @@ class WidgetsController < ApplicationController
 
     # Only allow a list of trusted parameters through.
     def widget_params
-      params['image'] = params['image'].blank? ? nil : params['image'] # if no image is chosen on new widget page, params['image'] comes in as a blank string, which throws a 500 error at User.new(user_params). This changes any params['avatar'] blank string to nil, which is fine in User.new(user_params).
-      params.permit(:name, :description, :image, :user_id)
+      params.permit(:id, :name, :description, :image, :user_id)
     end
 end
 ~
@@ -1094,7 +1096,11 @@ class SubwidgetsController < ApplicationController
 
   # GET /subwidgets
   def index
-    @subwidgets = Subwidget.all.map { |subwidget| prep_raw_subwidget(subwidget) }
+    if params['user_id'].present?
+      @subwidgets = Subwidget.joins(widget: [:user]).map { |subwidget| prep_raw_subwidget(subwidget) }
+    else
+      @subwidgets = Subwidget.all.map { |subwidget| prep_raw_subwidget(subwidget) }
+    end
     render json: @subwidgets
   end
 
@@ -1105,8 +1111,11 @@ class SubwidgetsController < ApplicationController
 
   # POST /subwidgets
   def create
-    @subwidget = Subwidget.new(subwidget_params)
-    if @subwidgets.save
+    create_params = subwidget_params
+    create_params['image'] = params['image'].blank? ? nil : params['image'] # if no image is chosen on new subwidget page, params['image'] comes in as a blank string, which throws a 500 error at Subwidget.new(create_params). This changes any params['avatar'] blank string to nil, which is fine in Subwidget.new(create_params).
+    create_params['widget_id'] = create_params['widget_id'].to_i
+    @subwidget = Subwidget.new(create_params)
+    if @subwidget.save
       render json: prep_raw_subwidget(@subwidget), status: :created, location: @subwidget
     else
       render json: @subwidget.errors, status: :unprocessable_entity
@@ -1135,8 +1144,7 @@ class SubwidgetsController < ApplicationController
 
     # Only allow a list of trusted parameters through.
     def subwidget_params
-      params['image'] = params['image'].blank? ? nil : params['image'] # if no image is chosen on new subwidget page, params['image'] comes in as a blank string, which throws a 500 error at User.new(user_params). This changes any params['avatar'] blank string to nil, which is fine in User.new(user_params).
-      params.permit(:name, :description, :image, :user_id)
+      params.permit(:id, :name, :description, :image, :widget_id)
     end
 end
 ~
@@ -1762,6 +1770,26 @@ export default function ({ route, store, redirect }) {
 }
 ~
 EOF
+cat <<'EOF' | puravida middleware/subwidgets.js ~
+export default function ({ route, store, redirect }) {
+  const { isAdmin, loggedInUser } = store.getters
+
+  const query = route.query
+  const isAdminRequest = query['admin'] ? true : false
+  const isUserIdRequest = query['user_id'] ? true : false
+  const isQueryEmpty = Object.keys(query).length === 0 ? true : false
+  const userIdRequestButNotAdmin = isUserIdRequest && !isAdmin
+  const isCurrentUsersWidgets = parseInt(query['user_id']) === loggedInUser.id ? true : false
+
+  if ((isAdminRequest || isQueryEmpty) && !isAdmin) {
+    return redirect('/')
+  } else if (userIdRequestButNotAdmin && !isCurrentUsersWidgets) {
+    return redirect('/subwidgets?user_id=' + loggedInUser.id)
+  }
+
+}
+~
+EOF
 cat <<'EOF' | puravida plugins/fontawesome.js ~
 import Vue from 'vue'
 import { library, config } from '@fortawesome/fontawesome-svg-core'
@@ -2027,6 +2055,12 @@ cat <<'EOF' | puravida components/widget/Card.vue ~
     <p>description: {{ widget.description }}</p>
     <p v-if="widget.image !== null" class="no-margin">image:</p>
     <img v-if="widget.image !== null" :src="widget.image" />
+    <h4 v-if="widget.subwidgets !== null">Subwidgets</h4>
+    <ul v-if="widget.subwidgets !== null">
+      <li v-for="subwidget in widget.subwidgets" :key="subwidget.id">
+        <NuxtLink :to="`/subwidgets/${subwidget.id}`">{{ subwidget.name }} - {{ subwidget.description }}</NuxtLink>
+      </li>
+    </ul>
   </article>
 </template>
 
@@ -2269,6 +2303,7 @@ cat <<'EOF' | puravida components/subwidget/Card.vue ~
     <p>description: {{ subwidget.description }}</p>
     <p v-if="subwidget.image !== null" class="no-margin">image:</p>
     <img v-if="subwidget.image !== null" :src="subwidget.image" />
+    <p>widget: <NuxtLink :to="`/widgets/${subwidget.widgetId}`">{{ subwidget.widgetName }} - {{ subwidget.widgetDescription }}</NuxtLink></p>
   </article>
 </template>
 
@@ -2304,8 +2339,8 @@ EOF
 cat <<'EOF' | puravida components/subwidget/Set.vue ~
 <template>
   <section>
-    <div v-for= "subwidget in subwidgets" :key= "subwidget.id">
-      <WidgetCard :widget= "subwidget" :subwidgets= "subwidgets" />
+    <div v-for="subwidget in subwidgets" :key="subwidget.id">
+      <SubwidgetCard :subwidget="subwidget" :subwidgets= "subwidgets" />
     </div>
   </section>
 </template>
@@ -2321,7 +2356,18 @@ export default {
     const query = this.$store.$auth.ctx.query
     const adminQuery = query.admin
     const idQuery = query.user_id
-    this.subwidgets = await this.$axios.$get('subwidgets')
+    
+    if (this.isAdmin && adminQuery) {
+      this.subwidgets = await this.$axios.$get('subwidgets')
+    } else if (idQuery) {
+      this.subwidgets = await this.$axios.$get('subwidgets', {
+        params: { user_id: idQuery }
+      })
+    } else {
+      this.subwidgets = await this.$axios.$get('subwidgets', {
+        params: { user_id: this.loggedInUser.id }
+      })
+    }
   }
 }
 </script>
@@ -2340,8 +2386,13 @@ cat <<'EOF' | puravida components/subwidget/Form.vue ~
         <p class="no-margin">Image: </p>
         <img v-if="!hideImage && editOrNew === 'edit'" :src="image" />    
         <input type="file" ref="inputFile" @change=uploadImage()>
-        <button v-if="editOrNew !== 'edit'" @click.prevent=createWidget>Create Widget</button>
-        <button v-else-if="editOrNew == 'edit'" @click.prevent=editWidget>Edit Widget</button>
+        <p>Widget: </p>
+        <select v-if="editOrNew === 'new'" name="widget" @change="selectWidget($event)">
+          <option value=""></option>
+          <option v-for="widget in widgets" :key="widget.id" :value="widget.id">{{ widget.name }} - {{ widget.description }}</option>
+        </select>
+        <button v-if="editOrNew !== 'edit'" @click.prevent=createSubwidget>Create Subwidget</button>
+        <button v-else-if="editOrNew == 'edit'" @click.prevent=editSubwidget>Edit Subwidget</button>
       </form>
     </article>
   </section>
@@ -2356,7 +2407,9 @@ export default {
       description: "",
       image: "",
       editOrNew: "",
-      hideImage: false
+      hideImage: false,
+      widgets: [],
+      widgetId: ""
     }
   },
   mounted() {
@@ -2375,6 +2428,11 @@ export default {
       this.description = subwidget.description,
       this.image = subwidget.image  
     }
+    if (this.editOrNew == 'new') {
+      this.widgets = await this.$axios.$get('/widgets', {
+        params: { user_id: this.$auth.$state.user.id }
+      })
+    }
   },
   methods: {
     uploadImage: function() {
@@ -2382,12 +2440,11 @@ export default {
       this.hideImage = true
     },
     createSubwidget: function() {
-      const userId = this.$auth.$state.user.id
       const params = {
         'name': this.name,
         'description': this.description,
         'image': this.image,
-        'user_id': userId
+        'widget_id': this.widgetId
       }
       let payload = new FormData()
       Object.entries(params).forEach(
@@ -2396,18 +2453,17 @@ export default {
       this.$axios.$post('subwidgets', payload)
         .then((res) => {
           const subwidgetId = res.id
-          this.$router.push(`/subwidgets/${widgetId}`)
+          this.$router.push(`/subwidgets/${subwidgetId}`)
         })
     },
-    editWidget: function() {
+    editSubwidget: function() {
       let params = {}
       const filePickerFile = this.$refs.inputFile.files[0]
       if (!filePickerFile) {
         params = { 'name': this.name, 'description': this.description }
       } else {
         params = { 'name': this.name, 'description': this.description, 'image': this.image }
-      }
-    
+      } 
       let payload = new FormData()
       Object.entries(params).forEach(
         ([key, value]) => payload.append(key, value)
@@ -2417,6 +2473,9 @@ export default {
           this.$router.push(`/subwidgets/${this.$route.params.id}`)
         })
     },
+    selectWidget: function(event) {
+      this.widgetId = event.target.value
+    }
   }
 }
 </script>
@@ -2431,7 +2490,7 @@ cat <<'EOF' | puravida pages/subwidgets/index.vue ~
   </main>
 </template>
 <script>
-export default { middleware: 'widgets' }
+export default { middleware: 'subwidgets' }
 </script>
 ~
 EOF
@@ -2443,7 +2502,7 @@ cat <<'EOF' | puravida pages/subwidgets/new.vue ~
 </template>
 ~
 EOF
-cat <<'EOF' | puravida pages/widgets/_id/index.vue ~
+cat <<'EOF' | puravida pages/subwidgets/_id/index.vue ~
 <template>
   <main class="container">
     <section>
@@ -2468,7 +2527,7 @@ export default {
 </script>
 ~
 EOF
-cat <<'EOF' | puravida pages/widgets/_id/edit.vue ~
+cat <<'EOF' | puravida pages/subwidgets/_id/edit.vue ~
 <template>
   <main class="container">
     <WidgetForm />
@@ -2502,7 +2561,7 @@ cat <<'EOF' | puravida components/nav/Default.vue ~
       <li v-if="!isAuthenticated"><strong><NuxtLink to="/log-in">Log In</NuxtLink></strong></li>
       <li v-if="!isAuthenticated"><strong><NuxtLink to="/sign-up">Sign Up</NuxtLink></strong></li>
       <li v-if="isAuthenticated"><strong><NuxtLink :to="`/widgets?user_id=${loggedInUser.id}`">Widgets</NuxtLink></strong></li>
-      <li v-if="isAuthenticated"><strong><NuxtLink to="/subwidgets">Subwidgets</NuxtLink></strong></li>
+      <li v-if="isAuthenticated"><strong><NuxtLink :to="`/subwidgets?user_id=${loggedInUser.id}`">Subwidgets</NuxtLink></strong></li>
       <li v-if="isAdmin"><strong><NuxtLink to="/admin">Admin</NuxtLink></strong></li>
       <li v-if="isAuthenticated" class='dropdown'>
         <details role="list" dir="rtl">
