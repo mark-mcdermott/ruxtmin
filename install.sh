@@ -1736,6 +1736,7 @@ export default function ({ route, store, redirect }) {
   let isElemUsers = false
   let isWidget = false;
   let isSubwidget = false;
+  let isUser = false;
   const userWidgets = loggedInUser.widget_ids
   const userSubwidgets = loggedInUser.subwidget_ids
 
@@ -1743,6 +1744,8 @@ export default function ({ route, store, redirect }) {
     isSubwidget = true
   } else if (url.includes("widget")) {
     isWidget = true
+  } else if (url.includes("users")) {
+    isUser = true
   }
 
   if (isEditPage(url)) {
@@ -1755,8 +1758,10 @@ export default function ({ route, store, redirect }) {
     isElemUsers = userWidgets.includes(elemId) ? true : false
   } else if (isSubwidget) {
     isElemUsers = userSubwidgets.includes(elemId) ? true : false
+  } else if (isUser) {
+    isElemUsers = loggedInUser.id === elemId ? true : false
   }
-  
+
   if (!isAdmin && !isElemUsers) {
     return redirect('/')
   }
