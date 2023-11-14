@@ -1152,7 +1152,7 @@ class SubwidgetsController < ApplicationController
   # GET /subwidgets
   def index
     if params['user_id'].present?
-      @subwidgets = Subwidget.joins(widget: [:user]).map { |subwidget| prep_raw_subwidget(subwidget) }
+      @subwidgets = Subwidget.joins(widget: [:user]).where(users: {id: params['user_id']}).map { |subwidget| prep_raw_subwidget(subwidget) }
     else
       @subwidgets = Subwidget.all.map { |subwidget| prep_raw_subwidget(subwidget) }
     end
