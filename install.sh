@@ -1757,20 +1757,20 @@ EOF
 cat <<'EOF' | puravida middleware/widgets.js ~
 export default function ({ route, store, redirect }) {
   const { isAdmin, loggedInUser } = store.getters
-
   const query = route.query
   const isAdminRequest = query['admin'] ? true : false
   const isUserIdRequest = query['user_id'] ? true : false
   const isQueryEmpty = Object.keys(query).length === 0 ? true : false
   const userIdRequestButNotAdmin = isUserIdRequest && !isAdmin
-  const isCurrentUsersWidgets = parseInt(query['user_id']) === loggedInUser.id ? true : false
+  const requested_user_id = parseInt(query['user_id'])
+  const actual_user_id = loggedInUser.id
+  const allowedAccess = requested_user_id === actual_user_id ? true : false
 
   if ((isAdminRequest || isQueryEmpty) && !isAdmin) {
     return redirect('/')
-  } else if (userIdRequestButNotAdmin && !isCurrentUsersWidgets) {
+  } else if (userIdRequestButNotAdmin && !allowedAccess) {
     return redirect('/widgets?user_id=' + loggedInUser.id)
   }
-
 }
 ~
 EOF
@@ -2939,23 +2939,6 @@ export default {
   layout: 'admin',
   data: () => ({ users: [] }),
   async fetch() { this.users = await this.$axios.$get('users') }
-}
-</script>
-~
-EOF
-
-cat <<'EOF' | puravida pages/admin/users.vue ~
-<template>
-  <main class="container">
-    <h1>Users</h1>
-    <NuxtLink to="/users/new" role="button">Add User</NuxtLink>
-    <UserSet />
-  </main>
-</template>
-
-<script>
-export default {
-  middleware: 'adminOnly'
 }
 </script>
 ~
