@@ -1801,14 +1801,32 @@ export default function ({ route, store, redirect }) {
   const { isAdmin, loggedInUser } = store.getters
   const url = route.fullPath;
   const splitPath = url.split('/')
-  let idParam = null;
-  if (url.includes("edit")) {
-    idParam = parseInt(splitPath[splitPath.length-2])
-  } else {
-    idParam = parseInt(splitPath[splitPath.length-1])
+  let elemId = null
+  let isElemUsers = false
+  let isWidget = false;
+  let isSubwidget = false;
+  const userWidgets = loggedInUser.widget_ids
+  const userSubwidgets = loggedInUser.subwidget_ids
+
+  if (url.includes("subwidget")) {
+    isSubwidget = true
+  } else if (url.includes("widget")) {
+    isWidget = true
   }
-  const isUserCurrentUser = idParam === loggedInUser.id
-  if (!isAdmin && !isUserCurrentUser) {
+
+  if (isEditPage(url)) {
+    elemId = parseInt(splitPath[splitPath.length-2])
+  } else if (isShowPage(url)) {
+    elemId = parseInt(splitPath[splitPath.length-1])
+  }
+  
+  if (isWidget) {
+    isElemUsers = userWidgets.includes(elemId) ? true : false
+  } else if (isSubwidget) {
+    isElemUsers = userSubwidgets.includes(elemId) ? true : false
+  }
+  
+  if (!isAdmin && !isElemUsers) {
     return redirect('/')
   }
 }
@@ -1819,7 +1837,7 @@ function isEditPage(url) {
 
 function isShowPage(url) {
   const splitUrl = url.split('/')
-  return (!isNaN(splitUrl[splitUrl.length]) && !isEditPage) ? true : false
+  return (!isNaN(splitUrl[splitUrl.length-1]) && !isEditPage(url)) ? true : false
 }
 ~
 ```
