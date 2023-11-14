@@ -515,8 +515,12 @@ class ApplicationController < ActionController::API
   # We also change avatar from a weird active_storage object to just the avatar url before it gets to the frontend.
   def prep_raw_user(user)
     avatar = user.avatar.present? ? url_for(user.avatar) : nil
+    widgets = Widget.where(user_id: user.id).map { |widget| widget.id }
+    subwidgets = Subwidget.where(widget_id: widgets).map { |subwidget| subwidget.id }
     user = user.admin ? user.slice(:id,:email,:name,:admin) : user.slice(:id,:email,:name)
     user['avatar'] = avatar
+    user['widget_ids'] = widgets
+    user['subwidget_ids'] = subwidgets
     user
   end
 
@@ -2377,7 +2381,7 @@ export default { middleware: 'currentOrAdmin-ShowEdit' }
 <template>
   <article>
     <h2>
-      <NuxtLink :to="`/subwidgets/${subwidget.id}`">{{ subwidget.name }}</NuxtLink> 
+      <NuxtLink :to="`/subwidgets/${subwidget.id}?user_id=${this.$auth.$state.user.id}`">{{ subwidget.name }}</NuxtLink>
       <NuxtLink :to="`/subwidgets/${subwidget.id}/edit?user_id=${this.$auth.$state.user.id}`"><font-awesome-icon icon="pencil" /></NuxtLink>
       <a @click.prevent=deleteWidget(subwidget.id) href="#"><font-awesome-icon icon="trash" /></a>
     </h2>
