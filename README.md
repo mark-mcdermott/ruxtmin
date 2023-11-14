@@ -1794,7 +1794,7 @@ export default function ({ store, redirect }) {
 }
 ~
 ```
-- `puravida middleware/currentOrAdmin-ShowEdit.js ~`
+- `puravida middleware/currentOrAdmin-showEdit.js ~`
 ```
 import { mapGetters } from 'vuex'
 export default function ({ route, store, redirect }) {
@@ -1823,7 +1823,7 @@ function isShowPage(url) {
 }
 ~
 ```
-- `puravida middleware/widgets.js ~`
+- `puravida middleware/currentOrAdmin-index.js ~`
 ```
 export default function ({ route, store, redirect }) {
   const { isAdmin, loggedInUser } = store.getters
@@ -1840,26 +1840,6 @@ export default function ({ route, store, redirect }) {
     return redirect('/')
   } else if (userIdRequestButNotAdmin && !allowedAccess) {
     return redirect('/widgets?user_id=' + loggedInUser.id)
-  }
-}
-~
-```
-- `puravida middleware/subwidgets.js ~`
-```
-export default function ({ route, store, redirect }) {
-  const { isAdmin, loggedInUser } = store.getters
-
-  const query = route.query
-  const isAdminRequest = query['admin'] ? true : false
-  const isUserIdRequest = query['user_id'] ? true : false
-  const isQueryEmpty = Object.keys(query).length === 0 ? true : false
-  const userIdRequestButNotAdmin = isUserIdRequest && !isAdmin
-  const isCurrentUsersWidgets = parseInt(query['user_id']) === loggedInUser.id ? true : false
-
-  if ((isAdminRequest || isQueryEmpty) && !isAdmin) {
-    return redirect('/')
-  } else if (userIdRequestButNotAdmin && !isCurrentUsersWidgets) {
-    return redirect('/subwidgets?user_id=' + loggedInUser.id)
   }
 }
 ~
@@ -2096,7 +2076,7 @@ export default { middleware: 'adminOnly' }
 
 <script>
 export default {
-  middleware: 'currentOrAdmin-ShowEdit',
+  middleware: 'currentOrAdmin-showEdit',
   data: () => ({ user: {} }),
   async fetch() { this.user = await this.$axios.$get(`users/${this.$route.params.id}`) },
   methods: {
@@ -2121,7 +2101,7 @@ export default {
 </template>
 
 <script>
-export default { middleware: 'currentOrAdmin-ShowEdit' }
+export default { middleware: 'currentOrAdmin-showEdit' }
 </script>
 ~
 ```
@@ -2323,7 +2303,7 @@ export default {
   </main>
 </template>
 <script>
-export default { middleware: 'widgets' }
+export default { middleware: 'currentOrAdmin-index' }
 </script>
 ~
 ```
@@ -2348,7 +2328,7 @@ export default { middleware: 'widgets' }
 
 <script>
 export default {
-  middleware: 'currentOrAdmin-ShowEdit',
+  middleware: 'currentOrAdmin-showEdit',
   data: () => ({ widget: {} }),
   async fetch() { this.widget = await this.$axios.$get(`widgets/${this.$route.params.id}`) },
   methods: {
@@ -2371,7 +2351,7 @@ export default {
 </template>
 
 <script>
-export default { middleware: 'currentOrAdmin-ShowEdit' }
+export default { middleware: 'currentOrAdmin-showEdit' }
 </script>
 ~
 ```
@@ -2580,7 +2560,7 @@ export default {
   </main>
 </template>
 <script>
-export default { middleware: 'subwidgets' }
+export default { middleware: 'currentOrAdmin-index' }
 </script>
 ~
 ```
@@ -2605,7 +2585,7 @@ export default { middleware: 'subwidgets' }
 
 <script>
 export default {
-  middleware: 'subwidgets',
+  middleware: 'currentOrAdmin-showEdit',
   data: () => ({ subwidget: {} }),
   async fetch() { this.subwidget = await this.$axios.$get(`subwidgets/${this.$route.params.id}`) },
   methods: {
@@ -2628,7 +2608,7 @@ export default {
 </template>
 
 <script>
-export default { middleware: 'subwidgets' }
+export default { middleware: 'currentOrAdmin-showEdit' }
 </script>
 ~
 ```
