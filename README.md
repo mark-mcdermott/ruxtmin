@@ -1579,6 +1579,445 @@ end
 ~
 ```
 
+### Documents (Backend)
+- `rails g scaffold document name description image:attachment user:references widget:references`
+- `rails db:migrate`
+- `puravida app/controllers/documents_controller.rb ~`
+```
+class DocumentsController < ApplicationController
+  before_action :set_document, only: %i[ show update destroy ]
+
+  # GET /documents
+  def index
+    if params['user_id'].present?
+      @documents = Document.joins(widget: [:user]).where(users: {id: params['user_id']}).map { |subwidget| prep_raw_document(document) }
+    else
+      @documents = Document.all.map { |document| prep_raw_document(document) }
+    end
+    render json: @documents
+  end
+
+  # GET /documents/1
+  def show
+    render json: prep_raw_document(@document)
+  end
+
+  # POST /documents
+  def create
+    create_params = document_params
+    create_params['image'] = params['image'].blank? ? nil : params['image'] # if no image is chosen on new document page, params['image'] comes in as a blank string, which throws a 500 error at Document.new(create_params). This changes any params['image'] blank string to nil, which is fine in Document.new(create_params).
+    create_params['widget_id'] = create_params['widget_id'].to_i
+    @document = Document.new(create_params)
+    if @document.save
+      render json: prep_raw_document(@document), status: :created, location: @document
+    else
+      render json: @document.errors, status: :unprocessable_entity
+    end
+  end
+
+  # PATCH/PUT /documents/1
+  def update
+    if @document.update(document_params)
+      render json: prep_raw_document(@document)
+    else
+      render json: @document.errors, status: :unprocessable_entity
+    end
+  end
+
+  # DELETE /documents/1
+  def destroy
+    @document.destroy
+  end
+
+  private
+    # Use callbacks to share common setup or constraints between actions.
+    def set_document
+      @document = Document.find(params[:id])
+    end
+
+    # Only allow a list of trusted parameters through.
+    def document_params
+      params.permit(:id, :name, :description, :image, :widget_id)
+    end
+end
+~
+```
+- `puravida spec/requests/documents_spec.rb ~`
+```
+# frozen_string_literal: true
+require 'open-uri'
+require 'rails_helper'
+RSpec.describe "/documents", type: :request do
+  let(:valid_create_user_1_params) { { name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password" } }
+  let(:user_1_attachment) { "/spec/fixtures/files/images/office-avatars/michael-scott.png" }
+  let(:user_1_image) { "michael-scott.png" }
+  let(:valid_create_user_2_params) { { name: "Jim Halpert", email: "jimhalpert@dundermifflin.com", admin: "false", password: "password" } }
+  let(:user_2_attachment) { "/spec/fixtures/files/images/office-avatars/jim-halpert.png" }
+  let(:user_2_image) { "jim-halpert.png" }
+  let(:invalid_create_user_1_params) { { name: "Michael Scott", email: "test", admin: "true", password: "password" } }
+  let(:invalid_create_user_2_params) { { name: "Jim Halpert", email: "test2", admin: "false", password: "password" } }
+  let(:valid_user_1_login_params) { { email: "michaelscott@dundermifflin.com",  password: "password" } }
+  let(:valid_user_2_login_params) { { email: "jimhalpert@dundermifflin.com",  password: "password" } }
+  let(:invalid_patch_params) { { email: "test" } }
+  let(:uploaded_image_path) { Rails.root.join '/spec/fixtures/files/images/office-avatars/michael-scott.png' }
+  let(:uploaded_image) { Rack::Test::UploadedFile.new uploaded_image_path, 'image/png' }
+
+  describe "GET /index" do
+    context "with valid auth header (non-admin user)" do
+      it "renders a successful response" do
+        user1 = User.create! valid_create_user_1_params
+        user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
+        user1.save!
+        user2 = User.create! valid_create_user_2_params
+        header = header_from_user(user2,valid_user_2_login_params)
+        widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
+        image_filename = "allen-wrenches.jpg"
+        image_path = "#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"
+        open_image = URI.open(image_path)
+        widget1.image.attach(io: open_image, filename: image_filename)
+        widget1.save!
+        widget2 = Widget.create(name: "Bolts", description: "Michael's bolts", user_id: user1.id)
+        widget2.save!
+        document1 = Document.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)document.create
+        get documents_url, headers: header, as: :json
+        expect(response).to be_successful
+      end
+      
+      it "gets two widgets (one with image, one without)" do
+        user1 = User.create! valid_create_user_1_params
+        user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
+        user1.save!
+        user2 = User.create! valid_create_user_2_params
+        widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
+        widget1.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
+        widget1.save!
+        widget2 = Widget.create(name: "Bolts", description: "Michael's bolts", user_id: user1.id)
+        widget2.save!
+        header = header_from_user(user2,valid_user_2_login_params)
+        get widgets_url, headers: header, as: :json
+        expect(response).to be_successful
+        expect(JSON.parse(response.body).length).to eq 2
+        expect(JSON.parse(response.body)[0]).to include("id","name","description","image","userId")
+        expect(JSON.parse(response.body)[0]['name']).to eq("Wrenches")
+        expect(JSON.parse(response.body)[0]['description']).to eq("Michael's wrenches")
+        expect(JSON.parse(response.body)[0]['image']).to match(/http.*\/allen-wrenches\.jpg/)
+        expect(JSON.parse(response.body)[0]['userId']).to eq(user1.id)
+        expect(JSON.parse(response.body)[1]).to include("id","name","description","image","userId")
+        expect(JSON.parse(response.body)[1]['name']).to eq("Bolts")
+        expect(JSON.parse(response.body)[1]['description']).to eq("Michael's bolts")
+        expect(JSON.parse(response.body)[1]['image']).to eq(nil)
+        expect(JSON.parse(response.body)[1]['userId']).to eq(user1.id)
+      end
+
+      it "gets user one's widgets" do
+        user1 = User.create! valid_create_user_1_params
+        user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
+        user1.save!
+        user2 = User.create! valid_create_user_2_params
+        widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
+        widget1.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
+        widget1.save!
+        widget2 = Widget.create(name: "Bolts", description: "Michael's bolts", user_id: user1.id)
+        widget3 = Widget.create(name: "test3", description: "test3", user_id: user2.id)
+        widget3 = Widget.create(name: "test4", description: "test4", user_id: user2.id)
+        header = header_from_user(user2,valid_user_2_login_params)
+        get widgets_url, params: { user_id: user1.id }, headers: header
+        expect(response).to be_successful
+        expect(JSON.parse(response.body).length).to eq 2
+        expect(JSON.parse(response.body)[0]).to include("id","name","description","image","userId")
+        expect(JSON.parse(response.body)[0]['name']).to eq("Wrenches")
+        expect(JSON.parse(response.body)[0]['description']).to eq("Michael's wrenches")
+        expect(JSON.parse(response.body)[0]['image']).to match(/http.*\/allen-wrenches\.jpg/)
+        expect(JSON.parse(response.body)[0]['userId']).to eq(user1.id)
+        expect(JSON.parse(response.body)[1]).to include("id","name","description","image","userId")
+        expect(JSON.parse(response.body)[1]['name']).to eq("Bolts")
+        expect(JSON.parse(response.body)[1]['description']).to eq("Michael's bolts")
+        expect(JSON.parse(response.body)[1]['image']).to eq(nil)
+        expect(JSON.parse(response.body)[1]['userId']).to eq(user1.id)
+      end
+
+      it "gets user two's widgets" do
+        user1 = User.create! valid_create_user_1_params
+        user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
+        user1.save!
+        user2 = User.create! valid_create_user_2_params
+        widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
+        widget1.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
+        widget1.save!
+        widget2 = Widget.create(name: "Bolts", description: "Michael's bolts", user_id: user1.id)
+        widget3 = Widget.create(name: "test3", description: "test3", user_id: user2.id)
+        widget3 = Widget.create(name: "test4", description: "test4", user_id: user2.id)
+        header = header_from_user(user2,valid_user_2_login_params)
+        get widgets_url, params: { user_id: user2.id }, headers: header
+        expect(response).to be_successful
+        expect(JSON.parse(response.body).length).to eq 2
+        expect(JSON.parse(response.body)[0]).to include("id","name","description","image","userId")
+        expect(JSON.parse(response.body)[0]['name']).to eq("test3")
+        expect(JSON.parse(response.body)[0]['description']).to eq("test3")
+        expect(JSON.parse(response.body)[0]['userId']).to eq(user2.id)
+        expect(JSON.parse(response.body)[0]['image']).to eq(nil)
+        expect(JSON.parse(response.body)[1]).to include("id","name","description","image","userId")
+        expect(JSON.parse(response.body)[1]['name']).to eq("test4")
+        expect(JSON.parse(response.body)[1]['description']).to eq("test4")
+        expect(JSON.parse(response.body)[1]['image']).to eq(nil)
+        expect(JSON.parse(response.body)[1]['userId']).to eq(user2.id)
+      end
+
+    end
+
+    context "with invalid auth header" do
+      it "renders a 401 response" do
+        User.create! valid_create_user_1_params
+        get widgets_url, headers: invalid_auth_header, as: :json
+        expect(response).to have_http_status(401)
+      end
+      it "renders a 401 response" do
+        User.create! valid_create_user_1_params
+        get widgets_url, headers: poorly_formed_header(valid_create_user_2_params), as: :json
+        expect(response).to have_http_status(401)
+      end
+    end
+  end
+
+  describe "GET /show" do
+    context "with valid auth header" do
+      it "renders a successful response" do
+        user1 = User.create! valid_create_user_1_params
+        user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
+        user1.save!
+        user2 = User.create! valid_create_user_2_params
+        header = header_from_user(user2,valid_user_2_login_params)
+        widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
+        widget1.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
+        widget1.save!
+        get widget_url(widget1), headers: header, as: :json
+        expect(response).to be_successful
+      end
+      it "gets one widget (with image)" do
+        user1 = User.create! valid_create_user_1_params
+        user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
+        user1.save!
+        user2 = User.create! valid_create_user_2_params
+        header = header_from_user(user2,valid_user_2_login_params)
+        widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
+        widget1.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
+        widget1.save!
+        get widget_url(widget1), headers: header, as: :json
+        expect(JSON.parse(response.body)).to include("id","name","description","image","userId")
+        expect(JSON.parse(response.body)['name']).to eq("Wrenches")
+        expect(JSON.parse(response.body)['description']).to eq("Michael's wrenches")
+        expect(JSON.parse(response.body)['image']).to match(/http.*\/allen-wrenches\.jpg/)
+        expect(JSON.parse(response.body)['userId']).to eq(user1.id)
+      end
+      it "gets one widget (without avatar)" do
+        user1 = User.create! valid_create_user_1_params
+        user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
+        user1.save!
+        user2 = User.create! valid_create_user_2_params
+        header = header_from_user(user2,valid_user_2_login_params)
+        widget2 = Widget.create(name: "Bolts", description: "Michael's bolts", user_id: user1.id)
+        widget2.save!
+        get widget_url(widget2), headers: header, as: :json
+        expect(JSON.parse(response.body)).to include("id","name","description","image","userId")
+        expect(JSON.parse(response.body)['name']).to eq("Bolts")
+        expect(JSON.parse(response.body)['description']).to eq("Michael's bolts")
+        expect(JSON.parse(response.body)['image']).to eq(nil)
+        expect(JSON.parse(response.body)['userId']).to eq(user1.id)
+      end
+    end
+    context "with invalid auth header" do
+      it "renders a 401 response" do
+        user1 = User.create! valid_create_user_1_params
+        widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
+        widget1.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
+        widget1.save!
+        get widget_url(widget1), headers: invalid_auth_header, as: :json
+        expect(response).to have_http_status(401)
+      end
+      it "renders a 401 response" do
+        user1 = User.create! valid_create_user_1_params
+        user2 = User.create! valid_create_user_2_params
+        widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
+        widget1.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
+        widget1.save!
+        get widget_url(widget1), headers: poorly_formed_header(valid_create_user_2_params), as: :json
+        expect(response).to have_http_status(401)
+      end
+    end
+  end
+
+  describe "POST /create" do
+    context "without auth header" do
+      it "returns 401" do
+        user1 = User.create! valid_create_user_1_params
+        post widgets_url, params: { name: "Wrenches", description: "Michael's wrenches", user_id: user1.id }
+        expect(response).to have_http_status(401)
+      end
+    end
+    context "with valid params (without image)" do
+      it "creates widget" do
+        user1 = User.create! valid_create_user_1_params
+        user2 = User.create! valid_create_user_2_params
+        header = header_from_user(user2,valid_user_2_login_params)
+        post widgets_url, headers: header, params: { name: "Wrenches", description: "Michael's wrenches", user_id: user1.id }
+        expect(response).to have_http_status(201)
+        expect(JSON.parse(response.body)).to include("id","name","description","image","userId")
+        expect(JSON.parse(response.body)['name']).to eq("Wrenches")
+        expect(JSON.parse(response.body)['description']).to eq("Michael's wrenches")
+        expect(JSON.parse(response.body)['image']).to be_nil
+        expect(JSON.parse(response.body)['userId']).to eq(user1.id)
+      end
+    end
+    context "with valid params (with image)" do
+      it "creates widget" do
+        user1 = User.create! valid_create_user_1_params
+        user2 = User.create! valid_create_user_2_params
+        header = header_from_user(user2,valid_user_2_login_params)
+        image = Rack::Test::UploadedFile.new(Rails.root.join("app/assets/images/widgets/allen-wrenches.jpg"))
+        post widgets_url, headers: header, params: { name: "Wrenches", description: "Michael's wrenches", image: image, user_id: user1.id }
+        expect(response).to have_http_status(201)
+        expect(JSON.parse(response.body)).to include("id","name","description","image","userId")
+        expect(JSON.parse(response.body)['name']).to eq("Wrenches")
+        expect(JSON.parse(response.body)['description']).to eq("Michael's wrenches")
+        expect(JSON.parse(response.body)['image']).to match(/http.*\/allen-wrenches\.jpg/)
+        expect(JSON.parse(response.body)['userId']).to eq(user1.id)
+      end
+      it "creates widget" do
+        user1 = User.create! valid_create_user_1_params
+        user2 = User.create! valid_create_user_2_params
+        header = header_from_user(user2,valid_user_2_login_params)
+        image = Rack::Test::UploadedFile.new(Rails.root.join("app/assets/images/widgets/allen-wrenches.jpg"))
+        expect { post widgets_url, headers: header, params: { name: "Wrenches", description: "Michael's wrenches", image: image, user_id: user1.id } }
+          .to change(Widget, :count).by(1)
+      end
+    end
+    context "with invalid parameters (missing user id)" do
+      it "does not create a new User" do
+        user2 = User.create! valid_create_user_2_params
+        header = header_from_user(user2,valid_user_2_login_params)
+        expect { post widgets_url, headers: header, params: { name: "Wrenches", description: "Michael's wrenches" }, as: :json}
+          .to change(User, :count).by(0)
+      end
+      it "renders a JSON error response" do
+        user2 = User.create! valid_create_user_2_params
+        header = header_from_user(user2,valid_user_2_login_params)
+        post widgets_url, headers: header, params: { name: "Wrenches", description: "Michael's wrenches" }, as: :json
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.content_type).to match(a_string_including("application/json"))
+      end
+    end
+  end
+
+  describe "PATCH /update" do
+    context "with valid parameters" do
+      it "updates the requested widget's name" do
+        user1 = User.create! valid_create_user_1_params
+        user2 = User.create! valid_create_user_2_params
+        header = header_from_user(user2,valid_user_2_login_params)
+        widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
+        widget1.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
+        widget1.save!        
+        patch widget_url(widget1), params: { name: "Updated Name!!"}, headers: header, as: :json
+        widget1.reload
+        expect(JSON.parse(response.body)['name']).to eq "Updated Name!!"
+        expect(response).to have_http_status(:ok)
+        expect(response.content_type).to match(a_string_including("application/json"))
+      end
+      it "updates the requested widgets's image" do
+        user1 = User.create! valid_create_user_1_params   
+        user2 = User.create! valid_create_user_2_params
+        header = header_from_user(user2,valid_user_2_login_params)
+        widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
+        widget1.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
+        widget1.save!
+        updated_image = Rack::Test::UploadedFile.new(Rails.root.join('spec/fixtures/files/images/office-avatars/erin-hannon.png'))
+        patch widget_url(widget1), params: { name: "test", image: updated_image }, headers: header
+        expect(response).to have_http_status(:ok)
+        expect(response.content_type).to match(a_string_including("application/json"))
+        expect(JSON.parse(response.body)['name']).to eq("test")
+        expect(JSON.parse(response.body)['image']).to be_kind_of(String)
+        expect(JSON.parse(response.body)['image']).to match(/http.*\/erin-hannon\.png/)
+      end
+    end
+  end
+
+  describe "DELETE /destroy" do
+    it "destroys the requested widget (without avatar)" do
+      user1 = User.create! valid_create_user_1_params
+      user2 = User.create! valid_create_user_2_params      
+      header = header_from_user(user2,valid_user_2_login_params)
+      widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
+      expect {
+        delete widget_url(widget1), headers: header, as: :json
+      }.to change(Widget, :count).by(-1)
+    end
+    it "destroys the requested widget (with avatar)" do
+      file = Rack::Test::UploadedFile.new(Rails.root.join("spec/fixtures/files/images/office-avatars/michael-scott.png"))
+      valid_create_user_1_params['avatar'] = file
+      user1 = User.create! valid_create_user_1_params
+      user2 = User.create! valid_create_user_2_params
+      header = header_from_user(user2,valid_user_2_login_params)
+      widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
+      widget1.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
+      widget1.save!
+      expect {
+        delete widget_url(widget1), headers: header, as: :json
+      }.to change(Widget, :count).by(-1)
+    end
+  end
+end
+
+private 
+
+def token_from_user(user,login_params)
+  post "/login", params: login_params
+  token = JSON.parse(response.body)['data']
+end
+
+def valid_token(create_user_params)
+  user = User.create(create_user_params)
+  post "/login", params: valid_user_1_login_params
+  token = JSON.parse(response.body)['data']
+end
+
+def valid_auth_header_from_token(token)
+  auth_value = "Bearer " + token
+  { Authorization: auth_value }
+end
+
+def valid_auth_header_from_user_params(create_user_params)
+  token = valid_token(create_user_params)
+  auth_value = "Bearer " + token
+  { Authorization: auth_value }
+end
+
+def header_from_user(user,login_params)
+  token = token_from_user(user,login_params)
+  auth_value = "Bearer " + token
+  { Authorization: auth_value }
+end
+
+def invalid_auth_header
+  auth_value = "Bearer " + "xyz"
+  { Authorization: auth_value }
+end
+
+def poorly_formed_header(create_user_params)
+  token = valid_token(create_user_params)
+  auth_value = "Bears " + token
+  { Authorization: auth_value }
+end
+
+def blob_for(name)
+  ActiveStorage::Blob.create_and_upload!(
+    io: File.open(Rails.root.join(file_fixture(name)), 'rb'),
+    filename: name,
+    content_type: 'image/png' # Or figure it out from `name` if you have non-JPEGs
+  )
+end
+~
+```
+
 ### Seeds
 - `puravida db/seeds.rb ~`
 ```
