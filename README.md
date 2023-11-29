@@ -16,6 +16,7 @@ This readme uses a small custom bash command called [puravida](#user-content-pur
   - if database already exists: `rails db:drop db:create`
 - `bundle add rack-cors bcrypt jwt pry`
 - `bundle add rspec-rails factory_bot_rails --group "development, test"`
+- `bundle add database_cleaner-active_record --group "test"`
 - `bundle`
 - `rails active_storage:install`
 - `rails generate rspec:install`
@@ -108,15 +109,20 @@ end
 - `puravida spec/models/user_spec.rb ~`
 ```
 require 'rails_helper'
+require 'database_cleaner/active_record'
 RSpec.describe User, type: :model do
+  before :all do
+    DatabaseCleaner.strategy = :truncation
+    DatabaseCleaner.start
+  end
   it "is valid with valid attributes" do
     expect(User.new(valid_create_params)).to be_valid
   end
-  it "is not valid without a name" do
-    expect(User.new(invalid_create_params_name_is_blank)).to_not be_valid
+  it "is not valid width poorly formed email" do
+    expect(User.new(invalid_create_params_email_poorly_formed)).to_not be_valid
   end
-  it "is not valid with numbers in name" do
-    expect(User.new(invalid_create_params_name_has_number)).to_not be_valid
+  after :all do
+    DatabaseCleaner.clean
   end
 end
 ~
