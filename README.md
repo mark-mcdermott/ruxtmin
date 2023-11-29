@@ -22,7 +22,7 @@ This readme uses a small custom bash command called [puravida](#user-content-pur
 - `rails db:migrate`
 - copy `assets` folder into `app` folder
 - `puravida spec/fixtures/files/images`
-- copy the `office-avatars` folder into `spec/fixtures/files/images` folder
+- copy the contents of the `office-avatars` folder into `spec/fixtures/files` folder
 - `puravida config/initializers/cors.rb ~`
 ```
 Rails.application.config.middleware.insert_before 0, Rack::Cors do
@@ -102,6 +102,61 @@ class User < ApplicationRecord
 end
 ~
 ```
+- `rm -rf test`
+- `rails g rspec:scaffold users`
+- `rails g rspec:model user`
+- `puravida spec/models/user_spec.rb ~`
+```
+require 'rails_helper'
+RSpec.describe User, type: :model do
+  it "is valid with valid attributes" do
+    expect(User.new(valid_create_params)).to be_valid
+  end
+  it "is not valid without a name" do
+    expect(User.new(invalid_create_params_name_is_blank)).to_not be_valid
+  end
+  it "is not valid with numbers in name" do
+    expect(User.new(invalid_create_params_name_has_number)).to_not be_valid
+  end
+end
+~
+```
+- `puravida spec/fixtures/users.yml ~`
+```
+michael:
+  name: Michael Scott
+  email: michaelscott@dundermifflin.com
+  password_digest: <%= BCrypt::Password.create('password') %>
+  admin: true
+
+jim:
+  name: Jim Halpert
+  email: jimhalpert@dundermifflin.com
+  password_digest: <%= BCrypt::Password.create('password') %>
+  admin: false
+
+pam:
+  name: Pam Beesly
+  email: pambeesly@dundermifflin.com
+  password_digest: <%= BCrypt::Password.create('password') %>
+  admin: false
+~
+```
+- `puravida config/storage.yml ~`
+```
+test:
+  service: Disk
+  root: <%= Rails.root.join("tmp/storage") %>
+
+test_fixtures:
+  service: Disk
+  root: <%= Rails.root.join("tmp/storage_fixtures") %>
+
+local:
+  service: Disk
+  root: <%= Rails.root.join("storage") %>
+~
+```
 - `puravida app/controllers/users_controller.rb ~`
 ```
 class UsersController < ApplicationController
@@ -158,8 +213,148 @@ class UsersController < ApplicationController
 end
 ~
 ```
-
 - `puravida spec/requests/users_spec.rb ~`
+require 'rails_helper'
+
+RSpec.describe "/users", type: :request do
+  fixtures :users
+
+  before :each do
+    @user = users(:michael)
+  end
+
+  describe "GET /index" do
+    it "renders a successful response" do
+      get users_url
+      expect(response).to be_successful
+    end
+
+    it "gets two users" do
+      get users_url
+      expect(JSON.parse(response.body).length).to eq 2
+    end
+  end
+
+  describe "GET /show" do
+    it "renders a successful response" do
+      get user_url(@user)
+      expect(response).to be_successful
+    end
+  end
+
+  describe "GET /new" do
+    it "renders a successful response" do
+      get new_user_url
+      expect(response).to be_successful
+    end
+  end
+
+  describe "GET /edit" do
+    it "renders a successful response" do
+      get edit_user_url(@user)
+      expect(response).to be_successful
+    end
+  end
+
+  describe "POST /create" do
+    context "with valid parameters" do
+      it "creates a new User" do
+        expect {
+          post users_url, params: { user: valid_create_params }
+        }.to change(User, :count).by(1)
+      end
+
+      it "redirects to the created user" do
+        post users_url, params: { user: valid_create_params }
+        expect(response).to redirect_to(user_url(User.last))
+      end
+
+      it "sets user name" do
+        post users_url, params: { user: valid_create_params }
+        user = User.order(:created_at).last
+        expect(user.name).to eq("Name")
+      end
+
+      it "attaches user avatar" do
+        post users_url, params: { user: valid_create_params }
+        user = User.order(:created_at).last
+        expect(user.avatar.attached?).to eq(true)
+      end
+    end
+
+    context "with invalid parameters (blank name)" do
+      it "does not create a new User" do
+        expect {
+          post users_url, params: { user: invalid_create_params_name_is_blank }
+        }.to change(User, :count).by(0)
+      end
+
+    
+      it "renders a response with 422 status (i.e. to display the 'new' template)" do
+        post users_url, params: { user: invalid_create_params_name_is_blank }
+        expect(response).to have_http_status(:unprocessable_entity)
+      end
+    
+    end
+
+    context "with invalid parameters (number in name)" do
+      it "does not create a new User" do
+        expect {
+          post users_url, params: { user: invalid_create_params_name_has_number }
+        }.to change(User, :count).by(0)
+      end
+
+    
+      it "renders a response with 422 status (i.e. to display the 'new' template)" do
+        post users_url, params: { user: invalid_create_params_name_has_number }
+        expect(response).to have_http_status(:unprocessable_entity)
+      end
+    
+    end
+  end
+
+  describe "PATCH /update" do
+    context "with valid parameters" do
+
+      it "updates the requested user" do
+        patch user_url(@user), params: { user: update_attributes }
+        @user.reload
+        expect(@user.name).to eq("UpdatedName")
+      end
+
+      it "redirects to the user" do
+        patch user_url(@user), params: { user: update_attributes }
+        @user.reload
+        expect(response).to redirect_to(user_url(@user))
+      end
+    end
+
+    context "with invalid parameters" do
+    
+      it "renders a response with 422 status (i.e. to display the 'edit' template)" do
+        patch user_url(@user), params: { user: invalid_create_params_name_has_number }
+        expect(response).to have_http_status(:unprocessable_entity)
+      end
+    
+    end
+  end
+
+  describe "DELETE /destroy" do
+    it "destroys the requested user" do
+      expect {
+        delete user_url(@user)
+      }.to change(User, :count).by(-1)
+    end
+
+    it "redirects to the users list" do
+      delete user_url(@user)
+      expect(response).to redirect_to(users_url)
+    end
+  end
+end
+~
+```
+- `puravida spec/requests/users_spec_bak.rb ~`
 ```
 # frozen_string_literal: true
 require 'open-uri'
@@ -680,6 +875,62 @@ RSpec.describe "/login", type: :request do
       end
     end
   end
+end
+~
+```
+- `puravida app/controllers/users_controller.rb ~`
+```
+class UsersController < ApplicationController
+  before_action :set_user, only: %i[ show update destroy ]
+  skip_before_action :require_login, only: :create
+
+  # GET /users
+  def index
+    @users = User.all.map { |user| prep_raw_user(user) }
+    render json: @users
+  end
+
+  # GET /users/1
+  def show
+    render json: prep_raw_user(@user)
+  end
+
+  # POST /users
+  def create
+    @user = User.new(user_params)
+    if @user.save
+      render json: prep_raw_user(@user), status: :created, location: @user
+    else
+      render json: @user.errors, status: :unprocessable_entity
+    end
+  end
+
+  # PATCH/PUT /users/1
+  def update
+    if @user.update(user_params)
+      render json: prep_raw_user(@user)
+    else
+      render json: @user.errors, status: :unprocessable_entity
+    end
+  end
+
+  # DELETE /users/1
+  def destroy
+    @user.destroy
+  end
+
+  private
+    # Use callbacks to share common setup or constraints between actions.
+    def set_user
+      @user = User.find(params[:id])
+    end
+
+    # Only allow a list of trusted parameters through.
+    def user_params
+      params['avatar'] = params['avatar'].blank? ? nil : params['avatar'] # if no avatar is chosen on signup page, params['avatar'] comes in as a blank string, which throws a 500 error at User.new(user_params). This changes any params['avatar'] blank string to nil, which is fine in User.new(user_params).
+      params.permit(:name, :email, :avatar, :admin, :password)
+    end
+    
 end
 ~
 ```
@@ -4109,6 +4360,10 @@ console_command = "/rails/bin/rails console"
 test:
   service: Disk
   root: <%= Rails.root.join("tmp/storage") %>
+
+test_fixtures:
+  service: Disk
+  root: <%= Rails.root.join("tmp/storage_fixtures") %>
 
 local:
   service: Disk
