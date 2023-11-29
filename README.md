@@ -214,6 +214,7 @@ end
 ~
 ```
 - `puravida spec/requests/users_spec.rb ~`
+```
 require 'rails_helper'
 
 RSpec.describe "/users", type: :request do
