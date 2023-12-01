@@ -138,6 +138,7 @@ def michael_token
 end
 def michael_auth_header() { Authorization: "Bearer " + michael_token } end
 def michael_poorly_formed_auth_header() { Authorization: "Bears " + michael_token } end
+def invalid_token_header() { Authorization: "Bearer xyz" } end
 def jim_create_params()  { name: "Jim Halpert", email: "jimhalpert@dundermifflin.com", admin: "false", password: "password" } end
 def jim_login_params() { email: "jimhalpert@dundermifflin.com",  password: "password" } end
 def jim_token
