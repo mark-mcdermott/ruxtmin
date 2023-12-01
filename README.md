@@ -76,6 +76,7 @@ Rails.application.routes.draw do
 end
 ~
 ```
+- `rspec`
 
 ### Users
 - `rails g scaffold user name email avatar:attachment admin:boolean password_digest`
