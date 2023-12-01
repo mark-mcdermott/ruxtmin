@@ -15,7 +15,7 @@ This readme uses a small custom bash command called [puravida](#user-content-pur
   - if first time doing this: `rails db:create`
   - if database already exists: `rails db:drop db:create`
 - `bundle add rack-cors bcrypt jwt pry`
-- `bundle add rspec-rails factory_bot_rails --group "development, test"`
+- `bundle add rspec-rails --group "development, test"`
 - `bundle add database_cleaner-active_record --group "test"`
 - `bundle`
 - `rails active_storage:install`
