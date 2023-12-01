@@ -749,12 +749,12 @@ class ApplicationController < ActionController::API
   # We also change avatar from a weird active_storage object to just the avatar url before it gets to the frontend.
   def prep_raw_user(user)
     avatar = user.avatar.present? ? url_for(user.avatar) : nil
-    widgets = Widget.where(user_id: user.id).map { |widget| widget.id }
-    subwidgets = Subwidget.where(widget_id: widgets).map { |subwidget| subwidget.id }
+    # widgets = Widget.where(user_id: user.id).map { |widget| widget.id }
+    # subwidgets = Subwidget.where(widget_id: widgets).map { |subwidget| subwidget.id }
     user = user.admin ? user.slice(:id,:email,:name,:admin) : user.slice(:id,:email,:name)
     user['avatar'] = avatar
-    user['widget_ids'] = widgets
-    user['subwidget_ids'] = subwidgets
+    # user['widget_ids'] = widgets
+    # user['subwidget_ids'] = subwidgets
     user
   end
 
@@ -994,6 +994,7 @@ class HealthController < ApplicationController
 end
 ~
 ```
+- `rspec`
 
 
 ### Widgets (Backend)
