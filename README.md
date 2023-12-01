@@ -104,6 +104,50 @@ end
 ~
 ```
 - `rm -rf test`
+- `puravida spec/rails_helper.rb ~`
+```
+require 'spec_helper'
+require 'database_cleaner/active_record'
+ENV['RAILS_ENV'] ||= 'test'
+require_relative '../config/environment'
+abort("The Rails environment is running in production mode!") if Rails.env.production?
+require 'rspec/rails'
+begin
+  ActiveRecord::Migration.maintain_test_schema!
+rescue ActiveRecord::PendingMigrationError => e
+  abort e.to_s.strip
+end
+RSpec.configure do |config|
+  config.fixture_path = Rails.root.join('spec/fixtures')
+  config.use_transactional_fixtures = true
+  config.infer_spec_type_from_file_location!
+  config.filter_rails_from_backtrace!
+end
+def db_pre_clean() DatabaseCleaner.strategy = :truncation; DatabaseCleaner.start;  DatabaseCleaner.clean end
+def db_post_clean() DatabaseCleaner.clean end
+def valid_create_params() { name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password", avatar: fixture_file_upload("spec/fixtures/files/michael-scott.png", "image/png") } end
+def invalid_create_params_email_poorly_formed() { name: "Michael Scott", email: "not_an_email", admin: "true", password: "password", avatar: fixture_file_upload("spec/fixtures/files/michael-scott.png", "image/png") } end
+def valid_update_attributes() { name: "UpdatedName" } end
+def invalid_update_attributes() { email: "not_an_email" } end
+def michael_create_params()  { name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password" } end
+def michael_login_params() { email: "michaelscott@dundermifflin.com",  password: "password" } end
+def michael_token
+  post "/login", params: michael_login_params
+  token = JSON.parse(response.body)['data']
+end
+def michael_auth_header() { Authorization: "Bearer " + michael_token } end
+def michael_poorly_formed_auth_header() { Authorization: "Bears " + michael_token } end
+def jim_create_params()  { name: "Jim Halpert", email: "jimhalpert@dundermifflin.com", admin: "false", password: "password" } end
+def jim_login_params() { email: "jimhalpert@dundermifflin.com",  password: "password" } end
+def jim_token
+  post "/login", params: jim_login_params
+  token = JSON.parse(response.body)['data']
+end
+def jim_auth_header() { Authorization: "Bearer " + jim_token } end
+def mock_1_valid_create_params()  { name: "First1 Last1", email: "one@mail.com", admin: "false", password: "password", avatar: fixture_file_upload("spec/fixtures/files/michael-scott.png", "image/png") } end
+def mock_1_invalid_create_params_email_poorly_formed()  { name: "", email: "not_an_email", admin: "false", password: "password", avatar: fixture_file_upload("spec/fixtures/files/michael-scott.png", "image/png") } end
+~
+```
 - `rails g rspec:scaffold users`
 - `rails g rspec:model user`
 - `puravida spec/models/user_spec.rb ~`
@@ -111,19 +155,14 @@ end
 require 'rails_helper'
 require 'database_cleaner/active_record'
 RSpec.describe User, type: :model do
-  before :all do
-    DatabaseCleaner.strategy = :truncation
-    DatabaseCleaner.start
-  end
+  before :all do db_pre_clean end
   it "is valid with valid attributes" do
     expect(User.new(valid_create_params)).to be_valid
   end
   it "is not valid width poorly formed email" do
     expect(User.new(invalid_create_params_email_poorly_formed)).to_not be_valid
   end
-  after :all do
-    DatabaseCleaner.clean
-  end
+  after :all do db_post_clean end
 end
 ~
 ```
@@ -161,6 +200,21 @@ test_fixtures:
 local:
   service: Disk
   root: <%= Rails.root.join("storage") %>
+~
+```
+- `puravida app/controllers/application_controller.rb ~`
+```
+class ApplicationController < ActionController::API
+  # We don't want to send the whole user record from the database to the frontend, so we only send what we need.
+  # The db user row has password_digest (unsafe) and created_at and updated_at (extraneous).
+  # We also change avatar from a weird active_storage object to just the avatar url before it gets to the frontend.
+  def prep_raw_user(user)
+    avatar = user.avatar.present? ? url_for(user.avatar) : nil
+    user = user.admin ? user.slice(:id,:email,:name,:admin) : user.slice(:id,:email,:name)
+    user['avatar'] = avatar
+    user
+  end
+end
 ~
 ```
 - `puravida app/controllers/users_controller.rb ~`
@@ -221,11 +275,15 @@ end
 ```
 - `puravida spec/requests/users_spec.rb ~`
 ```
+# frozen_string_literal: true
 require 'rails_helper'
+# require 'database_cleaner/active_record'
 
 RSpec.describe "/users", type: :request do
   fixtures :users
 
+  before :all do db_pre_clean end
+  
   before :each do
     @user = users(:michael)
   end
@@ -238,7 +296,7 @@ RSpec.describe "/users", type: :request do
 
     it "gets two users" do
       get users_url
-      expect(JSON.parse(response.body).length).to eq 2
+      expect(JSON.parse(response.body).length).to eq 3
     end
   end
 
@@ -249,74 +307,44 @@ RSpec.describe "/users", type: :request do
     end
   end
 
-  describe "GET /new" do
-    it "renders a successful response" do
-      get new_user_url
-      expect(response).to be_successful
-    end
-  end
-
-  describe "GET /edit" do
-    it "renders a successful response" do
-      get edit_user_url(@user)
-      expect(response).to be_successful
-    end
-  end
-
-  describe "POST /create" do
+  describe "POST /users" do
     context "with valid parameters" do
       it "creates a new User" do
         expect {
-          post users_url, params: { user: valid_create_params }
+          post users_url, params: mock_1_valid_create_params
         }.to change(User, :count).by(1)
       end
 
-      it "redirects to the created user" do
-        post users_url, params: { user: valid_create_params }
-        expect(response).to redirect_to(user_url(User.last))
+      it "renders a successful response" do
+        post users_url, params: mock_1_valid_create_params
+        expect(response).to be_successful
       end
 
       it "sets user name" do
-        post users_url, params: { user: valid_create_params }
+        post users_url, params: mock_1_valid_create_params
         user = User.order(:created_at).last
-        expect(user.name).to eq("Name")
+        expect(user.name).to eq("First1 Last1")
       end
 
       it "attaches user avatar" do
-        post users_url, params: { user: valid_create_params }
+        post users_url, params: mock_1_valid_create_params
         user = User.order(:created_at).last
         expect(user.avatar.attached?).to eq(true)
       end
     end
 
-    context "with invalid parameters (blank name)" do
+    context "with invalid parameters (email poorly formed)" do
       it "does not create a new User" do
         expect {
-          post users_url, params: { user: invalid_create_params_name_is_blank }
+          post users_url, params: mock_1_invalid_create_params_email_poorly_formed
         }.to change(User, :count).by(0)
       end
 
     
-      it "renders a response with 422 status (i.e. to display the 'new' template)" do
-        post users_url, params: { user: invalid_create_params_name_is_blank }
+      it "renders a 422 response" do
+        post users_url, params: mock_1_invalid_create_params_email_poorly_formed
         expect(response).to have_http_status(:unprocessable_entity)
-      end
-    
-    end
-
-    context "with invalid parameters (number in name)" do
-      it "does not create a new User" do
-        expect {
-          post users_url, params: { user: invalid_create_params_name_has_number }
-        }.to change(User, :count).by(0)
-      end
-
-    
-      it "renders a response with 422 status (i.e. to display the 'new' template)" do
-        post users_url, params: { user: invalid_create_params_name_has_number }
-        expect(response).to have_http_status(:unprocessable_entity)
-      end
-    
+      end  
     end
   end
 
@@ -324,22 +352,22 @@ RSpec.describe "/users", type: :request do
     context "with valid parameters" do
 
       it "updates the requested user" do
-        patch user_url(@user), params: { user: update_attributes }
+        patch user_url(@user), params: valid_update_attributes
         @user.reload
         expect(@user.name).to eq("UpdatedName")
       end
 
-      it "redirects to the user" do
-        patch user_url(@user), params: { user: update_attributes }
+      it "is successful" do
+        patch user_url(@user), params: valid_update_attributes
         @user.reload
-        expect(response).to redirect_to(user_url(@user))
+        expect(response).to be_successful
       end
     end
 
     context "with invalid parameters" do
     
-      it "renders a response with 422 status (i.e. to display the 'edit' template)" do
-        patch user_url(@user), params: { user: invalid_create_params_name_has_number }
+      it "renders a 422 response" do
+        patch user_url(@user), params: invalid_update_attributes
         expect(response).to have_http_status(:unprocessable_entity)
       end
     
@@ -353,11 +381,14 @@ RSpec.describe "/users", type: :request do
       }.to change(User, :count).by(-1)
     end
 
-    it "redirects to the users list" do
+    it "renders a successful response" do
       delete user_url(@user)
-      expect(response).to redirect_to(users_url)
+      expect(response).to be_successful
     end
   end
+
+  after :all do db_post_clean end
+
 end
 ~
 ```
