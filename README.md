@@ -689,6 +689,7 @@ def blob_for(name)
 end
 ~
 ```
+- `rspec`
 
 #### /me Route (Application Controller Auth Helpers)
 
@@ -2728,6 +2729,7 @@ export default {
 </template>
 ~
 ```
+`rspec`
 
 ### Users Page
 - `puravida components/user/Card.vue ~`
