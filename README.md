@@ -952,16 +952,13 @@ class UsersController < ApplicationController
 end
 ~
 ```
-- `puravida spec/requests/user_spec.rb ~`
+- `puravida spec/requests/users_spec.rb ~`
 ```
 # frozen_string_literal: true
 require 'rails_helper'
-require 'database_cleaner/active_record'
 
 RSpec.describe "/users", type: :request do
   fixtures :users
-
-  before :all do db_pre_clean end
   
   before :each do
     @user = users(:michael)
@@ -1065,9 +1062,6 @@ RSpec.describe "/users", type: :request do
       expect(response).to be_successful
     end
   end
-
-  after :all do db_post_clean end
-
 end
 ~
 ```
