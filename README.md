@@ -221,7 +221,6 @@ end
 ```
 class UsersController < ApplicationController
   before_action :set_user, only: %i[ show update destroy ]
-  skip_before_action :require_login, only: :create
 
   # GET /users
   def index
@@ -691,7 +690,7 @@ end
 ~
 ```
 
-#### /me Route (Application Controller)
+#### /me Route (Application Controller Auth Helpers)
 
 - `puravida app/controllers/application_controller.rb ~`
 ```
@@ -992,6 +991,7 @@ class HealthController < ApplicationController
 end
 ~
 ```
+
 
 ### Widgets (Backend)
 - `rails g scaffold widget name description image:attachment user:references`
