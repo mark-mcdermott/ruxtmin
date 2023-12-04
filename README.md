@@ -1168,66 +1168,67 @@ RSpec.describe "/widgets", type: :request do
   let(:invalid_attributes) {{ name: "invalid_attributes", description: "invalid_attributes" }}
   let(:valid_headers) {{ Authorization: "Bearer eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjo3NjIxNDYxMTEsImVtYWlsIjoibWljaGFlbHNjb3R0QGR1bmRlcm1pZmZsaW4uY29tIn0.RcCe7stt_V2prjuMbNCQv3tbHQwMfspl9iyrZoy2FHo"}}
 
-  describe "GET /index" do
-    it "renders a successful response" do
-      Widget.create! valid_attributes
-      get widgets_url, headers: valid_headers
-      expect(response).to be_successful
-    end
-  end
+  # describe "GET /index" do
+  #   it "renders a successful response" do
+  #     get widgets_url, headers: valid_headers
+  #     expect(response).to be_successful
+  #   end
+  #   it "gets two widgets a successful response" do
+  #     get widgets_url, headers: valid_headers
+  #     expect(JSON.parse(response.body).length).to eq 2
+  #   end
+  # end
 
-  describe "GET /show" do
-    it "renders a successful response" do
-      widget = Widget.create! valid_attributes
-      get widget_url(widget), headers: valid_headers
-      expect(response).to be_successful
-    end
-  end
+  # describe "GET /show" do
+  #   it "renders a successful response" do
+  #     widget = widgets(:widget_one)
+  #     get widget_url(widget), headers: valid_headers
+  #     expect(response).to be_successful
+  #   end
+  # end
 
-  describe "POST /create" do
-    context "with valid parameters" do
-      it "creates a new Widget" do
-        expect {
-          post widgets_url,
-               params: valid_attributes, headers: valid_headers, as: :json
-        }.to change(Widget, :count).by(1)
-      end
+  # describe "POST /create" do
+  #   context "with valid parameters" do
+  #     it "creates a new Widget" do
+  #       expect { post widgets_url, params: valid_attributes, headers: valid_headers, as: :json
+  #       }.to change(Widget, :count).by(1)
+  #     end
 
-      it "renders a JSON response with the new widget" do
-        post widgets_url, params: valid_attributes, headers: valid_headers, as: :json
-        expect(response).to have_http_status(:created)
-        expect(response.content_type).to match(a_string_including("application/json"))
-      end
-    end
+  #     it "renders a JSON response with the new widget" do
+  #       post widgets_url, params: valid_attributes, headers: valid_headers, as: :json
+  #       expect(response).to have_http_status(:created)
+  #       expect(response.content_type).to match(a_string_including("application/json"))
+  #     end
+  #   end
 
-    context "with invalid parameters" do
-      it "does not create a new Widget" do
-        expect {
-          post widgets_url, params: invalid_attributes, headers: valid_headers, as: :json
-        }.to change(Widget, :count).by(0)
-      end
+  #   context "with invalid parameters" do
+  #     it "does not create a new Widget" do
+  #       expect {
+  #         post widgets_url, params: invalid_attributes, headers: valid_headers, as: :json
+  #       }.to change(Widget, :count).by(0)
+  #     end
 
-      it "renders a JSON response with errors for the new widget" do
-        post widgets_url, params: invalid_attributes, headers: valid_headers, as: :json
-        expect(response).to have_http_status(:unprocessable_entity)
-        expect(response.content_type).to match(a_string_including("application/json"))
-      end
-    end
-  end
+  #     it "renders a JSON response with errors for the new widget" do
+  #       post widgets_url, params: invalid_attributes, headers: valid_headers, as: :json
+  #       expect(response).to have_http_status(:unprocessable_entity)
+  #       expect(response.content_type).to match(a_string_including("application/json"))
+  #     end
+  #   end
+  # end
 
   describe "PATCH /update" do
     context "with valid parameters" do
       let(:new_attributes) {{ name: "UpdatedName"}}
 
       it "updates the requested widget" do
-        widget = Widget.create! valid_attributes
+        widget = widgets(:widget_one)
         patch widget_url(widget), params: new_attributes, headers: valid_headers, as: :json
         widget.reload
-        expect(Widget.last.name).to eq("UpdatedName")
+        expect(widget.name).to eq("UpdatedName")
       end
 
       it "renders a JSON response with the widget" do
-        widget = Widget.create! valid_attributes
+        widget = widgets(:widget_one)
         patch widget_url(widget), params: new_attributes, headers: valid_headers, as: :json
         expect(response).to have_http_status(:ok)
         expect(response.content_type).to match(a_string_including("application/json"))
@@ -1236,7 +1237,7 @@ RSpec.describe "/widgets", type: :request do
 
     # context "with invalid parameters" do
     #   it "renders a JSON response with errors for the widget" do
-    #     widget = Widget.create! valid_attributes
+    #     widget = widgets(:widget_one)
     #     patch widget_url(widget), params: invalid_attributes, headers: valid_headers, as: :json
     #     expect(response).to have_http_status(:unprocessable_entity)
     #     expect(response.content_type).to match(a_string_including("application/json"))
@@ -1244,13 +1245,13 @@ RSpec.describe "/widgets", type: :request do
     # end
   end
 
-  describe "DELETE /destroy" do
-    it "destroys the requested widget" do
-      widget = Widget.create! valid_attributes
-      expect { delete widget_url(widget), headers: valid_headers, as: :json
-      }.to change(Widget, :count).by(-1)
-    end
-  end
+  # describe "DELETE /destroy" do
+  #   it "destroys the requested widget" do
+  #     widget = Widget.create! valid_attributes
+  #     expect { delete widget_url(widget), headers: valid_headers, as: :json
+  #     }.to change(Widget, :count).by(-1)
+  #   end
+  # end
 end
 ~
 ```
