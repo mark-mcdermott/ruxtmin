@@ -804,6 +804,9 @@ require 'rails_helper'
 
 RSpec.describe "/me", type: :request do
   fixtures :users
+  let(:valid_headers) {{ Authorization: "Bearer eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjo3NjIxNDYxMTEsImVtYWlsIjoibWljaGFlbHNjb3R0QGR1bmRlcm1pZmZsaW4uY29tIn0.RcCe7stt_V2prjuMbNCQv3tbHQwMfspl9iyrZoy2FHo" }}
+  let(:invalid_token_header) {{ Authorization: "Bearer xyz" }}
+  let(:poorly_formed_header) {{ Authorization: "Bear eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjo3NjIxNDYxMTEsImVtYWlsIjoibWljaGFlbHNjb3R0QGR1bmRlcm1pZmZsaW4uY29tIn0.RcCe7stt_V2prjuMbNCQv3tbHQwMfspl9iyrZoy2FHo" }}
   describe "GET /me" do
 
     context "without auth header" do
@@ -822,14 +825,14 @@ RSpec.describe "/me", type: :request do
 
     context "with valid token, but poorly formed auth header" do
       it "returns http success" do
-        get "/me", headers: michael_poorly_formed_auth_header
+        get "/me", headers: poorly_formed_header
         expect(response).to have_http_status(:unauthorized)
       end
     end
 
     context "with valid auth header" do
       it "returns http success" do
-        get "/me", headers: michael_auth_header
+        get "/me", headers: valid_headers
         expect(response).to have_http_status(:success)
       end
     end
@@ -1150,6 +1153,18 @@ class WidgetsController < ApplicationController
       params.permit(:id, :name, :description, :image, :user_id)
     end
 end
+```
+- `puravida spec/fixtures/widgets.yml ~`
+```
+widget_one:
+  name: widget_one_name
+  description: widget_one_description
+  user_id: <%= User.find_by(email: "michaelscott@dundermifflin.com").id %>
+
+widget_two:
+  name: widget_two_name
+  description: widget_two_description
+  user_id: <%= User.find_by(email: "jimhalpert@dundermifflin.com").id %>
 ~
 ```
 - `puravida spec/requests/widgets_spec.rb ~`
