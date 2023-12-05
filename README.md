@@ -260,12 +260,17 @@ end
 ```
 # frozen_string_literal: true
 require 'rails_helper'
-# require 'database_cleaner/active_record'
 
 RSpec.describe "/users", type: :request do
   fixtures :users
-
-  before :all do db_pre_clean end
+  let(:valid_headers) {{ Authorization: "Bearer eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjo3NjIxNDYxMTEsImVtYWlsIjoibWljaGFlbHNjb3R0QGR1bmRlcm1pZmZsaW4uY29tIn0.RcCe7stt_V2prjuMbNCQv3tbHQwMfspl9iyrZoy2FHo" }}
+  let(:admin_2_headers) {{ Authorization: "Bearer eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjo3Njc0ODg2MjIsImVtYWlsIjoicnlhbmhvd2FyZEBkdW5kZXJtaWZmbGluLmNvbSJ9.Ld2Z5M7CVIJz7uHcFLpd2wHnvRLdts6-qB1Edwt7UEk" }}
+  let(:invalid_token_header) {{ Authorization: "Bearer xyz" }}
+  let(:poorly_formed_header) {{ Authorization: "Bear eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjo3NjIxNDYxMTEsImVtYWlsIjoibWljaGFlbHNjb3R0QGR1bmRlcm1pZmZsaW4uY29tIn0.RcCe7stt_V2prjuMbNCQv3tbHQwMfspl9iyrZoy2FHo" }}
+  let(:user_valid_create_params_mock_1) {{ name: "First1 Last1", email: "one@mail.com", admin: "false", password: "password", avatar: fixture_file_upload("spec/fixtures/files/michael-scott.png", "image/png") }}
+  let(:user_invalid_create_params_email_poorly_formed_mock_1) {{ name: "", email: "not_an_email", admin: "false", password: "password", avatar: fixture_file_upload("spec/fixtures/files/michael-scott.png", "image/png") }}
+  let(:valid_user_update_attributes) {{ name: "UpdatedName" }}
+  let(:invalid_user_update_attributes) {{ email: "not_an_email" }}
   
   before :each do
     @user = users(:michael)
@@ -279,7 +284,7 @@ RSpec.describe "/users", type: :request do
 
     it "gets two users" do
       get users_url
-      expect(JSON.parse(response.body).length).to eq 3
+      expect(JSON.parse(response.body).length).to eq 4
     end
   end
 
@@ -369,8 +374,6 @@ RSpec.describe "/users", type: :request do
       expect(response).to be_successful
     end
   end
-
-  after :all do db_post_clean end
 
 end
 ~
