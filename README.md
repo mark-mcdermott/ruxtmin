@@ -1112,7 +1112,6 @@ def blob_for(name)
 end
 ~
 ```
-- `rspec`
 
 ### Update Health Controller For Auth
 - `puravida app/controllers/health_controller.rb ~`
