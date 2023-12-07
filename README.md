@@ -1072,6 +1072,41 @@ Rails.application.routes.draw do
 end
 ~
 ```
+### Put JWT tokens in credentials.yml.enc
+- `puravida db/seeds.rb ~`
+```
+user = User.create(name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password")
+user.avatar.attach(io: URI.open("#{Rails.root}/app/assets/images/office-avatars/michael-scott.png"), filename: "michael-scott.png")
+user.save!
+user = User.create(name: "Jim Halpert", email: "jimhalpert@dundermifflin.com", admin: "false", password: "password")
+user.avatar.attach(io: URI.open("#{Rails.root}/app/assets/images/office-avatars/jim-halpert.png"), filename: "jim-halpert.png")
+user.save!
+user = User.create(name: "Pam Beesly", email: "pambeesly@dundermifflin.com", admin: "false", password: "password")
+user.avatar.attach(io: URI.open("#{Rails.root}/app/assets/images/office-avatars/pam-beesly.png"), filename: "jim-halpert.png")
+user.save!
+~
+```
+- `rails db:seed`
+- `rails s`
+- in postman run a POST on `/login` with the body of { email: "michaelscott@dundermifflin.com", password: "password" } and copy the return string (without `Bearer `)
+- control + c
+- `EDITOR="code --wait" rails credentials:edit`
+- add:
+```
+token:
+  dev: <token from above>
+```
+- `RAILS_ENV=test rails s`
+- in postman run a POST on `/login` with the body of { email: "michaelscott@dundermifflin.com", password: "password" } and copy the return string (without `Bearer `)
+- control + c
+- `EDITOR="code --wait" rails credentials:edit`
+- add:
+```
+token:
+  dev: <token from above>
+  test: <token from above>
+```
+
 ### Update Health Controller For Auth
 - `puravida app/controllers/health_controller.rb ~`
 ```
