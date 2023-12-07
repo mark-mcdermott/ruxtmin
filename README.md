@@ -189,6 +189,7 @@ local:
 - `puravida app/controllers/application_controller.rb ~`
 ```
 class ApplicationController < ActionController::API
+  SECRET_KEY_BASE = Rails.application.credentials.secret_key_base
 
   def encode_token(payload)
     JWT.encode payload, SECRET_KEY_BASE, 'HS256'
