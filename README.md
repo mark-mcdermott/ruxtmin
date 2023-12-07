@@ -127,7 +127,7 @@ end
 
 def token_from_email_password(email,password)
   post "/login", params: { email: email, password: password }
-  (JSON.parse(response.body)['data']).split(' ')[1]
+  JSON.parse(response.body)['data']
 end
 ~
 ```
