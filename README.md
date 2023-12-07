@@ -574,34 +574,39 @@ require 'rails_helper'
 
 RSpec.describe "/users", type: :request do
   fixtures :users
-  let(:valid_headers) {{ Authorization: "Bearer " + Rails._application_.credentials.token.michael.test }}
-  let(:admin_2_headers) {{ Authorization: "Bearer " + Rails.application.credentials.token.ryan.test }}
+  let(:valid_headers) {{ Authorization: "Bearer " + @michael_token }}
+  let(:admin_2_headers) {{ Authorization: "Bearer " + @ryan_token }}
   let(:invalid_token_header) {{ Authorization: "Bearer xyz" }}
-  let(:poorly_formed_header) {{ Authorization: "Bear " + Rails.application.credentials.token.michael.test }}
+  let(:poorly_formed_header) {{ Authorization: "Bear " + @michael_token }}
   let(:user_valid_create_params_mock_1) {{ name: "First1 Last1", email: "one@mail.com", admin: "false", password: "password", avatar: fixture_file_upload("spec/fixtures/files/michael-scott.png", "image/png") }}
   let(:user_invalid_create_params_email_poorly_formed_mock_1) {{ name: "", email: "not_an_email", admin: "false", password: "password", avatar: fixture_file_upload("spec/fixtures/files/michael-scott.png", "image/png") }}
   let(:valid_user_update_attributes) {{ name: "UpdatedName" }}
   let(:invalid_user_update_attributes) {{ email: "not_an_email" }}
   
+  before :all do
+    @michael_token = token_from_email_password("michaelscott@dundermifflin.com", "password")
+    @ryan_token = token_from_email_password("ryanhoward@dundermifflin.com", "password")
+  end
+
   before :each do
     @user = users(:michael)
   end
 
   describe "GET /index" do
     it "renders a successful response" do
-      get users_url
+      get users_url, headers: valid_headers
       expect(response).to be_successful
     end
 
     it "gets two users" do
-      get users_url
+      get users_url, headers: valid_headers
       expect(JSON.parse(response.body).length).to eq 4
     end
   end
 
   describe "GET /show" do
     it "renders a successful response" do
-      get user_url(@user)
+      get user_url(@user), headers: valid_headers
       expect(response).to be_successful
     end
   end
@@ -651,13 +656,13 @@ RSpec.describe "/users", type: :request do
     context "with valid parameters" do
 
       it "updates the requested user" do
-        patch user_url(@user), params: valid_user_update_attributes
+        patch user_url(@user), headers: valid_headers, params: valid_user_update_attributes
         @user.reload
         expect(@user.name).to eq("UpdatedName")
       end
 
       it "is successful" do
-        patch user_url(@user), params: valid_user_update_attributes
+        patch user_url(@user), headers: valid_headers, params: valid_user_update_attributes
         @user.reload
         expect(response).to be_successful
       end
@@ -666,7 +671,7 @@ RSpec.describe "/users", type: :request do
     context "with invalid parameters" do
     
       it "renders a 422 response" do
-        patch user_url(@user), params: invalid_user_update_attributes
+        patch user_url(@user), headers: valid_headers, params: invalid_user_update_attributes
         expect(response).to have_http_status(:unprocessable_entity)
       end
     
@@ -676,12 +681,12 @@ RSpec.describe "/users", type: :request do
   describe "DELETE /destroy" do
     it "destroys the requested user" do
       expect {
-        delete user_url(@user)
+        delete user_url(@user), headers: admin_2_headers
       }.to change(User, :count).by(-1)
     end
 
     it "renders a successful response" do
-      delete user_url(@user)
+      delete user_url(@user), headers: admin_2_headers
       expect(response).to be_successful
     end
   end
