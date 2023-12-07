@@ -149,6 +149,7 @@ RSpec.describe User, type: :model do
 end
 ~
 ```
+- `rspec`
 - `puravida spec/fixtures/users.yml ~`
 ```
 michael:
@@ -281,6 +282,125 @@ class UsersController < ApplicationController
       params.permit(:name, :email, :avatar, :admin, :password)
     end
     
+end
+~
+```
+`puravida spec/requests/users_spec.rb ~`
+```
+# frozen_string_literal: true
+require 'rails_helper'
+# require 'database_cleaner/active_record'
+
+RSpec.describe "/users", type: :request do
+  fixtures :users
+
+  before :all do db_pre_clean end
+  
+  before :each do
+    @user = users(:michael)
+  end
+
+  describe "GET /index" do
+    it "renders a successful response" do
+      get users_url
+      expect(response).to be_successful
+    end
+
+    it "gets two users" do
+      get users_url
+      expect(JSON.parse(response.body).length).to eq 3
+    end
+  end
+
+  describe "GET /show" do
+    it "renders a successful response" do
+      get user_url(@user)
+      expect(response).to be_successful
+    end
+  end
+
+  describe "POST /users" do
+    context "with valid parameters" do
+      it "creates a new User" do
+        expect {
+          post users_url, params: user_valid_create_params_mock_1
+        }.to change(User, :count).by(1)
+      end
+
+      it "renders a successful response" do
+        post users_url, params: user_valid_create_params_mock_1
+        expect(response).to be_successful
+      end
+
+      it "sets user name" do
+        post users_url, params: user_valid_create_params_mock_1
+        user = User.order(:created_at).last
+        expect(user.name).to eq("First1 Last1")
+      end
+
+      it "attaches user avatar" do
+        post users_url, params: user_valid_create_params_mock_1
+        user = User.order(:created_at).last
+        expect(user.avatar.attached?).to eq(true)
+      end
+    end
+
+    context "with invalid parameters (email poorly formed)" do
+      it "does not create a new User" do
+        expect {
+          post users_url, params: user_invalid_create_params_email_poorly_formed_mock_1
+        }.to change(User, :count).by(0)
+      end
+
+    
+      it "renders a 422 response" do
+        post users_url, params: user_invalid_create_params_email_poorly_formed_mock_1
+        expect(response).to have_http_status(:unprocessable_entity)
+      end  
+    end
+  end
+
+  describe "PATCH /update" do
+    context "with valid parameters" do
+
+      it "updates the requested user" do
+        patch user_url(@user), params: valid_user_update_attributes
+        @user.reload
+        expect(@user.name).to eq("UpdatedName")
+      end
+
+      it "is successful" do
+        patch user_url(@user), params: valid_user_update_attributes
+        @user.reload
+        expect(response).to be_successful
+      end
+    end
+
+    context "with invalid parameters" do
+    
+      it "renders a 422 response" do
+        patch user_url(@user), params: invalid_user_update_attributes
+        expect(response).to have_http_status(:unprocessable_entity)
+      end
+    
+    end
+  end
+
+  describe "DELETE /destroy" do
+    it "destroys the requested user" do
+      expect {
+        delete user_url(@user)
+      }.to change(User, :count).by(-1)
+    end
+
+    it "renders a successful response" do
+      delete user_url(@user)
+      expect(response).to be_successful
+    end
+  end
+
+  after :all do db_post_clean end
+
 end
 ~
 ```
