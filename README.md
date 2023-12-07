@@ -21,8 +21,8 @@ This readme uses a small custom bash command called [puravida](#user-content-pur
 - `rails active_storage:install`
 - `rails generate rspec:install`
 - `rails db:migrate`
-- copy `assets` folder into `app` folder
 - `puravida spec/fixtures/files`
+- copy `assets` folder into `app` folder
 - copy the contents of the `office-avatars` folder into `spec/fixtures/files` folder
 - `puravida config/initializers/cors.rb ~`
 ```
@@ -590,9 +590,14 @@ require 'rails_helper'
 
 RSpec.describe "/me", type: :request do
   fixtures :users
-  let(:valid_headers) {{ Authorization: "Bearer eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjo3NjIxNDYxMTEsImVtYWlsIjoibWljaGFlbHNjb3R0QGR1bmRlcm1pZmZsaW4uY29tIn0.RcCe7stt_V2prjuMbNCQv3tbHQwMfspl9iyrZoy2FHo" }}
+  let(:valid_headers) {{ Authorization: "Bearer " + @token }}
   let(:invalid_token_header) {{ Authorization: "Bearer xyz" }}
-  let(:poorly_formed_header) {{ Authorization: "Bear eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjo3NjIxNDYxMTEsImVtYWlsIjoibWljaGFlbHNjb3R0QGR1bmRlcm1pZmZsaW4uY29tIn0.RcCe7stt_V2prjuMbNCQv3tbHQwMfspl9iyrZoy2FHo" }}
+  let(:poorly_formed_header) {{ Authorization: "Bear " + @token }}
+  
+  before :all do
+    @token = token_from_email_password("michaelscott@dundermifflin.com", "password")
+  end
+  
   describe "GET /me" do
 
     context "without auth header" do
