@@ -124,6 +124,11 @@ RSpec.configure do |config|
   config.infer_spec_type_from_file_location!
   config.filter_rails_from_backtrace!
 end
+
+def token_from_email_password(email,password)
+  post "/login", params: { email: email, password: password }
+  (JSON.parse(response.body)['data']).split(' ')[1]
+end
 ~
 ```
 - `rails g rspec:scaffold users`
