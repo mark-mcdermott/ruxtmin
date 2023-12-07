@@ -275,6 +275,16 @@ user.save!
 ~
 ```
 - `rails db:seed`
+- `puravida config/routes.rb ~`
+```
+Rails.application.routes.draw do
+  resources :users
+  get "health", to: "health#index"
+  post "login", to: "authentications#create"
+  get "me", to: "application#user_from_token"
+end
+~
+```
 - `rails s`
 - in postman run a POST on `/login` with the body of { email: "michaelscott@dundermifflin.com", password: "password" } and copy the return string (without `Bearer `)
 - control + c
@@ -1132,16 +1142,7 @@ RSpec.describe "/users", type: :request do
 end
 ~
 ```
-- `puravida config/routes.rb ~`
-```
-Rails.application.routes.draw do
-  resources :users
-  get "health", to: "health#index"
-  post "login", to: "authentications#create"
-  get "me", to: "application#user_from_token"
-end
-~
-```
+
 ### Update Health Controller For Auth
 - `puravida app/controllers/health_controller.rb ~`
 ```
