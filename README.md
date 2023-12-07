@@ -1018,10 +1018,10 @@ require 'rails_helper'
 
 RSpec.describe "/users", type: :request do
   fixtures :users
-  let(:valid_headers) {{ Authorization: "Bearer " + Rails.application.credentials.token.test }}
-  let(:admin_2_headers) {{ Authorization: "Bearer eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjo3Njc0ODg2MjIsImVtYWlsIjoicnlhbmhvd2FyZEBkdW5kZXJtaWZmbGluLmNvbSJ9.Ld2Z5M7CVIJz7uHcFLpd2wHnvRLdts6-qB1Edwt7UEk" }}
+  let(:valid_headers) {{ Authorization: "Bearer " + Rails.application.credentials.token.michael.test }}
+  let(:admin_2_headers) {{ Authorization: "Bearer " + Rails.application.credentials.token.ryan.test }}
   let(:invalid_token_header) {{ Authorization: "Bearer xyz" }}
-  let(:poorly_formed_header) {{ Authorization: "Bear eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjo3NjIxNDYxMTEsImVtYWlsIjoibWljaGFlbHNjb3R0QGR1bmRlcm1pZmZsaW4uY29tIn0.RcCe7stt_V2prjuMbNCQv3tbHQwMfspl9iyrZoy2FHo" }}
+  let(:poorly_formed_header) {{ Authorization: "Bear " + Rails.application.credentials.token.michael.test }}
   let(:mock_1_valid_create_params) {{ name: "First1 Last1", email: "one@mail.com", admin: "false", password: "password", avatar: fixture_file_upload("spec/fixtures/files/michael-scott.png", "image/png") }}
   let(:mock_1_invalid_create_params_email_poorly_formed) {{ name: "", email: "not_an_email", admin: "false", password: "password", avatar: fixture_file_upload("spec/fixtures/files/michael-scott.png", "image/png") }}
   let(:valid_update_attributes) {{ name: "UpdatedName" }}
