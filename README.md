@@ -403,6 +403,7 @@ RSpec.describe "/users", type: :request do
 end
 ~
 ```
+`rspec`
 
 #### /login Route (Authentications Controller)
 - `rails g controller Authentications`
