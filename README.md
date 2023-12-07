@@ -189,6 +189,22 @@ local:
 - `puravida app/controllers/application_controller.rb ~`
 ```
 class ApplicationController < ActionController::API
+
+  def encode_token(payload)
+    JWT.encode payload, SECRET_KEY_BASE, 'HS256'
+  end
+
+  def decoded_token
+    if auth_header and auth_header.split(' ')[0] == "Bearer"
+      token = auth_header.split(' ')[1]
+      begin
+        JWT.decode token, SECRET_KEY_BASE, true, { algorithm: 'HS256' }
+      rescue JWT::DecodeError
+        []
+      end
+    end
+  end
+
   # We don't want to send the whole user record from the database to the frontend, so we only send what we need.
   # The db user row has password_digest (unsafe) and created_at and updated_at (extraneous).
   # We also change avatar from a weird active_storage object to just the avatar url before it gets to the frontend.
@@ -197,6 +213,12 @@ class ApplicationController < ActionController::API
     user = user.admin ? user.slice(:id,:email,:name,:admin) : user.slice(:id,:email,:name)
     user['avatar'] = avatar
     user
+  end
+
+  private 
+
+  def auth_header
+    request.headers['Authorization']
   end
 end
 ~
@@ -608,7 +630,7 @@ require 'rails_helper'
 
 RSpec.describe "/users", type: :request do
   fixtures :users
-  let(:valid_headers) {{ Authorization: "Bearer " + Rails.application.credentials.token.michael.test }}
+  let(:valid_headers) {{ Authorization: "Bearer " + Rails._application_.credentials.token.michael.test }}
   let(:admin_2_headers) {{ Authorization: "Bearer " + Rails.application.credentials.token.ryan.test }}
   let(:invalid_token_header) {{ Authorization: "Bearer xyz" }}
   let(:poorly_formed_header) {{ Authorization: "Bear " + Rails.application.credentials.token.michael.test }}
