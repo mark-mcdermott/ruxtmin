@@ -1187,6 +1187,7 @@ class WidgetsController < ApplicationController
       params.permit(:id, :name, :description, :image, :user_id)
     end
 end
+~
 ```
 - `puravida spec/fixtures/widgets.yml ~`
 ```
