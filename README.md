@@ -257,6 +257,123 @@ end
 ~
 ```
 
+#### /login Route (Authentications Controller)
+- `rails g controller Authentications`
+- `puravida app/controllers/authentications_controller.rb ~`
+```
+class AuthenticationsController < ApplicationController
+  skip_before_action :require_login
+  
+  def create
+    user = User.find_by(email: params[:email])
+    if user && user.authenticate(params[:password])
+      payload = { user_id: user.id, email: user.email }
+      token = encode_token(payload)
+      render json: { data: token, status: 200, message: 'You are logged in successfully' }
+    else
+      response_unauthorized
+    end
+  end
+end
+~
+```
+- `puravida spec/requests/authentications_spec.rb ~`
+```
+# frozen_string_literal: true
+require 'rails_helper'
+
+RSpec.describe "/login", type: :request do
+  fixtures :users
+  let(:valid_login_params) { { email: "michaelscott@dundermifflin.com",  password: "password" } }
+  let(:invalid_login_params) { { email: "michaelscott@dundermifflin.com",  password: "testing" } }
+  let(:create_user_params) { { name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password" }}
+  describe "POST /login" do
+    context "without params" do
+      it "returns unauthorized" do
+        post "/login"
+        expect(response).to have_http_status(:unauthorized)
+      end
+    end
+  end
+  describe "POST /login" do
+    context "with invalid params" do
+      it "returns unauthorized" do
+        post "/login", params: invalid_login_params
+        expect(response).to have_http_status(:unauthorized)
+      end
+    end
+  end
+  describe "POST /login" do
+    context "with valid params" do
+      it "returns unauthorized" do
+        user = User.create(create_user_params)
+        post "/login", params: valid_login_params
+        expect(response).to have_http_status(:success)
+        expect(JSON.parse(response.body)['message']).to eq "You are logged in successfully"
+        expect(JSON.parse(response.body)['data']).to match(/^(?:[\w-]*\.){2}[\w-]*$/)
+      end
+    end
+  end
+end
+~
+```
+- `puravida app/controllers/users_controller.rb ~`
+```
+class UsersController < ApplicationController
+  before_action :set_user, only: %i[ show update destroy ]
+  skip_before_action :require_login, only: :create
+
+  # GET /users
+  def index
+    @users = User.all.map { |user| prep_raw_user(user) }
+    render json: @users
+  end
+
+  # GET /users/1
+  def show
+    render json: prep_raw_user(@user)
+  end
+
+  # POST /users
+  def create
+    @user = User.new(user_params)
+    if @user.save
+      render json: prep_raw_user(@user), status: :created, location: @user
+    else
+      render json: @user.errors, status: :unprocessable_entity
+    end
+  end
+
+  # PATCH/PUT /users/1
+  def update
+    if @user.update(user_params)
+      render json: prep_raw_user(@user)
+    else
+      render json: @user.errors, status: :unprocessable_entity
+    end
+  end
+
+  # DELETE /users/1
+  def destroy
+    @user.destroy
+  end
+
+  private
+    # Use callbacks to share common setup or constraints between actions.
+    def set_user
+      @user = User.find(params[:id])
+    end
+
+    # Only allow a list of trusted parameters through.
+    def user_params
+      params['avatar'] = params['avatar'].blank? ? nil : params['avatar'] # if no avatar is chosen on signup page, params['avatar'] comes in as a blank string, which throws a 500 error at User.new(user_params). This changes any params['avatar'] blank string to nil, which is fine in User.new(user_params).
+      params.permit(:name, :email, :avatar, :admin, :password)
+    end
+    
+end
+~
+```
+
 ### Put JWT tokens in credentials.yml.enc
 - `puravida db/seeds.rb ~`
 ```
@@ -333,6 +450,156 @@ token:
     dev: <token>
     test: <token>
 ```
+
+#### /me Route (Application Controller Auth Helpers)
+
+- `puravida app/controllers/application_controller.rb ~`
+```
+class ApplicationController < ActionController::API
+  SECRET_KEY_BASE = Rails.application.credentials.secret_key_base
+  before_action :require_login
+  rescue_from Exception, with: :response_internal_server_error
+
+  def require_login
+    response_unauthorized if current_user_raw.blank?
+  end
+
+  # this is safe to send to the frontend, excludes password_digest, created_at, updated_at
+  def user_from_token
+    user = prep_raw_user(current_user_raw)
+    render json: { data: user, status: 200 }
+  end
+
+  # unsafe/internal: includes password_digest, created_at, updated_at - we don't want those going to the frontend
+  def current_user_raw
+    if decoded_token.present?
+      user_id = decoded_token[0]['user_id']
+      @user = User.find_by(id: user_id)
+    else
+      nil
+    end
+  end
+
+  def encode_token(payload)
+    JWT.encode payload, SECRET_KEY_BASE, 'HS256'
+  end
+
+  def decoded_token
+    if auth_header and auth_header.split(' ')[0] == "Bearer"
+      token = auth_header.split(' ')[1]
+      begin
+        JWT.decode token, SECRET_KEY_BASE, true, { algorithm: 'HS256' }
+      rescue JWT::DecodeError
+        []
+      end
+    end
+  end
+
+  def response_unauthorized
+    render status: 401, json: { status: 401, message: 'Unauthorized' }
+  end
+  
+  def response_internal_server_error
+    render status: 500, json: { status: 500, message: 'Internal Server Error' }
+  end
+
+  # We don't want to send the whole user record from the database to the frontend, so we only send what we need.
+  # The db user row has password_digest (unsafe) and created_at and updated_at (extraneous).
+  # We also change avatar from a weird active_storage object to just the avatar url before it gets to the frontend.
+  def prep_raw_user(user)
+    avatar = user.avatar.present? ? url_for(user.avatar) : nil
+    # widgets = Widget.where(user_id: user.id).map { |widget| widget.id }
+    # subwidgets = Subwidget.where(widget_id: widgets).map { |subwidget| subwidget.id }
+    user = user.admin ? user.slice(:id,:email,:name,:admin) : user.slice(:id,:email,:name)
+    user['avatar'] = avatar
+    # user['widget_ids'] = widgets
+    # user['subwidget_ids'] = subwidgets
+    user
+  end
+
+  def prep_raw_widget(widget)
+    user_id = widget.user_id
+    user_name = User.find(widget.user_id).name
+    # subwidgets = Subwidget.where(widget_id: widget.id)
+    # subwidgets = subwidgets.map { |subwidget| subwidget.slice(:id,:name,:description,:widget_id) }
+    image = widget.image.present? ? url_for(widget.image) : nil
+    widget = widget.slice(:id,:name,:description)
+    widget['userId'] = user_id
+    widget['userName'] = user_name
+    widget['image'] = image
+    # widget['subwidgets'] = subwidgets
+    widget
+  end
+
+  def prep_raw_subwidget(subwidget)
+    widget_id = subwidget.widget_id
+    widget = Widget.find(widget_id)
+    user = User.find(widget.user_id)
+    image = subwidget.image.present? ? url_for(subwidget.image) : nil
+    subwidget = subwidget.slice(:id,:name,:description)
+    subwidget['widgetId'] = widget_id
+    subwidget['widgetName'] = widget.name
+    subwidget['widgetDescription'] = widget.description
+    subwidget['userId'] = user.id
+    subwidget['userName'] = user.name
+    subwidget['image'] = image
+    subwidget
+  end
+  
+  private 
+  
+    def auth_header
+      request.headers['Authorization']
+    end
+
+end
+~
+```
+- `puravida spec/requests/application_spec.rb ~`
+```
+# frozen_string_literal: true
+require 'rails_helper'
+
+RSpec.describe "/me", type: :request do
+  fixtures :users
+  let(:valid_headers) {{ Authorization: "Bearer eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjo3NjIxNDYxMTEsImVtYWlsIjoibWljaGFlbHNjb3R0QGR1bmRlcm1pZmZsaW4uY29tIn0.RcCe7stt_V2prjuMbNCQv3tbHQwMfspl9iyrZoy2FHo" }}
+  let(:invalid_token_header) {{ Authorization: "Bearer xyz" }}
+  let(:poorly_formed_header) {{ Authorization: "Bear eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjo3NjIxNDYxMTEsImVtYWlsIjoibWljaGFlbHNjb3R0QGR1bmRlcm1pZmZsaW4uY29tIn0.RcCe7stt_V2prjuMbNCQv3tbHQwMfspl9iyrZoy2FHo" }}
+  describe "GET /me" do
+
+    context "without auth header" do
+      it "returns http success" do
+        get "/me"
+        expect(response).to have_http_status(:unauthorized)
+      end
+    end
+    
+    context "with invalid token header" do
+      it "returns http success" do
+        get "/me", headers: invalid_token_header
+        expect(response).to have_http_status(:unauthorized)
+      end
+    end
+
+    context "with valid token, but poorly formed auth header" do
+      it "returns http success" do
+        get "/me", headers: poorly_formed_header
+        expect(response).to have_http_status(:unauthorized)
+      end
+    end
+
+    context "with valid auth header" do
+      it "returns http success" do
+        get "/me", headers: valid_headers
+        expect(response).to have_http_status(:success)
+      end
+    end
+  end
+end
+~
+```
+
+### Update users_spec.rb For Auth
 
 - `puravida spec/requests/users_spec.rb ~`
 ```
@@ -755,271 +1022,6 @@ end
 ~
 ```
 - `rspec`
-
-#### /me Route (Application Controller Auth Helpers)
-
-- `puravida app/controllers/application_controller.rb ~`
-```
-class ApplicationController < ActionController::API
-  SECRET_KEY_BASE = Rails.application.credentials.secret_key_base
-  before_action :require_login
-  rescue_from Exception, with: :response_internal_server_error
-
-  def require_login
-    response_unauthorized if current_user_raw.blank?
-  end
-
-  # this is safe to send to the frontend, excludes password_digest, created_at, updated_at
-  def user_from_token
-    user = prep_raw_user(current_user_raw)
-    render json: { data: user, status: 200 }
-  end
-
-  # unsafe/internal: includes password_digest, created_at, updated_at - we don't want those going to the frontend
-  def current_user_raw
-    if decoded_token.present?
-      user_id = decoded_token[0]['user_id']
-      @user = User.find_by(id: user_id)
-    else
-      nil
-    end
-  end
-
-  def encode_token(payload)
-    JWT.encode payload, SECRET_KEY_BASE, 'HS256'
-  end
-
-  def decoded_token
-    if auth_header and auth_header.split(' ')[0] == "Bearer"
-      token = auth_header.split(' ')[1]
-      begin
-        JWT.decode token, SECRET_KEY_BASE, true, { algorithm: 'HS256' }
-      rescue JWT::DecodeError
-        []
-      end
-    end
-  end
-
-  def response_unauthorized
-    render status: 401, json: { status: 401, message: 'Unauthorized' }
-  end
-  
-  def response_internal_server_error
-    render status: 500, json: { status: 500, message: 'Internal Server Error' }
-  end
-
-  # We don't want to send the whole user record from the database to the frontend, so we only send what we need.
-  # The db user row has password_digest (unsafe) and created_at and updated_at (extraneous).
-  # We also change avatar from a weird active_storage object to just the avatar url before it gets to the frontend.
-  def prep_raw_user(user)
-    avatar = user.avatar.present? ? url_for(user.avatar) : nil
-    # widgets = Widget.where(user_id: user.id).map { |widget| widget.id }
-    # subwidgets = Subwidget.where(widget_id: widgets).map { |subwidget| subwidget.id }
-    user = user.admin ? user.slice(:id,:email,:name,:admin) : user.slice(:id,:email,:name)
-    user['avatar'] = avatar
-    # user['widget_ids'] = widgets
-    # user['subwidget_ids'] = subwidgets
-    user
-  end
-
-  def prep_raw_widget(widget)
-    user_id = widget.user_id
-    user_name = User.find(widget.user_id).name
-    # subwidgets = Subwidget.where(widget_id: widget.id)
-    # subwidgets = subwidgets.map { |subwidget| subwidget.slice(:id,:name,:description,:widget_id) }
-    image = widget.image.present? ? url_for(widget.image) : nil
-    widget = widget.slice(:id,:name,:description)
-    widget['userId'] = user_id
-    widget['userName'] = user_name
-    widget['image'] = image
-    # widget['subwidgets'] = subwidgets
-    widget
-  end
-
-  def prep_raw_subwidget(subwidget)
-    widget_id = subwidget.widget_id
-    widget = Widget.find(widget_id)
-    user = User.find(widget.user_id)
-    image = subwidget.image.present? ? url_for(subwidget.image) : nil
-    subwidget = subwidget.slice(:id,:name,:description)
-    subwidget['widgetId'] = widget_id
-    subwidget['widgetName'] = widget.name
-    subwidget['widgetDescription'] = widget.description
-    subwidget['userId'] = user.id
-    subwidget['userName'] = user.name
-    subwidget['image'] = image
-    subwidget
-  end
-  
-  private 
-  
-    def auth_header
-      request.headers['Authorization']
-    end
-
-end
-~
-```
-- `puravida spec/requests/application_spec.rb ~`
-```
-# frozen_string_literal: true
-require 'rails_helper'
-
-RSpec.describe "/me", type: :request do
-  fixtures :users
-  let(:valid_headers) {{ Authorization: "Bearer eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjo3NjIxNDYxMTEsImVtYWlsIjoibWljaGFlbHNjb3R0QGR1bmRlcm1pZmZsaW4uY29tIn0.RcCe7stt_V2prjuMbNCQv3tbHQwMfspl9iyrZoy2FHo" }}
-  let(:invalid_token_header) {{ Authorization: "Bearer xyz" }}
-  let(:poorly_formed_header) {{ Authorization: "Bear eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjo3NjIxNDYxMTEsImVtYWlsIjoibWljaGFlbHNjb3R0QGR1bmRlcm1pZmZsaW4uY29tIn0.RcCe7stt_V2prjuMbNCQv3tbHQwMfspl9iyrZoy2FHo" }}
-  describe "GET /me" do
-
-    context "without auth header" do
-      it "returns http success" do
-        get "/me"
-        expect(response).to have_http_status(:unauthorized)
-      end
-    end
-    
-    context "with invalid token header" do
-      it "returns http success" do
-        get "/me", headers: invalid_token_header
-        expect(response).to have_http_status(:unauthorized)
-      end
-    end
-
-    context "with valid token, but poorly formed auth header" do
-      it "returns http success" do
-        get "/me", headers: poorly_formed_header
-        expect(response).to have_http_status(:unauthorized)
-      end
-    end
-
-    context "with valid auth header" do
-      it "returns http success" do
-        get "/me", headers: valid_headers
-        expect(response).to have_http_status(:success)
-      end
-    end
-  end
-end
-~
-```
-
-#### /login Route (Authentications Controller)
-- `rails g controller Authentications`
-- `puravida app/controllers/authentications_controller.rb ~`
-```
-class AuthenticationsController < ApplicationController
-  skip_before_action :require_login
-  
-  def create
-    user = User.find_by(email: params[:email])
-    if user && user.authenticate(params[:password])
-      payload = { user_id: user.id, email: user.email }
-      token = encode_token(payload)
-      render json: { data: token, status: 200, message: 'You are logged in successfully' }
-    else
-      response_unauthorized
-    end
-  end
-end
-~
-```
-- `puravida spec/requests/authentications_spec.rb ~`
-```
-# frozen_string_literal: true
-require 'rails_helper'
-
-RSpec.describe "/login", type: :request do
-  fixtures :users
-  let(:valid_login_params) { { email: "michaelscott@dundermifflin.com",  password: "password" } }
-  let(:invalid_login_params) { { email: "michaelscott@dundermifflin.com",  password: "testing" } }
-  let(:create_user_params) { { name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password" }}
-  describe "POST /login" do
-    context "without params" do
-      it "returns unauthorized" do
-        post "/login"
-        expect(response).to have_http_status(:unauthorized)
-      end
-    end
-  end
-  describe "POST /login" do
-    context "with invalid params" do
-      it "returns unauthorized" do
-        post "/login", params: invalid_login_params
-        expect(response).to have_http_status(:unauthorized)
-      end
-    end
-  end
-  describe "POST /login" do
-    context "with valid params" do
-      it "returns unauthorized" do
-        user = User.create(create_user_params)
-        post "/login", params: valid_login_params
-        expect(response).to have_http_status(:success)
-        expect(JSON.parse(response.body)['message']).to eq "You are logged in successfully"
-        expect(JSON.parse(response.body)['data']).to match(/^(?:[\w-]*\.){2}[\w-]*$/)
-      end
-    end
-  end
-end
-~
-```
-- `puravida app/controllers/users_controller.rb ~`
-```
-class UsersController < ApplicationController
-  before_action :set_user, only: %i[ show update destroy ]
-  skip_before_action :require_login, only: :create
-
-  # GET /users
-  def index
-    @users = User.all.map { |user| prep_raw_user(user) }
-    render json: @users
-  end
-
-  # GET /users/1
-  def show
-    render json: prep_raw_user(@user)
-  end
-
-  # POST /users
-  def create
-    @user = User.new(user_params)
-    if @user.save
-      render json: prep_raw_user(@user), status: :created, location: @user
-    else
-      render json: @user.errors, status: :unprocessable_entity
-    end
-  end
-
-  # PATCH/PUT /users/1
-  def update
-    if @user.update(user_params)
-      render json: prep_raw_user(@user)
-    else
-      render json: @user.errors, status: :unprocessable_entity
-    end
-  end
-
-  # DELETE /users/1
-  def destroy
-    @user.destroy
-  end
-
-  private
-    # Use callbacks to share common setup or constraints between actions.
-    def set_user
-      @user = User.find(params[:id])
-    end
-
-    # Only allow a list of trusted parameters through.
-    def user_params
-      params['avatar'] = params['avatar'].blank? ? nil : params['avatar'] # if no avatar is chosen on signup page, params['avatar'] comes in as a blank string, which throws a 500 error at User.new(user_params). This changes any params['avatar'] blank string to nil, which is fine in User.new(user_params).
-      params.permit(:name, :email, :avatar, :admin, :password)
-    end
-    
-end
-~
-```
 
 ### Users Spec (with auth)
 - `puravida spec/requests/users_spec.rb ~`
