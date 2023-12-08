@@ -1137,6 +1137,7 @@ class Widget < ApplicationRecord
   has_one_attached :image
   validates :name, presence: true, allow_blank: false, length: { minimum: 4, maximum: 254 }
 end
+~
 ```
 - `puravida app/controllers/widgets_controller.rb ~`
 ```
