@@ -285,8 +285,8 @@ local:
   root: <%= Rails.root.join("storage") %>
 ~
 ```
-- `puravida spec/fixtures/active_storage`
-- `puravida spec/active_storage/attachments.yml ~`
+- `# puravida spec/fixtures/active_storage`
+- `# puravida spec/active_storage/attachments.yml ~`
 ```
 michael_avatar:
   name: avatar
@@ -294,7 +294,7 @@ michael_avatar:
   blob: michael_avatar_blob
 ~
 ```
-- `puravida spec/active_storage/blobs.yml ~`
+- `# puravida spec/active_storage/blobs.yml ~`
 ```
 michael_avatar_blob: <%= ActiveStorage::FixtureSet.blob filename: "michael-scott.png", service_name: "test_fixtures" %>
 ~
