@@ -13,9 +13,9 @@ bundle
 rails active_storage:install
 rails generate rspec:install
 rails db:migrate
-cp -a ~/Desktop/ruxtmin/assets ~/Desktop/back/app/
+cp -a ~/Desktop/ruxtmin/assets ~/Desktop/backtest/app/
 puravida spec/fixtures/files
-cp -a ~/Desktop/ruxtmin/assets/images/office-avatars ~/Desktop/back/spec/fixtures/files
+cp -a ~/Desktop/ruxtmin/assets/images/office-avatars ~/Desktop/backtest/spec/fixtures/files/
 cat <<'EOF' | puravida config/initializers/cors.rb ~
 Rails.application.config.middleware.insert_before 0, Rack::Cors do
   allow do
@@ -66,7 +66,7 @@ rspec
 
 echo -e "\n\n🦄  Users\n\n"
 rails g scaffold user name email avatar:attachment admin:boolean password_digest
-MIGRATION_FILE=$(find /Users/mmcdermott/Desktop/back/db/migrate -name "*_create_users.rb")
+MIGRATION_FILE=$(find /Users/mmcdermott/Desktop/backtest/db/migrate -name "*_create_users.rb")
 sed -i -e 3,10d $MIGRATION_FILE
 awk 'NR==3 {print "\t\tcreate_table :users do |t|\n\t\t\tt.string :name, null: false\n\t\t\tt.string :email, null: false, index: { unique: true }\n\t\t\tt.boolean :admin, default: false\n\t\t\tt.string :password_digest\n\t\t\tt.timestamps\n\t\tend"} 1' $MIGRATION_FILE > temp.txt && mv temp.txt $MIGRATION_FILE
 rails db:migrate
