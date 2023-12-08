@@ -150,48 +150,6 @@ end
 ~
 ```
 - `rspec`
-- `puravida spec/fixtures/users.yml ~`
-```
-michael:
-  name: Michael Scott
-  email: michaelscott@dundermifflin.com
-  password_digest: <%= BCrypt::Password.create('password') %>
-  admin: true
-
-jim:
-  name: Jim Halpert
-  email: jimhalpert@dundermifflin.com
-  password_digest: <%= BCrypt::Password.create('password') %>
-  admin: false
-
-pam:
-  name: Pam Beesly
-  email: pambeesly@dundermifflin.com
-  password_digest: <%= BCrypt::Password.create('password') %>
-  admin: false
-
-ryan:
-  name: Ryan Howard
-  email: ryanhoward@dundermifflin.com
-  password_digest: <%= BCrypt::Password.create('password') %>
-  admin: true
-~
-```
-- `puravida config/storage.yml ~`
-```
-test:
-  service: Disk
-  root: <%= Rails.root.join("tmp/storage") %>
-
-test_fixtures:
-  service: Disk
-  root: <%= Rails.root.join("tmp/storage_fixtures") %>
-
-local:
-  service: Disk
-  root: <%= Rails.root.join("storage") %>
-~
-```
 - `puravida app/controllers/application_controller.rb ~`
 ```
 class ApplicationController < ActionController::API
@@ -283,6 +241,69 @@ class UsersController < ApplicationController
     end
     
 end
+~
+```
+- `puravida spec/fixtures/users.yml ~`
+```
+michael:
+  name: Michael Scott
+  email: michaelscott@dundermifflin.com
+  password_digest: <%= BCrypt::Password.create('password') %>
+  admin: true
+
+jim:
+  name: Jim Halpert
+  email: jimhalpert@dundermifflin.com
+  password_digest: <%= BCrypt::Password.create('password') %>
+  admin: false
+
+pam:
+  name: Pam Beesly
+  email: pambeesly@dundermifflin.com
+  password_digest: <%= BCrypt::Password.create('password') %>
+  admin: false
+
+ryan:
+  name: Ryan Howard
+  email: ryanhoward@dundermifflin.com
+  password_digest: <%= BCrypt::Password.create('password') %>
+  admin: true
+~
+```
+- `puravida config/storage.yml ~`
+```
+test:
+  service: Disk
+  root: <%= Rails.root.join("tmp/storage") %>
+
+test_fixtures:
+  service: Disk
+  root: <%= Rails.root.join("tmp/storage_fixtures") %>
+
+local:
+  service: Disk
+  root: <%= Rails.root.join("storage") %>
+~
+```
+- `puravida spec/fixtures/active_storage`
+- `puravida spec active_storage/attachments.yml ~`
+```
+freds_picture:
+  name: avatar
+  record: michael (User)
+  blob: michael_picture_blob
+~
+```
+- `puravida spec active_storage/blobs.yml ~`
+```
+michael_picture_blob:
+  key: <%= ActiveStorage::Blob.generate_unique_secure_token %>
+  filename: michael-scott.png
+  content_type: image/png
+  metadata: '{"identified":true,"analyzed":true}'
+  byte_size: 1000
+  checksum: fdUivZUf74Y6pjAiemuvlg==
+  service_name: local
 ~
 ```
 `puravida spec/requests/users_spec.rb ~`
