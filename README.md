@@ -312,121 +312,150 @@ RSpec.describe "/users", type: :request do
   let(:invalid_user_update_attributes) {{ email: "not_an_email" }}
   
   before :each do
-    @user = users(:michael)
-    avatar = fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'michael-scott.png'),'image/png')
-    @user.avatar.attach(avatar)
+    @user1 = users(:michael)
+    avatar1 = fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'michael-scott.png'),'image/png')
+    @user1.avatar.attach(avatar1)
+    @user2 = users(:jim)
+    avatar2 = fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'jim-halpert.png'),'image/png')
+    @user2.avatar.attach(avatar2)
   end
 
   describe "GET /index" do
-    # it "renders a successful response" do
-    #   get users_url
-    #   expect(response).to be_successful
-    # end
+    it "renders a successful response" do
+      get users_url
+      expect(response).to be_successful
+    end
 
-    # it "gets four users" do
-    #   get users_url
-    #   expect(JSON.parse(response.body).length).to eq 4
-    # end
+    it "gets four users" do
+      get users_url
+      expect(JSON.parse(response.body).length).to eq 4
+    end
 
     it "gets first users' correct details" do
       get users_url
       users = JSON.parse(response.body)
       michael = users.find { |user| user['email'] == "michaelscott@dundermifflin.com" }
-      puts michael.inspect
       expect(michael['name']).to eq "Michael Scott"
       expect(michael['email']).to eq "michaelscott@dundermifflin.com"
       expect(michael['admin']).to eq true
-      # expect(michael['avatar']).to match 
+      expect(michael['avatar']).to be_kind_of(String)
+      expect(michael['avatar']).to match(/http.*\michael-scott\.png/)
+      expect(michael['password']).to be_nil
+      expect(michael['password_digest']).to be_nil
+    end
+
+    it "gets second users' correct details" do
+      get users_url
+      users = JSON.parse(response.body)
+      jim = users.find { |user| user['email'] == "jimhalpert@dundermifflin.com" }
+      expect(jim['name']).to eq "Jim Halpert"
+      expect(jim['email']).to eq "jimhalpert@dundermifflin.com"
+      expect(jim['admin']).to be_nil or eq false
+      expect(jim['avatar']).to be_kind_of(String)
+      expect(jim['avatar']).to match(/http.*\jim-halpert\.png/)
+      expect(jim['password']).to be_nil
+      expect(jim['password_digest']).to be_nil
     end
 
   end
 
-  # describe "GET /show" do
-  #   it "renders a successful response" do
-  #     get user_url(@user)
-  #     expect(response).to be_successful
-  #   end
-  # end
+  describe "GET /show" do
+    it "renders a successful response" do
+      get user_url(@user1)
+      expect(response).to be_successful
+    end
+    it "gets users' correct details" do
+      get user_url(@user1)
+      michael = JSON.parse(response.body)
+      expect(michael['name']).to eq "Michael Scott"
+      expect(michael['email']).to eq "michaelscott@dundermifflin.com"
+      expect(michael['admin']).to eq true
+      expect(michael['avatar']).to be_kind_of(String)
+      expect(michael['avatar']).to match(/http.*\michael-scott\.png/)
+      expect(michael['password']).to be_nil
+      expect(michael['password_digest']).to be_nil
+    end
+  end
 
-  # describe "POST /users" do
-  #   context "with valid parameters" do
-  #     it "creates a new User" do
-  #       expect {
-  #         post users_url, params: user_valid_create_params_mock_1
-  #       }.to change(User, :count).by(1)
-  #     end
+  describe "POST /users" do
+    context "with valid parameters" do
+      it "creates a new User" do
+        expect {
+          post users_url, params: user_valid_create_params_mock_1
+        }.to change(User, :count).by(1)
+      end
 
-  #     it "renders a successful response" do
-  #       post users_url, params: user_valid_create_params_mock_1
-  #       expect(response).to be_successful
-  #     end
+      it "renders a successful response" do
+        post users_url, params: user_valid_create_params_mock_1
+        expect(response).to be_successful
+      end
 
-  #     it "sets user name" do
-  #       post users_url, params: user_valid_create_params_mock_1
-  #       user = User.order(:created_at).last
-  #       expect(user.name).to eq("First1 Last1")
-  #     end
+      it "sets user name" do
+        post users_url, params: user_valid_create_params_mock_1
+        user = User.order(:created_at).last
+        expect(user.name).to eq("First1 Last1")
+      end
 
-  #     it "attaches user avatar" do
-  #       post users_url, params: user_valid_create_params_mock_1
-  #       user = User.order(:created_at).last
-  #       expect(user.avatar.attached?).to eq(true)
-  #     end
-  #   end
+      it "attaches user avatar" do
+        post users_url, params: user_valid_create_params_mock_1
+        user = User.order(:created_at).last
+        expect(user.avatar.attached?).to eq(true)
+      end
+    end
 
-  #   context "with invalid parameters (email poorly formed)" do
-  #     it "does not create a new User" do
-  #       expect {
-  #         post users_url, params: user_invalid_create_params_email_poorly_formed_mock_1
-  #       }.to change(User, :count).by(0)
-  #     end
+    context "with invalid parameters (email poorly formed)" do
+      it "does not create a new User" do
+        expect {
+          post users_url, params: user_invalid_create_params_email_poorly_formed_mock_1
+        }.to change(User, :count).by(0)
+      end
 
     
-  #     it "renders a 422 response" do
-  #       post users_url, params: user_invalid_create_params_email_poorly_formed_mock_1
-  #       expect(response).to have_http_status(:unprocessable_entity)
-  #     end  
-  #   end
-  # end
+      it "renders a 422 response" do
+        post users_url, params: user_invalid_create_params_email_poorly_formed_mock_1
+        expect(response).to have_http_status(:unprocessable_entity)
+      end  
+    end
+  end
 
-  # describe "PATCH /update" do
-  #   context "with valid parameters" do
+  describe "PATCH /update" do
+    context "with valid parameters" do
 
-  #     it "updates the requested user" do
-  #       patch user_url(@user), params: valid_user_update_attributes
-  #       @user.reload
-  #       expect(@user.name).to eq("UpdatedName")
-  #     end
+      it "updates the requested user" do
+        patch user_url(@user1), params: valid_user_update_attributes
+        @user1.reload
+        expect(@user1.name).to eq("UpdatedName")
+      end
 
-  #     it "is successful" do
-  #       patch user_url(@user), params: valid_user_update_attributes
-  #       @user.reload
-  #       expect(response).to be_successful
-  #     end
-  #   end
+      it "is successful" do
+        patch user_url(@user1), params: valid_user_update_attributes
+        @user1.reload
+        expect(response).to be_successful
+      end
+    end
 
-  #   context "with invalid parameters" do
+    context "with invalid parameters" do
     
-  #     it "renders a 422 response" do
-  #       patch user_url(@user), params: invalid_user_update_attributes
-  #       expect(response).to have_http_status(:unprocessable_entity)
-  #     end
+      it "renders a 422 response" do
+        patch user_url(@user1), params: invalid_user_update_attributes
+        expect(response).to have_http_status(:unprocessable_entity)
+      end
     
-  #   end
-  # end
+    end
+  end
 
-  # describe "DELETE /destroy" do
-  #   it "destroys the requested user" do
-  #     expect {
-  #       delete user_url(@user)
-  #     }.to change(User, :count).by(-1)
-  #   end
+  describe "DELETE /destroy" do
+    it "destroys the requested user" do
+      expect {
+        delete user_url(@user1)
+      }.to change(User, :count).by(-1)
+    end
 
-  #   it "renders a successful response" do
-  #     delete user_url(@user)
-  #     expect(response).to be_successful
-  #   end
-  # end
+    it "renders a successful response" do
+      delete user_url(@user1)
+      expect(response).to be_successful
+    end
+  end
 
 end
 ~
