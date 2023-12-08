@@ -1130,6 +1130,14 @@ end
 ### Widgets (Backend)
 - `rails g scaffold widget name description image:attachment user:references`
 - `rails db:migrate`
+- `puravida app/models/widget.rb ~`
+```
+class Widget < ApplicationRecord
+  belongs_to :user
+  has_one_attached :image
+  validates :name, presence: true, allow_blank: false, length: { minimum: 4, maximum: 254 }
+end
+```
 - `puravida app/controllers/widgets_controller.rb ~`
 ```
 class WidgetsController < ApplicationController
