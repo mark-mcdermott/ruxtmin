@@ -3,8 +3,8 @@ export PATH=/usr/local/bin:$PATH
 
 echo -e "\n\n🦄 BACKEND\n\n"
 cd ~/Desktop
-rails new back --api --database=postgresql --skip-test-unit
-cd back
+rails new backtest --api --database=postgresql --skip-test-unit
+cd backtest
 rails db:drop db:create
 bundle add rack-cors bcrypt jwt pry
 bundle add rspec-rails --group "development, test"
@@ -31,7 +31,6 @@ echo -e "\n\n🦄 Health Controller\n\n"
 rails g controller health index
 cat <<'EOF' | puravida app/controllers/health_controller.rb ~
 class HealthController < ApplicationController
-  skip_before_action :require_login
   def index
     render json: { status: 'online' }
   end
@@ -64,491 +63,1189 @@ end
 ~
 EOF
 
-echo -e "\n\n🦄  Users\n\n"
-rails g scaffold user name email avatar:attachment admin:boolean password_digest
-MIGRATION_FILE=$(find /Users/mmcdermott/Desktop/back/db/migrate -name "*_create_users.rb")
-sed -i -e 3,10d $MIGRATION_FILE
-awk 'NR==3 {print "\t\tcreate_table :users do |t|\n\t\t\tt.string :name, null: false\n\t\t\tt.string :email, null: false, index: { unique: true }\n\t\t\tt.boolean :admin, default: false\n\t\t\tt.string :password_digest\n\t\t\tt.timestamps\n\t\tend"} 1' $MIGRATION_FILE > temp.txt && mv temp.txt $MIGRATION_FILE
-rails db:migrate
-cat <<'EOF' | puravida app/models/user.rb ~
-class User < ApplicationRecord
-  has_one_attached :avatar
-  has_secure_password
-  validates :email, format: { with: /\A(.+)@(.+)\z/, message: "Email invalid" }, uniqueness: { case_sensitive: false }, length: { minimum: 4, maximum: 254 }
-end
-~
-EOF
-rm -rf test
-cat <<'EOF' | puravida spec/rails_helper.rb ~
-require 'spec_helper'
-require 'database_cleaner/active_record'
-ENV['RAILS_ENV'] ||= 'test'
-require_relative '../config/environment'
-abort("The Rails environment is running in production mode!") if Rails.env.production?
-require 'rspec/rails'
-begin
-  ActiveRecord::Migration.maintain_test_schema!
-rescue ActiveRecord::PendingMigrationError => e
-  abort e.to_s.strip
-end
-RSpec.configure do |config|
-  config.fixture_path = Rails.root.join('spec/fixtures')
-  config.use_transactional_fixtures = true
-  config.infer_spec_type_from_file_location!
-  config.filter_rails_from_backtrace!
-end
+# echo -e "\n\n🦄  Users\n\n"
+# rails g scaffold user name email avatar:attachment admin:boolean password_digest
+# MIGRATION_FILE=$(find /Users/mmcdermott/Desktop/back/db/migrate -name "*_create_users.rb")
+# sed -i -e 3,10d $MIGRATION_FILE
+# awk 'NR==3 {print "\t\tcreate_table :users do |t|\n\t\t\tt.string :name, null: false\n\t\t\tt.string :email, null: false, index: { unique: true }\n\t\t\tt.boolean :admin, default: false\n\t\t\tt.string :password_digest\n\t\t\tt.timestamps\n\t\tend"} 1' $MIGRATION_FILE > temp.txt && mv temp.txt $MIGRATION_FILE
+# rails db:migrate
+# cat <<'EOF' | puravida app/models/user.rb ~
+# class User < ApplicationRecord
+#   has_one_attached :avatar
+#   has_secure_password
+#   validates :email, format: { with: /\A(.+)@(.+)\z/, message: "Email invalid" }, uniqueness: { case_sensitive: false }, length: { minimum: 4, maximum: 254 }
+# end
+# ~
+# EOF
+# rm -rf test
+# cat <<'EOF' | puravida spec/rails_helper.rb ~
+# require 'spec_helper'
+# require 'database_cleaner/active_record'
+# ENV['RAILS_ENV'] ||= 'test'
+# require_relative '../config/environment'
+# abort("The Rails environment is running in production mode!") if Rails.env.production?
+# require 'rspec/rails'
+# begin
+#   ActiveRecord::Migration.maintain_test_schema!
+# rescue ActiveRecord::PendingMigrationError => e
+#   abort e.to_s.strip
+# end
+# RSpec.configure do |config|
+#   config.fixture_path = Rails.root.join('spec/fixtures')
+#   config.use_transactional_fixtures = true
+#   config.infer_spec_type_from_file_location!
+#   config.filter_rails_from_backtrace!
+# end
 
-def token_from_email_password(email,password)
-  post "/login", params: { email: email, password: password }
-  JSON.parse(response.body)['data']
-end
-~
-EOF
-rails g rspec:scaffold users
-rails g rspec:model user
-cat <<'EOF' | puravida spec/models/user_spec.rb ~
-require 'rails_helper'
-require 'database_cleaner/active_record'
-RSpec.describe User, type: :model do
-  let(:mock_1_valid_create_params) {{ name: "First1 Last1", email: "one@mail.com", admin: "false", password: "password", avatar: fixture_file_upload("spec/fixtures/files/michael-scott.png", "image/png") }}
-  let(:mock_1_invalid_create_params_email_poorly_formed) {{ name: "", email: "not_an_email", admin: "false", password: "password", avatar: fixture_file_upload("spec/fixtures/files/michael-scott.png", "image/png") }}
-  it "is valid with valid attributes" do
-    expect(User.new(mock_1_valid_create_params)).to be_valid
-  end
-  it "is not valid width poorly formed email" do
-    expect(User.new(mock_1_invalid_create_params_email_poorly_formed)).to_not be_valid
-  end
-end
-~
-EOF
-rspec
-cat <<'EOF' | puravida spec/fixtures/users.yml ~
-michael:
-  name: Michael Scott
-  email: michaelscott@dundermifflin.com
-  password_digest: <%= BCrypt::Password.create('password') %>
-  admin: true
-
-jim:
-  name: Jim Halpert
-  email: jimhalpert@dundermifflin.com
-  password_digest: <%= BCrypt::Password.create('password') %>
-  admin: false
-
-pam:
-  name: Pam Beesly
-  email: pambeesly@dundermifflin.com
-  password_digest: <%= BCrypt::Password.create('password') %>
-  admin: false
-
-ryan:
-  name: Ryan Howard
-  email: ryanhoward@dundermifflin.com
-  password_digest: <%= BCrypt::Password.create('password') %>
-  admin: true
-~
-EOF
-cat <<'EOF' | puravida config/storage.yml ~
-test:
-  service: Disk
-  root: <%= Rails.root.join("tmp/storage") %>
-
-test_fixtures:
-  service: Disk
-  root: <%= Rails.root.join("tmp/storage_fixtures") %>
-
-local:
-  service: Disk
-  root: <%= Rails.root.join("storage") %>
-~
-EOF
-cat <<'EOF' | puravida app/controllers/application_controller.rb ~
-class ApplicationController < ActionController::API
-  SECRET_KEY_BASE = Rails.application.credentials.secret_key_base
-
-  def encode_token(payload)
-    JWT.encode payload, SECRET_KEY_BASE, 'HS256'
-  end
-
-  def decoded_token
-    if auth_header and auth_header.split(' ')[0] == "Bearer"
-      token = auth_header.split(' ')[1]
-      begin
-        JWT.decode token, SECRET_KEY_BASE, true, { algorithm: 'HS256' }
-      rescue JWT::DecodeError
-        []
-      end
-    end
-  end
-
-  # We don't want to send the whole user record from the database to the frontend, so we only send what we need.
-  # The db user row has password_digest (unsafe) and created_at and updated_at (extraneous).
-  # We also change avatar from a weird active_storage object to just the avatar url before it gets to the frontend.
-  def prep_raw_user(user)
-    avatar = user.avatar.present? ? url_for(user.avatar) : nil
-    user = user.admin ? user.slice(:id,:email,:name,:admin) : user.slice(:id,:email,:name)
-    user['avatar'] = avatar
-    user
-  end
-
-  private 
-
-  def auth_header
-    request.headers['Authorization']
-  end
-end
-~
-EOF
-cat <<'EOF' | puravida app/controllers/users_controller.rb ~
-class UsersController < ApplicationController
-  before_action :set_user, only: %i[ show update destroy ]
-
-  # GET /users
-  def index
-    @users = User.all.map { |user| prep_raw_user(user) }
-    render json: @users
-  end
-
-  # GET /users/1
-  def show
-    render json: prep_raw_user(@user)
-  end
-
-  # POST /users
-  def create
-    @user = User.new(user_params)
-    if @user.save
-      render json: prep_raw_user(@user), status: :created, location: @user
-    else
-      render json: @user.errors, status: :unprocessable_entity
-    end
-  end
-
-  # PATCH/PUT /users/1
-  def update
-    if @user.update(user_params)
-      render json: prep_raw_user(@user)
-    else
-      render json: @user.errors, status: :unprocessable_entity
-    end
-  end
-
-  # DELETE /users/1
-  def destroy
-    @user.destroy
-  end
-
-  private
-    # Use callbacks to share common setup or constraints between actions.
-    def set_user
-      @user = User.find(params[:id])
-    end
-
-    # Only allow a list of trusted parameters through.
-    def user_params
-      params['avatar'] = params['avatar'].blank? ? nil : params['avatar'] # if no avatar is chosen on signup page, params['avatar'] comes in as a blank string, which throws a 500 error at User.new(user_params). This changes any params['avatar'] blank string to nil, which is fine in User.new(user_params).
-      params.permit(:name, :email, :avatar, :admin, :password)
-    end
-    
-end
-~
-EOF
-cat <<'EOF' | puravida spec/requests/users_spec.rb ~
-# frozen_string_literal: true
-require 'rails_helper'
-
-RSpec.describe "/users", type: :request do
-  fixtures :users
-  let(:user_valid_create_params_mock_1) {{ name: "First1 Last1", email: "one@mail.com", admin: "false", password: "password", avatar: fixture_file_upload("spec/fixtures/files/michael-scott.png", "image/png") }}
-  let(:user_invalid_create_params_email_poorly_formed_mock_1) {{ name: "", email: "not_an_email", admin: "false", password: "password", avatar: fixture_file_upload("spec/fixtures/files/michael-scott.png", "image/png") }}
-  let(:valid_user_update_attributes) {{ name: "UpdatedName" }}
-  let(:invalid_user_update_attributes) {{ email: "not_an_email" }}
-  
-  before :each do
-    @user = users(:michael)
-  end
-
-  describe "GET /index" do
-    it "renders a successful response" do
-      get users_url
-      expect(response).to be_successful
-    end
-
-    it "gets two users" do
-      get users_url
-      expect(JSON.parse(response.body).length).to eq 4
-    end
-  end
-
-  describe "GET /show" do
-    it "renders a successful response" do
-      get user_url(@user)
-      expect(response).to be_successful
-    end
-  end
-
-  describe "POST /users" do
-    context "with valid parameters" do
-      it "creates a new User" do
-        expect {
-          post users_url, params: user_valid_create_params_mock_1
-        }.to change(User, :count).by(1)
-      end
-
-      it "renders a successful response" do
-        post users_url, params: user_valid_create_params_mock_1
-        expect(response).to be_successful
-      end
-
-      it "sets user name" do
-        post users_url, params: user_valid_create_params_mock_1
-        user = User.order(:created_at).last
-        expect(user.name).to eq("First1 Last1")
-      end
-
-      it "attaches user avatar" do
-        post users_url, params: user_valid_create_params_mock_1
-        user = User.order(:created_at).last
-        expect(user.avatar.attached?).to eq(true)
-      end
-    end
-
-    context "with invalid parameters (email poorly formed)" do
-      it "does not create a new User" do
-        expect {
-          post users_url, params: user_invalid_create_params_email_poorly_formed_mock_1
-        }.to change(User, :count).by(0)
-      end
-
-    
-      it "renders a 422 response" do
-        post users_url, params: user_invalid_create_params_email_poorly_formed_mock_1
-        expect(response).to have_http_status(:unprocessable_entity)
-      end  
-    end
-  end
-
-  describe "PATCH /update" do
-    context "with valid parameters" do
-
-      it "updates the requested user" do
-        patch user_url(@user), params: valid_user_update_attributes
-        @user.reload
-        expect(@user.name).to eq("UpdatedName")
-      end
-
-      it "is successful" do
-        patch user_url(@user), params: valid_user_update_attributes
-        @user.reload
-        expect(response).to be_successful
-      end
-    end
-
-    context "with invalid parameters" do
-    
-      it "renders a 422 response" do
-        patch user_url(@user), params: invalid_user_update_attributes
-        expect(response).to have_http_status(:unprocessable_entity)
-      end
-    
-    end
-  end
-
-  describe "DELETE /destroy" do
-    it "destroys the requested user" do
-      expect {
-        delete user_url(@user)
-      }.to change(User, :count).by(-1)
-    end
-
-    it "renders a successful response" do
-      delete user_url(@user)
-      expect(response).to be_successful
-    end
-  end
-
-end
-~
-EOF
-rspec
-
-# cat <<'EOF' | puravida spec/requests/users_spec.rb ~
-# # frozen_string_literal: true
-# require 'open-uri'
+# def token_from_email_password(email,password)
+#   post "/login", params: { email: email, password: password }
+#   JSON.parse(response.body)['data']
+# end
+# ~
+# EOF
+# rails g rspec:scaffold users
+# rails g rspec:model user
+# cat <<'EOF' | puravida spec/models/user_spec.rb ~
 # require 'rails_helper'
-# RSpec.describe "/users", type: :request do
-#   let(:valid_create_user_1_params) { { name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password" } }
-#   let(:user_1_attachment) { "/spec/fixtures/files/images/office-avatars/michael-scott.png" }
-#   let(:user_1_image) { "michael-scott.png" }
-#   let(:valid_create_user_2_params) { { name: "Jim Halpert", email: "jimhalpert@dundermifflin.com", admin: "false", password: "password" } }
-#   let(:user_2_attachment) { "/spec/fixtures/files/images/office-avatars//jim-halpert.png" }
-#   let(:user_2_image) { "jim-halpert.png" }
-#   let(:invalid_create_user_1_params) { { name: "Michael Scott", email: "test", admin: "true", password: "password" } }
-#   let(:invalid_create_user_2_params) { { name: "Jim Halpert", email: "test2", admin: "false", password: "password" } }
-#   let(:valid_user_1_login_params) { { email: "michaelscott@dundermifflin.com",  password: "password" } }
-#   let(:valid_user_2_login_params) { { email: "jimhalpert@dundermifflin.com",  password: "password" } }
-#   let(:invalid_patch_params) { { email: "test" } }
-#   let(:uploaded_image_path) { Rails.root.join '/spec/fixtures/files/images/office-avatars/michael-scott.png' }
-#   let(:uploaded_image) { Rack::Test::UploadedFile.new uploaded_image_path, 'image/png' }
+# require 'database_cleaner/active_record'
+# RSpec.describe User, type: :model do
+#   let(:mock_1_valid_create_params) {{ name: "First1 Last1", email: "one@mail.com", admin: "false", password: "password", avatar: fixture_file_upload("spec/fixtures/files/michael-scott.png", "image/png") }}
+#   let(:mock_1_invalid_create_params_email_poorly_formed) {{ name: "", email: "not_an_email", admin: "false", password: "password", avatar: fixture_file_upload("spec/fixtures/files/michael-scott.png", "image/png") }}
+#   it "is valid with valid attributes" do
+#     expect(User.new(mock_1_valid_create_params)).to be_valid
+#   end
+#   it "is not valid width poorly formed email" do
+#     expect(User.new(mock_1_invalid_create_params_email_poorly_formed)).to_not be_valid
+#   end
+# end
+# ~
+# EOF
+# rspec
+# cat <<'EOF' | puravida spec/fixtures/users.yml ~
+# michael:
+#   name: Michael Scott
+#   email: michaelscott@dundermifflin.com
+#   password_digest: <%= BCrypt::Password.create('password') %>
+#   admin: true
 
-#   describe "GET /index" do
-#     context "with valid auth header" do
-#       it "renders a successful response" do
-#         user1 = User.create! valid_create_user_1_params
-#         user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
-#         user1.save!
-#         user2 = User.create! valid_create_user_2_params
-#         header = header_from_user(user2,valid_user_2_login_params)
-#         get users_url, headers: header, as: :json
-#         expect(response).to be_successful
-#       end
-#       it "gets two users (one with avatar, one without)" do
-#         user1 = User.create! valid_create_user_1_params
-#         user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
-#         user1.save!
-#         user2 = User.create! valid_create_user_2_params
-#         header = header_from_user(user2,valid_user_2_login_params)
-#         get users_url, headers: header, as: :json
-#         expect(JSON.parse(response.body).length).to eq 2
-#         expect(JSON.parse(response.body)[0]).to include("id","name","email","admin","avatar")
-#         expect(JSON.parse(response.body)[0]).not_to include("password_digest","password")
-#         expect(JSON.parse(response.body)[0]['name']).to eq("Michael Scott")
-#         expect(JSON.parse(response.body)[0]['email']).to eq("michaelscott@dundermifflin.com")
-#         expect(JSON.parse(response.body)[0]['admin']).to eq(true)
-#         expect(JSON.parse(response.body)[0]['avatar']).to be_kind_of(String)
-#         expect(JSON.parse(response.body)[0]['avatar']).to match(/http.*\michael-scott\.png/)
-#         expect(JSON.parse(response.body)[0]['password']).to be_nil
-#         expect(JSON.parse(response.body)[0]['password_digest']).to be_nil
-#         expect(JSON.parse(response.body)[1]).to include("id","name","email","avatar")
-#         expect(JSON.parse(response.body)[1]).not_to include("admin","password_digest","password")
-#         expect(JSON.parse(response.body)[1]['name']).to eq("Jim Halpert")
-#         expect(JSON.parse(response.body)[1]['email']).to eq("jimhalpert@dundermifflin.com")
-#         expect(JSON.parse(response.body)[1]['admin']).to be_nil
-#         expect(JSON.parse(response.body)[1]['avatar']).to be_nil
-#         expect(JSON.parse(response.body)[1]['password']).to be_nil
-#         expect(JSON.parse(response.body)[1]['password_digest']).to be_nil
-#       end
-#     end
+# jim:
+#   name: Jim Halpert
+#   email: jimhalpert@dundermifflin.com
+#   password_digest: <%= BCrypt::Password.create('password') %>
+#   admin: false
 
-#     context "with invalid auth header" do
-#       it "renders a 401 response" do
-#         User.create! valid_create_user_1_params
-#         get users_url, headers: invalid_auth_header, as: :json
-#         expect(response).to have_http_status(401)
-#       end
-#       it "renders a 401 response" do
-#         User.create! valid_create_user_1_params
-#         get users_url, headers: poorly_formed_header(valid_create_user_2_params), as: :json
-#         expect(response).to have_http_status(401)
+# pam:
+#   name: Pam Beesly
+#   email: pambeesly@dundermifflin.com
+#   password_digest: <%= BCrypt::Password.create('password') %>
+#   admin: false
+
+# ryan:
+#   name: Ryan Howard
+#   email: ryanhoward@dundermifflin.com
+#   password_digest: <%= BCrypt::Password.create('password') %>
+#   admin: true
+# ~
+# EOF
+# cat <<'EOF' | puravida config/storage.yml ~
+# test:
+#   service: Disk
+#   root: <%= Rails.root.join("tmp/storage") %>
+
+# test_fixtures:
+#   service: Disk
+#   root: <%= Rails.root.join("tmp/storage_fixtures") %>
+
+# local:
+#   service: Disk
+#   root: <%= Rails.root.join("storage") %>
+# ~
+# EOF
+# cat <<'EOF' | puravida app/controllers/application_controller.rb ~
+# class ApplicationController < ActionController::API
+#   SECRET_KEY_BASE = Rails.application.credentials.secret_key_base
+
+#   def encode_token(payload)
+#     JWT.encode payload, SECRET_KEY_BASE, 'HS256'
+#   end
+
+#   def decoded_token
+#     if auth_header and auth_header.split(' ')[0] == "Bearer"
+#       token = auth_header.split(' ')[1]
+#       begin
+#         JWT.decode token, SECRET_KEY_BASE, true, { algorithm: 'HS256' }
+#       rescue JWT::DecodeError
+#         []
 #       end
 #     end
 #   end
 
+#   # We don't want to send the whole user record from the database to the frontend, so we only send what we need.
+#   # The db user row has password_digest (unsafe) and created_at and updated_at (extraneous).
+#   # We also change avatar from a weird active_storage object to just the avatar url before it gets to the frontend.
+#   def prep_raw_user(user)
+#     avatar = user.avatar.present? ? url_for(user.avatar) : nil
+#     user = user.admin ? user.slice(:id,:email,:name,:admin) : user.slice(:id,:email,:name)
+#     user['avatar'] = avatar
+#     user
+#   end
+
+#   private 
+
+#   def auth_header
+#     request.headers['Authorization']
+#   end
+# end
+# ~
+# EOF
+# cat <<'EOF' | puravida app/controllers/users_controller.rb ~
+# class UsersController < ApplicationController
+#   before_action :set_user, only: %i[ show update destroy ]
+
+#   # GET /users
+#   def index
+#     @users = User.all.map { |user| prep_raw_user(user) }
+#     render json: @users
+#   end
+
+#   # GET /users/1
+#   def show
+#     render json: prep_raw_user(@user)
+#   end
+
+#   # POST /users
+#   def create
+#     @user = User.new(user_params)
+#     if @user.save
+#       render json: prep_raw_user(@user), status: :created, location: @user
+#     else
+#       render json: @user.errors, status: :unprocessable_entity
+#     end
+#   end
+
+#   # PATCH/PUT /users/1
+#   def update
+#     if @user.update(user_params)
+#       render json: prep_raw_user(@user)
+#     else
+#       render json: @user.errors, status: :unprocessable_entity
+#     end
+#   end
+
+#   # DELETE /users/1
+#   def destroy
+#     @user.destroy
+#   end
+
+#   private
+#     # Use callbacks to share common setup or constraints between actions.
+#     def set_user
+#       @user = User.find(params[:id])
+#     end
+
+#     # Only allow a list of trusted parameters through.
+#     def user_params
+#       params['avatar'] = params['avatar'].blank? ? nil : params['avatar'] # if no avatar is chosen on signup page, params['avatar'] comes in as a blank string, which throws a 500 error at User.new(user_params). This changes any params['avatar'] blank string to nil, which is fine in User.new(user_params).
+#       params.permit(:name, :email, :avatar, :admin, :password)
+#     end
+    
+# end
+# ~
+# EOF
+# cat <<'EOF' | puravida spec/requests/users_spec.rb ~
+# # frozen_string_literal: true
+# require 'rails_helper'
+
+# RSpec.describe "/users", type: :request do
+#   fixtures :users
+#   let(:user_valid_create_params_mock_1) {{ name: "First1 Last1", email: "one@mail.com", admin: "false", password: "password", avatar: fixture_file_upload("spec/fixtures/files/michael-scott.png", "image/png") }}
+#   let(:user_invalid_create_params_email_poorly_formed_mock_1) {{ name: "", email: "not_an_email", admin: "false", password: "password", avatar: fixture_file_upload("spec/fixtures/files/michael-scott.png", "image/png") }}
+#   let(:valid_user_update_attributes) {{ name: "UpdatedName" }}
+#   let(:invalid_user_update_attributes) {{ email: "not_an_email" }}
+  
+#   before :each do
+#     @user = users(:michael)
+#   end
+
+#   describe "GET /index" do
+#     it "renders a successful response" do
+#       get users_url
+#       expect(response).to be_successful
+#     end
+
+#     it "gets two users" do
+#       get users_url
+#       expect(JSON.parse(response.body).length).to eq 4
+#     end
+#   end
+
 #   describe "GET /show" do
-#     context "with valid auth header" do
+#     it "renders a successful response" do
+#       get user_url(@user)
+#       expect(response).to be_successful
+#     end
+#   end
+
+#   describe "POST /users" do
+#     context "with valid parameters" do
+#       it "creates a new User" do
+#         expect {
+#           post users_url, params: user_valid_create_params_mock_1
+#         }.to change(User, :count).by(1)
+#       end
+
 #       it "renders a successful response" do
-#         user1 = User.create! valid_create_user_1_params
-#         user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
-#         user1.save!
-#         user2 = User.create! valid_create_user_2_params
-#         header = header_from_user(user2,valid_user_2_login_params)
-#         get user_url(user1), headers: header, as: :json
+#         post users_url, params: user_valid_create_params_mock_1
 #         expect(response).to be_successful
 #       end
-#       it "gets one user (with avatar)" do
-#         user1 = User.create! valid_create_user_1_params
-#         user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
-#         user1.save!
-#         user2 = User.create! valid_create_user_2_params
-#         header = header_from_user(user2,valid_user_2_login_params)
-#         get user_url(user1), headers: header, as: :json
-#         expect(JSON.parse(response.body)).to include("id","name","email","admin","avatar")
-#         expect(JSON.parse(response.body)).not_to include("password_digest","password")
-#         expect(JSON.parse(response.body)['name']).to eq("Michael Scott")
-#         expect(JSON.parse(response.body)['email']).to eq("michaelscott@dundermifflin.com")
-#         expect(JSON.parse(response.body)['admin']).to eq(true)
-#         expect(JSON.parse(response.body)['avatar']).to be_kind_of(String)
-#         expect(JSON.parse(response.body)['avatar']).to match(/http.*\michael-scott\.png/)
-#         expect(JSON.parse(response.body)['password']).to be_nil
-#         expect(JSON.parse(response.body)['password_digest']).to be_nil
+
+#       it "sets user name" do
+#         post users_url, params: user_valid_create_params_mock_1
+#         user = User.order(:created_at).last
+#         expect(user.name).to eq("First1 Last1")
 #       end
-#       it "gets one user (without avatar)" do
-#         user1 = User.create! valid_create_user_1_params
-#         user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
-#         user1.save!
-#         user2 = User.create! valid_create_user_2_params
-#         header = header_from_user(user2,valid_user_2_login_params)
-#         get user_url(user2), headers: header, as: :json
-#         expect(JSON.parse(response.body)).to include("id","name","email","avatar")
-#         expect(JSON.parse(response.body)).not_to include("admin","password_digest","password")
-#         expect(JSON.parse(response.body)['name']).to eq("Jim Halpert")
-#         expect(JSON.parse(response.body)['email']).to eq("jimhalpert@dundermifflin.com")
-#         expect(JSON.parse(response.body)['admin']).to be_nil
-#         expect(JSON.parse(response.body)['avatar']).to be_nil
-#         expect(JSON.parse(response.body)['password']).to be_nil
-#         expect(JSON.parse(response.body)['password_digest']).to be_nil
+
+#       it "attaches user avatar" do
+#         post users_url, params: user_valid_create_params_mock_1
+#         user = User.order(:created_at).last
+#         expect(user.avatar.attached?).to eq(true)
 #       end
 #     end
-#     context "with invalid auth header" do
-#       it "renders a 401 response" do
-#         user = User.create! valid_create_user_1_params
-#         get user_url(user), headers: invalid_auth_header, as: :json
-#         expect(response).to have_http_status(401)
+
+#     context "with invalid parameters (email poorly formed)" do
+#       it "does not create a new User" do
+#         expect {
+#           post users_url, params: user_invalid_create_params_email_poorly_formed_mock_1
+#         }.to change(User, :count).by(0)
 #       end
-#       it "renders a 401 response" do
-#         user = User.create! valid_create_user_1_params
-#         get user_url(user), headers: poorly_formed_header(valid_create_user_2_params), as: :json
-#         expect(response).to have_http_status(401)
+
+    
+#       it "renders a 422 response" do
+#         post users_url, params: user_invalid_create_params_email_poorly_formed_mock_1
+#         expect(response).to have_http_status(:unprocessable_entity)
+#       end  
+#     end
+#   end
+
+#   describe "PATCH /update" do
+#     context "with valid parameters" do
+
+#       it "updates the requested user" do
+#         patch user_url(@user), params: valid_user_update_attributes
+#         @user.reload
+#         expect(@user.name).to eq("UpdatedName")
 #       end
+
+#       it "is successful" do
+#         patch user_url(@user), params: valid_user_update_attributes
+#         @user.reload
+#         expect(response).to be_successful
+#       end
+#     end
+
+#     context "with invalid parameters" do
+    
+#       it "renders a 422 response" do
+#         patch user_url(@user), params: invalid_user_update_attributes
+#         expect(response).to have_http_status(:unprocessable_entity)
+#       end
+    
+#     end
+#   end
+
+#   describe "DELETE /destroy" do
+#     it "destroys the requested user" do
+#       expect {
+#         delete user_url(@user)
+#       }.to change(User, :count).by(-1)
+#     end
+
+#     it "renders a successful response" do
+#       delete user_url(@user)
+#       expect(response).to be_successful
+#     end
+#   end
+
+# end
+# ~
+# EOF
+# rspec
+
+# # cat <<'EOF' | puravida spec/requests/users_spec.rb ~
+# # # frozen_string_literal: true
+# # require 'open-uri'
+# # require 'rails_helper'
+# # RSpec.describe "/users", type: :request do
+# #   let(:valid_create_user_1_params) { { name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password" } }
+# #   let(:user_1_attachment) { "/spec/fixtures/files/images/office-avatars/michael-scott.png" }
+# #   let(:user_1_image) { "michael-scott.png" }
+# #   let(:valid_create_user_2_params) { { name: "Jim Halpert", email: "jimhalpert@dundermifflin.com", admin: "false", password: "password" } }
+# #   let(:user_2_attachment) { "/spec/fixtures/files/images/office-avatars//jim-halpert.png" }
+# #   let(:user_2_image) { "jim-halpert.png" }
+# #   let(:invalid_create_user_1_params) { { name: "Michael Scott", email: "test", admin: "true", password: "password" } }
+# #   let(:invalid_create_user_2_params) { { name: "Jim Halpert", email: "test2", admin: "false", password: "password" } }
+# #   let(:valid_user_1_login_params) { { email: "michaelscott@dundermifflin.com",  password: "password" } }
+# #   let(:valid_user_2_login_params) { { email: "jimhalpert@dundermifflin.com",  password: "password" } }
+# #   let(:invalid_patch_params) { { email: "test" } }
+# #   let(:uploaded_image_path) { Rails.root.join '/spec/fixtures/files/images/office-avatars/michael-scott.png' }
+# #   let(:uploaded_image) { Rack::Test::UploadedFile.new uploaded_image_path, 'image/png' }
+
+# #   describe "GET /index" do
+# #     context "with valid auth header" do
+# #       it "renders a successful response" do
+# #         user1 = User.create! valid_create_user_1_params
+# #         user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
+# #         user1.save!
+# #         user2 = User.create! valid_create_user_2_params
+# #         header = header_from_user(user2,valid_user_2_login_params)
+# #         get users_url, headers: header, as: :json
+# #         expect(response).to be_successful
+# #       end
+# #       it "gets two users (one with avatar, one without)" do
+# #         user1 = User.create! valid_create_user_1_params
+# #         user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
+# #         user1.save!
+# #         user2 = User.create! valid_create_user_2_params
+# #         header = header_from_user(user2,valid_user_2_login_params)
+# #         get users_url, headers: header, as: :json
+# #         expect(JSON.parse(response.body).length).to eq 2
+# #         expect(JSON.parse(response.body)[0]).to include("id","name","email","admin","avatar")
+# #         expect(JSON.parse(response.body)[0]).not_to include("password_digest","password")
+# #         expect(JSON.parse(response.body)[0]['name']).to eq("Michael Scott")
+# #         expect(JSON.parse(response.body)[0]['email']).to eq("michaelscott@dundermifflin.com")
+# #         expect(JSON.parse(response.body)[0]['admin']).to eq(true)
+# #         expect(JSON.parse(response.body)[0]['avatar']).to be_kind_of(String)
+# #         expect(JSON.parse(response.body)[0]['avatar']).to match(/http.*\michael-scott\.png/)
+# #         expect(JSON.parse(response.body)[0]['password']).to be_nil
+# #         expect(JSON.parse(response.body)[0]['password_digest']).to be_nil
+# #         expect(JSON.parse(response.body)[1]).to include("id","name","email","avatar")
+# #         expect(JSON.parse(response.body)[1]).not_to include("admin","password_digest","password")
+# #         expect(JSON.parse(response.body)[1]['name']).to eq("Jim Halpert")
+# #         expect(JSON.parse(response.body)[1]['email']).to eq("jimhalpert@dundermifflin.com")
+# #         expect(JSON.parse(response.body)[1]['admin']).to be_nil
+# #         expect(JSON.parse(response.body)[1]['avatar']).to be_nil
+# #         expect(JSON.parse(response.body)[1]['password']).to be_nil
+# #         expect(JSON.parse(response.body)[1]['password_digest']).to be_nil
+# #       end
+# #     end
+
+# #     context "with invalid auth header" do
+# #       it "renders a 401 response" do
+# #         User.create! valid_create_user_1_params
+# #         get users_url, headers: invalid_auth_header, as: :json
+# #         expect(response).to have_http_status(401)
+# #       end
+# #       it "renders a 401 response" do
+# #         User.create! valid_create_user_1_params
+# #         get users_url, headers: poorly_formed_header(valid_create_user_2_params), as: :json
+# #         expect(response).to have_http_status(401)
+# #       end
+# #     end
+# #   end
+
+# #   describe "GET /show" do
+# #     context "with valid auth header" do
+# #       it "renders a successful response" do
+# #         user1 = User.create! valid_create_user_1_params
+# #         user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
+# #         user1.save!
+# #         user2 = User.create! valid_create_user_2_params
+# #         header = header_from_user(user2,valid_user_2_login_params)
+# #         get user_url(user1), headers: header, as: :json
+# #         expect(response).to be_successful
+# #       end
+# #       it "gets one user (with avatar)" do
+# #         user1 = User.create! valid_create_user_1_params
+# #         user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
+# #         user1.save!
+# #         user2 = User.create! valid_create_user_2_params
+# #         header = header_from_user(user2,valid_user_2_login_params)
+# #         get user_url(user1), headers: header, as: :json
+# #         expect(JSON.parse(response.body)).to include("id","name","email","admin","avatar")
+# #         expect(JSON.parse(response.body)).not_to include("password_digest","password")
+# #         expect(JSON.parse(response.body)['name']).to eq("Michael Scott")
+# #         expect(JSON.parse(response.body)['email']).to eq("michaelscott@dundermifflin.com")
+# #         expect(JSON.parse(response.body)['admin']).to eq(true)
+# #         expect(JSON.parse(response.body)['avatar']).to be_kind_of(String)
+# #         expect(JSON.parse(response.body)['avatar']).to match(/http.*\michael-scott\.png/)
+# #         expect(JSON.parse(response.body)['password']).to be_nil
+# #         expect(JSON.parse(response.body)['password_digest']).to be_nil
+# #       end
+# #       it "gets one user (without avatar)" do
+# #         user1 = User.create! valid_create_user_1_params
+# #         user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
+# #         user1.save!
+# #         user2 = User.create! valid_create_user_2_params
+# #         header = header_from_user(user2,valid_user_2_login_params)
+# #         get user_url(user2), headers: header, as: :json
+# #         expect(JSON.parse(response.body)).to include("id","name","email","avatar")
+# #         expect(JSON.parse(response.body)).not_to include("admin","password_digest","password")
+# #         expect(JSON.parse(response.body)['name']).to eq("Jim Halpert")
+# #         expect(JSON.parse(response.body)['email']).to eq("jimhalpert@dundermifflin.com")
+# #         expect(JSON.parse(response.body)['admin']).to be_nil
+# #         expect(JSON.parse(response.body)['avatar']).to be_nil
+# #         expect(JSON.parse(response.body)['password']).to be_nil
+# #         expect(JSON.parse(response.body)['password_digest']).to be_nil
+# #       end
+# #     end
+# #     context "with invalid auth header" do
+# #       it "renders a 401 response" do
+# #         user = User.create! valid_create_user_1_params
+# #         get user_url(user), headers: invalid_auth_header, as: :json
+# #         expect(response).to have_http_status(401)
+# #       end
+# #       it "renders a 401 response" do
+# #         user = User.create! valid_create_user_1_params
+# #         get user_url(user), headers: poorly_formed_header(valid_create_user_2_params), as: :json
+# #         expect(response).to have_http_status(401)
+# #       end
+# #     end
+# #   end
+
+# #   describe "POST /create" do
+# #     context "with valid parameters" do
+# #       it "creates a new User (without avatar)" do
+# #         expect { post users_url, params: valid_create_user_1_params }
+# #           .to change(User, :count).by(1)
+# #       end
+# #       it "renders a JSON response with new user (with avatar)" do  
+# #         file = Rack::Test::UploadedFile.new(Rails.root.join("spec/fixtures/files/images/office-avatars/michael-scott.png"))
+# #         valid_create_user_1_params['avatar'] = file
+# #         post users_url, params: valid_create_user_1_params        
+# #         expect(response).to have_http_status(:created)
+# #         expect(response.content_type).to match(a_string_including("application/json"))
+# #         expect(JSON.parse(response.body)).to include("id","name","email","admin","avatar")
+# #         expect(JSON.parse(response.body)).not_to include("password_digest","password")
+# #         expect(JSON.parse(response.body)['name']).to eq("Michael Scott")
+# #         expect(JSON.parse(response.body)['email']).to eq("michaelscott@dundermifflin.com")
+# #         expect(JSON.parse(response.body)['admin']).to eq(true)
+# #         expect(JSON.parse(response.body)['avatar']).to be_kind_of(String)
+# #         expect(JSON.parse(response.body)['avatar']).to match(/http.*\michael-scott\.png/)
+# #         expect(JSON.parse(response.body)['password']).to be_nil
+# #         expect(JSON.parse(response.body)['password_digest']).to be_nil
+# #       end
+# #     end
+# #     context "with invalid parameters" do
+# #       it "does not create a new User" do
+# #         expect { post users_url, params: invalid_create_user_2_params, as: :json}
+# #           .to change(User, :count).by(0)
+# #       end
+# #       it "renders a JSON error response" do
+# #         post users_url, params: invalid_create_user_2_params, as: :json
+# #         expect(response).to have_http_status(:unprocessable_entity)
+# #         expect(response.content_type).to match(a_string_including("application/json"))
+# #       end
+# #     end
+# #     context "with valid auth header" do
+# #       it "creates a new User" do
+# #         user1 = User.create! valid_create_user_1_params
+# #         header = header_from_user(user1,valid_user_1_login_params)
+# #         expect { post users_url, headers: header, params: valid_create_user_2_params, as: :json }
+# #           .to change(User, :count).by(1)
+# #       end
+# #       it "renders a JSON response with the new user" do
+# #         user1 = User.create! valid_create_user_1_params
+# #         header = header_from_user(user1,valid_user_1_login_params)
+# #         post users_url, params: valid_create_user_2_params, as: :json
+# #         expect(response).to have_http_status(:created)
+# #         expect(response.content_type).to match(a_string_including("application/json"))
+# #       end
+# #     end
+# #   end
+
+# #   describe "PATCH /update" do
+# #     context "with valid parameters" do
+
+# #       it "updates the requested user's name" do
+# #         user1 = User.create! valid_create_user_1_params
+# #         user2 = User.create! valid_create_user_2_params
+# #         header = header_from_user(user2,valid_user_2_login_params)
+# #         patch user_url(user1), params: { name: "Updated Name!!"}, headers: header, as: :json
+# #         user1.reload
+# #         expect(JSON.parse(response.body)['name']).to eq "Updated Name!!"
+# #         expect(response).to have_http_status(:ok)
+# #         expect(response.content_type).to match(a_string_including("application/json"))
+# #       end
+
+# #       it "updates the requested user's avatar" do
+# #         avatar = Rack::Test::UploadedFile.new(Rails.root.join("spec/fixtures/files/images/office-avatars/michael-scott.png"))
+# #         valid_create_user_1_params['avatar'] = avatar
+# #         user1 = User.create! valid_create_user_1_params   
+# #         user2 = User.create! valid_create_user_2_params
+# #         header = header_from_user(user2,valid_user_2_login_params)
+# #         updated_avatar = Rack::Test::UploadedFile.new(Rails.root.join('spec/fixtures/files/images/office-avatars/jim-halpert.png'))
+# #         valid_create_user_1_params['avatar'] = updated_avatar
+# #         patch user_url(user1), params: valid_create_user_1_params, headers: header
+# #         expect(response).to have_http_status(:ok)
+# #         expect(response.content_type).to match(a_string_including("application/json"))
+# #         expect(JSON.parse(response.body)['name']).to eq("Michael Scott")
+# #         expect(JSON.parse(response.body)['avatar']).to be_kind_of(String)
+# #         expect(JSON.parse(response.body)['avatar']).to match(/http.*\jim-halpert\.png/)
+# #       end
+# #     end
+
+# #     context "with invalid parameters" do
+# #       it "renders a JSON response with errors for the user" do
+# #         user1 = User.create! valid_create_user_1_params
+# #         user2 = User.create! valid_create_user_2_params
+# #         header = header_from_user(user2,valid_user_2_login_params)
+# #         patch user_url(user1), params: invalid_patch_params, headers: header, as: :json
+# #         expect(response).to have_http_status(:unprocessable_entity)
+# #         expect(response.content_type).to match(a_string_including("application/json"))
+# #       end
+# #     end
+# #   end
+
+# #   describe "DELETE /destroy" do
+# #     it "destroys the requested user (without avatar)" do
+# #       user1 = User.create! valid_create_user_1_params
+# #       user2 = User.create! valid_create_user_2_params
+# #       header = header_from_user(user2,valid_user_2_login_params)
+# #       expect {
+# #         delete user_url(user1), headers: header, as: :json
+# #       }.to change(User, :count).by(-1)
+# #     end
+# #     it "destroys the requested user (with avatar)" do
+# #       file = Rack::Test::UploadedFile.new(Rails.root.join("spec/fixtures/files/images/office-avatars/michael-scott.png"))
+# #       valid_create_user_1_params['avatar'] = file
+# #       user1 = User.create! valid_create_user_1_params
+# #       user2 = User.create! valid_create_user_2_params
+# #       header = header_from_user(user2,valid_user_2_login_params)
+# #       expect {
+# #         delete user_url(user1), headers: header, as: :json
+# #       }.to change(User, :count).by(-1)
+# #     end
+# #   end
+# # end
+
+# # private 
+
+# # def token_from_user(user,login_params)
+# #   post "/login", params: login_params
+# #   token = JSON.parse(response.body)['data']
+# # end
+
+# # def valid_token(create_user_params)
+# #   user = User.create(create_user_params)
+# #   post "/login", params: valid_user_1_login_params
+# #   token = JSON.parse(response.body)['data']
+# # end
+
+# # def valid_auth_header_from_token(token)
+# #   auth_value = "Bearer " + token
+# #   { Authorization: auth_value }
+# # end
+
+# # def valid_auth_header_from_user_params(create_user_params)
+# #   token = valid_token(create_user_params)
+# #   auth_value = "Bearer " + token
+# #   { Authorization: auth_value }
+# # end
+
+# # def header_from_user(user,login_params)
+# #   token = token_from_user(user,login_params)
+# #   auth_value = "Bearer " + token
+# #   { Authorization: auth_value }
+# # end
+
+# # def invalid_auth_header
+# #   auth_value = "Bearer " + "xyz"
+# #   { Authorization: auth_value }
+# # end
+
+# # def poorly_formed_header(create_user_params)
+# #   token = valid_token(create_user_params)
+# #   auth_value = "Bears " + token
+# #   { Authorization: auth_value }
+# # end
+
+# # def blob_for(name)
+# #   ActiveStorage::Blob.create_and_upload!(
+# #     io: File.open(Rails.root.join(file_fixture(name)), 'rb'),
+# #     filename: name,
+# #     content_type: 'image/png' # Or figure it out from `name` if you have non-JPEGs
+# #   )
+# # end
+# # ~
+# # EOF
+
+# echo -e "\n\n🦄  /login Route (Authentications Controller)\n\n"
+# rails g controller Authentications
+# cat <<'EOF' | puravida app/controllers/authentications_controller.rb ~
+# class AuthenticationsController < ApplicationController
+#   skip_before_action :require_login
+  
+#   def create
+#     user = User.find_by(email: params[:email])
+#     if user && user.authenticate(params[:password])
+#       payload = { user_id: user.id, email: user.email }
+#       token = encode_token(payload)
+#       render json: { data: token, status: 200, message: 'You are logged in successfully' }
+#     else
+#       response_unauthorized
+#     end
+#   end
+# end
+# ~
+# EOF
+# cat <<'EOF' | puravida spec/requests/authentications_spec.rb ~
+# # frozen_string_literal: true
+# require 'rails_helper'
+
+# RSpec.describe "/login", type: :request do
+#   let(:valid_login_params) { { email: "michaelscott@dundermifflin.com",  password: "password" } }
+#   let(:invalid_login_params) { { email: "michaelscott@dundermifflin.com",  password: "testing" } }
+#   let(:create_user_params) { { name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password" }}
+#   describe "POST /login" do
+#     context "without params" do
+#       it "returns unauthorized" do
+#         post "/login"
+#         expect(response).to have_http_status(:unauthorized)
+#       end
+#     end
+#   end
+#   describe "POST /login" do
+#     context "with invalid params" do
+#       it "returns unauthorized" do
+#         post "/login", params: invalid_login_params
+#         expect(response).to have_http_status(:unauthorized)
+#       end
+#     end
+#   end
+#   describe "POST /login" do
+#     context "with valid params" do
+#       it "returns unauthorized" do
+#         user = User.create(create_user_params)
+#         post "/login", params: valid_login_params
+#         expect(response).to have_http_status(:success)
+#         expect(JSON.parse(response.body)['message']).to eq "You are logged in successfully"
+#         expect(JSON.parse(response.body)['data']).to match(/^(?:[\w-]*\.){2}[\w-]*$/)
+#       end
+#     end
+#   end
+# end
+# ~
+# EOF
+# cat <<'EOF' | puravida app/controllers/users_controller.rb ~
+# class UsersController < ApplicationController
+#   before_action :set_user, only: %i[ show update destroy ]
+#   skip_before_action :require_login, only: :create
+
+#   # GET /users
+#   def index
+#     @users = User.all.map { |user| prep_raw_user(user) }
+#     render json: @users
+#   end
+
+#   # GET /users/1
+#   def show
+#     render json: prep_raw_user(@user)
+#   end
+
+#   # POST /users
+#   def create
+#     @user = User.new(user_params)
+#     if @user.save
+#       render json: prep_raw_user(@user), status: :created, location: @user
+#     else
+#       render json: @user.errors, status: :unprocessable_entity
+#     end
+#   end
+
+#   # PATCH/PUT /users/1
+#   def update
+#     if @user.update(user_params)
+#       render json: prep_raw_user(@user)
+#     else
+#       render json: @user.errors, status: :unprocessable_entity
+#     end
+#   end
+
+#   # DELETE /users/1
+#   def destroy
+#     @user.destroy
+#   end
+
+#   private
+#     # Use callbacks to share common setup or constraints between actions.
+#     def set_user
+#       @user = User.find(params[:id])
+#     end
+
+#     # Only allow a list of trusted parameters through.
+#     def user_params
+#       params['avatar'] = params['avatar'].blank? ? nil : params['avatar'] # if no avatar is chosen on signup page, params['avatar'] comes in as a blank string, which throws a 500 error at User.new(user_params). This changes any params['avatar'] blank string to nil, which is fine in User.new(user_params).
+#       params.permit(:name, :email, :avatar, :admin, :password)
+#     end
+    
+# end
+# ~
+# EOF
+# cat <<'EOF' | puravida config/routes.rb ~
+# Rails.application.routes.draw do
+#   resources :users
+#   get "health", to: "health#index"
+#   post "login", to: "authentications#create"
+#   get "me", to: "application#user_from_token"
+# end
+# ~
+# EOF
+
+# echo -e "\n\n🦄  /me Route (Application Controller)\n\n"
+# cat <<'EOF' | puravida app/controllers/application_controller.rb ~
+# class ApplicationController < ActionController::API
+#   SECRET_KEY_BASE = Rails.application.credentials.secret_key_base
+#   before_action :require_login
+#   rescue_from Exception, with: :response_internal_server_error
+
+#   def require_login
+#     response_unauthorized if current_user_raw.blank?
+#   end
+
+#   # this is safe to send to the frontend, excludes password_digest, created_at, updated_at
+#   def user_from_token
+#     user = prep_raw_user(current_user_raw)
+#     render json: { data: user, status: 200 }
+#   end
+
+#   # unsafe/internal: includes password_digest, created_at, updated_at - we don't want those going to the frontend
+#   def current_user_raw
+#     if decoded_token.present?
+#       user_id = decoded_token[0]['user_id']
+#       @user = User.find_by(id: user_id)
+#     else
+#       nil
+#     end
+#   end
+
+#   def encode_token(payload)
+#     JWT.encode payload, SECRET_KEY_BASE, 'HS256'
+#   end
+
+#   def decoded_token
+#     if auth_header and auth_header.split(' ')[0] == "Bearer"
+#       token = auth_header.split(' ')[1]
+#       begin
+#         JWT.decode token, SECRET_KEY_BASE, true, { algorithm: 'HS256' }
+#       rescue JWT::DecodeError
+#         []
+#       end
+#     end
+#   end
+
+#   def response_unauthorized
+#     render status: 401, json: { status: 401, message: 'Unauthorized' }
+#   end
+  
+#   def response_internal_server_error
+#     render status: 500, json: { status: 500, message: 'Internal Server Error' }
+#   end
+
+#   # We don't want to send the whole user record from the database to the frontend, so we only send what we need.
+#   # The db user row has password_digest (unsafe) and created_at and updated_at (extraneous).
+#   # We also change avatar from a weird active_storage object to just the avatar url before it gets to the frontend.
+#   def prep_raw_user(user)
+#     avatar = user.avatar.present? ? url_for(user.avatar) : nil
+#     # widgets = Widget.where(user_id: user.id).map { |widget| widget.id }
+#     # subwidgets = Subwidget.where(widget_id: widgets).map { |subwidget| subwidget.id }
+#     user = user.admin ? user.slice(:id,:email,:name,:admin) : user.slice(:id,:email,:name)
+#     user['avatar'] = avatar
+#     # user['widget_ids'] = widgets
+#     # user['subwidget_ids'] = subwidgets
+#     user
+#   end
+
+#   def prep_raw_widget(widget)
+#     user_id = widget.user_id
+#     user_name = User.find(widget.user_id).name
+#     # subwidgets = Subwidget.where(widget_id: widget.id)
+#     # subwidgets = subwidgets.map { |subwidget| subwidget.slice(:id,:name,:description,:widget_id) }
+#     image = widget.image.present? ? url_for(widget.image) : nil
+#     widget = widget.slice(:id,:name,:description)
+#     widget['userId'] = user_id
+#     widget['userName'] = user_name
+#     widget['image'] = image
+#     # widget['subwidgets'] = subwidgets
+#     widget
+#   end
+
+#   def prep_raw_subwidget(subwidget)
+#     widget_id = subwidget.widget_id
+#     widget = Widget.find(widget_id)
+#     user = User.find(widget.user_id)
+#     image = subwidget.image.present? ? url_for(subwidget.image) : nil
+#     subwidget = subwidget.slice(:id,:name,:description)
+#     subwidget['widgetId'] = widget_id
+#     subwidget['widgetName'] = widget.name
+#     subwidget['widgetDescription'] = widget.description
+#     subwidget['userId'] = user.id
+#     subwidget['userName'] = user.name
+#     subwidget['image'] = image
+#     subwidget
+#   end
+  
+#   private 
+  
+#     def auth_header
+#       request.headers['Authorization']
+#     end
+
+# end
+# ~
+# EOF
+# cat <<'EOF' | puravida spec/requests/application_spec.rb ~
+# # frozen_string_literal: true
+# require 'rails_helper'
+
+# RSpec.describe "/me", type: :request do
+#   fixtures :users
+#   let(:valid_headers) {{ Authorization: "Bearer " + @token }}
+#   let(:invalid_token_header) {{ Authorization: "Bearer xyz" }}
+#   let(:poorly_formed_header) {{ Authorization: "Bear " + @token }}
+  
+#   before :all do
+#     @token = token_from_email_password("michaelscott@dundermifflin.com", "password")
+#   end
+  
+#   describe "GET /me" do
+
+#     context "without auth header" do
+#       it "returns http success" do
+#         get "/me"
+#         expect(response).to have_http_status(:unauthorized)
+#       end
+#     end
+    
+#     context "with invalid token header" do
+#       it "returns http success" do
+#         get "/me", headers: invalid_token_header
+#         expect(response).to have_http_status(:unauthorized)
+#       end
+#     end
+
+#     context "with valid token, but poorly formed auth header" do
+#       it "returns http success" do
+#         get "/me", headers: poorly_formed_header
+#         expect(response).to have_http_status(:unauthorized)
+#       end
+#     end
+
+#     context "with valid auth header" do
+#       it "returns http success" do
+#         get "/me", headers: valid_headers
+#         expect(response).to have_http_status(:success)
+#       end
+#     end
+#   end
+# end
+# ~
+# EOF
+
+# echo -e "\n\n🦄  Update users_spec.rb For Auth\n\n"
+# cat <<'EOF' | puravida spec/requests/users_spec.rb ~
+# # frozen_string_literal: true
+# require 'rails_helper'
+
+# RSpec.describe "/users", type: :request do
+#   fixtures :users
+#   let(:valid_headers) {{ Authorization: "Bearer " + @michael_token }}
+#   let(:admin_2_headers) {{ Authorization: "Bearer " + @ryan_token }}
+#   let(:invalid_token_header) {{ Authorization: "Bearer xyz" }}
+#   let(:poorly_formed_header) {{ Authorization: "Bear " + @michael_token }}
+#   let(:user_valid_create_params_mock_1) {{ name: "First1 Last1", email: "one@mail.com", admin: "false", password: "password", avatar: fixture_file_upload("spec/fixtures/files/michael-scott.png", "image/png") }}
+#   let(:user_invalid_create_params_email_poorly_formed_mock_1) {{ name: "", email: "not_an_email", admin: "false", password: "password", avatar: fixture_file_upload("spec/fixtures/files/michael-scott.png", "image/png") }}
+#   let(:valid_user_update_attributes) {{ name: "UpdatedName" }}
+#   let(:invalid_user_update_attributes) {{ email: "not_an_email" }}
+  
+#   before :all do
+#     @michael_token = token_from_email_password("michaelscott@dundermifflin.com", "password")
+#     @ryan_token = token_from_email_password("ryanhoward@dundermifflin.com", "password")
+#   end
+
+#   before :each do
+#     @user = users(:michael)
+#   end
+
+#   describe "GET /index" do
+#     it "renders a successful response" do
+#       get users_url, headers: valid_headers
+#       expect(response).to be_successful
+#     end
+
+#     it "gets two users" do
+#       get users_url, headers: valid_headers
+#       expect(JSON.parse(response.body).length).to eq 4
+#     end
+#   end
+
+#   describe "GET /show" do
+#     it "renders a successful response" do
+#       get user_url(@user), headers: valid_headers
+#       expect(response).to be_successful
+#     end
+#   end
+
+#   describe "POST /users" do
+#     context "with valid parameters" do
+#       it "creates a new User" do
+#         expect {
+#           post users_url, params: user_valid_create_params_mock_1
+#         }.to change(User, :count).by(1)
+#       end
+
+#       it "renders a successful response" do
+#         post users_url, params: user_valid_create_params_mock_1
+#         expect(response).to be_successful
+#       end
+
+#       it "sets user name" do
+#         post users_url, params: user_valid_create_params_mock_1
+#         user = User.order(:created_at).last
+#         expect(user.name).to eq("First1 Last1")
+#       end
+
+#       it "attaches user avatar" do
+#         post users_url, params: user_valid_create_params_mock_1
+#         user = User.order(:created_at).last
+#         expect(user.avatar.attached?).to eq(true)
+#       end
+#     end
+
+#     context "with invalid parameters (email poorly formed)" do
+#       it "does not create a new User" do
+#         expect {
+#           post users_url, params: user_invalid_create_params_email_poorly_formed_mock_1
+#         }.to change(User, :count).by(0)
+#       end
+
+    
+#       it "renders a 422 response" do
+#         post users_url, params: user_invalid_create_params_email_poorly_formed_mock_1
+#         expect(response).to have_http_status(:unprocessable_entity)
+#       end  
+#     end
+#   end
+
+#   describe "PATCH /update" do
+#     context "with valid parameters" do
+
+#       it "updates the requested user" do
+#         patch user_url(@user), headers: valid_headers, params: valid_user_update_attributes
+#         @user.reload
+#         expect(@user.name).to eq("UpdatedName")
+#       end
+
+#       it "is successful" do
+#         patch user_url(@user), headers: valid_headers, params: valid_user_update_attributes
+#         @user.reload
+#         expect(response).to be_successful
+#       end
+#     end
+
+#     context "with invalid parameters" do
+    
+#       it "renders a 422 response" do
+#         patch user_url(@user), headers: valid_headers, params: invalid_user_update_attributes
+#         expect(response).to have_http_status(:unprocessable_entity)
+#       end
+    
+#     end
+#   end
+
+#   # TODO: Failing because of casading foreign key issue
+#   # describe "DELETE /destroy" do
+#     # it "destroys the requested user" do
+#     #   expect {
+#     #     delete user_url(@user), headers: admin_2_headers
+#     #   }.to change(User, :count).by(-1)
+#     # end
+#     # it "renders a successful response" do
+#     #   delete user_url(@user), headers: admin_2_headers
+#     #   expect(response).to be_successful
+#     # end
+#   # end
+
+# end
+# ~
+# EOF
+
+# echo -e "\n\n🦄  Update Health Controller For Auth\n\n"
+# cat <<'EOF' | puravida app/controllers/health_controller.rb ~
+# class HealthController < ApplicationController
+#   skip_before_action :require_login
+#   def index
+#     render json: { status: 'online' }
+#   end
+# end
+# ~
+# EOF
+# rspec
+
+# echo -e "\n\n🦄  Widgets (Backend)\n\n"
+# rails g scaffold widget name description image:attachment user:references
+# rails db:migrate
+# cat <<'EOF' | puravida app/models/widget.rb ~
+# class Widget < ApplicationRecord
+#   belongs_to :user
+#   has_one_attached :image
+#   validates :name, presence: true, allow_blank: false, length: { minimum: 4, maximum: 254 }
+# end
+# ~
+# EOF
+
+# cat <<'EOF' | puravida app/controllers/widgets_controller.rb ~
+# class WidgetsController < ApplicationController
+#   before_action :set_widget, only: %i[ show update destroy ]
+
+#   # GET /widgets
+#   def index
+#     if params['user_id'].present?
+#       @widgets = Widget.where(user_id: params['user_id']).map { |widget| prep_raw_widget(widget) }
+#     else
+#       @widgets = Widget.all.map { |widget| prep_raw_widget(widget) }
+#     end
+#     render json: @widgets
+#   end
+
+#   # GET /widgets/1
+#   def show
+#     render json: prep_raw_widget(@widget)
+#   end
+
+#   # POST /widgets
+#   def create
+#     create_params = widget_params
+#     create_params['image'] = params['image'].blank? ? nil : params['image'] # if no image is chosen on new widget page, params['image'] comes in as a blank string, which throws a 500 error at User.new(user_params). This changes any params['avatar'] blank string to nil, which is fine in User.new(user_params).
+#     @widget = Widget.new(create_params)
+#     if @widget.save
+#       render json: prep_raw_widget(@widget), status: :created, location: @widget
+#     else
+#       render json: @widget.errors, status: :unprocessable_entity
+#     end
+#   end
+
+#   # PATCH/PUT /widgets/1
+#   def update
+#     if @widget.update(widget_params)
+#       render json: prep_raw_widget(@widget)
+#     else
+#       render json: @widget.errors, status: :unprocessable_entity
+#     end
+#   end
+
+#   # DELETE /widgets/1
+#   def destroy
+#     @widget.destroy
+#   end
+
+#   private
+#     # Use callbacks to share common setup or constraints between actions.
+#     def set_widget
+#       @widget = Widget.find(params[:id])
+#     end
+
+#     # Only allow a list of trusted parameters through.
+#     def widget_params
+#       params.permit(:id, :name, :description, :image, :user_id)
+#     end
+# end
+# ~
+# EOF
+# cat <<'EOF' | puravida spec/fixtures/widgets.yml ~
+# widget_one:
+#   name: widget_one_name
+#   description: widget_one_description
+#   user_id: <%= User.find_by(email: "michaelscott@dundermifflin.com").id %>
+
+# widget_two:
+#   name: widget_two_name
+#   description: widget_two_description
+#   user_id: <%= User.find_by(email: "jimhalpert@dundermifflin.com").id %>
+# ~
+# EOF
+# cat <<'EOF' | puravida spec/models/widget_spec.rb ~
+# require 'rails_helper'
+
+# RSpec.describe "/widgets", type: :request do
+#   fixtures :users
+#   fixtures :widgets
+#   let(:valid_attributes) {{ name: "test1", description: "test1", user_id: User.find_by(email: "michaelscott@dundermifflin.com").id }}
+#   let(:invalid_attributes) {{ name: "", description: "invalid_attributes" }}
+#   let(:valid_headers) {{ Authorization: "Bearer " + @michael_token }}
+
+#   before :all do
+#     @michael_token = token_from_email_password("michaelscott@dundermifflin.com", "password")
+#   end
+
+#   it "is valid with valid attributes" do
+#     expect(Widget.new(valid_attributes)).to be_valid
+#   end
+#   it "is not valid width poorly formed email" do
+#     expect(Widget.new(invalid_attributes)).to_not be_valid
+#   end
+
+# end
+# ~
+# EOF
+
+# cat <<'EOF' | puravida spec/requests/widgets_spec.rb ~
+# require 'rails_helper'
+
+# RSpec.describe "/widgets", type: :request do
+#   fixtures :users
+#   fixtures :widgets
+#   let(:valid_attributes) {{ name: "test1", description: "test1", user_id: User.find_by(email: "michaelscott@dundermifflin.com").id }}
+#   let(:invalid_attributes) {{ name: "invalid_attributes", description: "invalid_attributes" }}
+#   let(:valid_headers) {{ Authorization: "Bearer " + @michael_token }}
+
+#   before :all do
+#     @michael_token = token_from_email_password("michaelscott@dundermifflin.com", "password")
+#     @ryan_token = token_from_email_password("ryanhoward@dundermifflin.com", "password")
+#   end
+
+#   describe "GET /index" do
+#     it "renders a successful response" do
+#       get widgets_url, headers: valid_headers
+#       expect(response).to be_successful
+#     end
+#     it "gets two widgets a successful response" do
+#       get widgets_url, headers: valid_headers
+#       expect(JSON.parse(response.body).length).to eq 2
+#     end
+#   end
+
+#   describe "GET /show" do
+#     it "renders a successful response" do
+#       widget = widgets(:widget_one)
+#       get widget_url(widget), headers: valid_headers
+#       expect(response).to be_successful
 #     end
 #   end
 
 #   describe "POST /create" do
 #     context "with valid parameters" do
-#       it "creates a new User (without avatar)" do
-#         expect { post users_url, params: valid_create_user_1_params }
-#           .to change(User, :count).by(1)
+#       it "creates a new Widget" do
+#         expect { post widgets_url, params: valid_attributes, headers: valid_headers, as: :json
+#         }.to change(Widget, :count).by(1)
 #       end
-#       it "renders a JSON response with new user (with avatar)" do  
-#         file = Rack::Test::UploadedFile.new(Rails.root.join("spec/fixtures/files/images/office-avatars/michael-scott.png"))
-#         valid_create_user_1_params['avatar'] = file
-#         post users_url, params: valid_create_user_1_params        
+
+#       it "renders a JSON response with the new widget" do
+#         post widgets_url, params: valid_attributes, headers: valid_headers, as: :json
 #         expect(response).to have_http_status(:created)
 #         expect(response.content_type).to match(a_string_including("application/json"))
-#         expect(JSON.parse(response.body)).to include("id","name","email","admin","avatar")
-#         expect(JSON.parse(response.body)).not_to include("password_digest","password")
-#         expect(JSON.parse(response.body)['name']).to eq("Michael Scott")
-#         expect(JSON.parse(response.body)['email']).to eq("michaelscott@dundermifflin.com")
-#         expect(JSON.parse(response.body)['admin']).to eq(true)
-#         expect(JSON.parse(response.body)['avatar']).to be_kind_of(String)
-#         expect(JSON.parse(response.body)['avatar']).to match(/http.*\michael-scott\.png/)
-#         expect(JSON.parse(response.body)['password']).to be_nil
-#         expect(JSON.parse(response.body)['password_digest']).to be_nil
 #       end
 #     end
+
 #     context "with invalid parameters" do
-#       it "does not create a new User" do
-#         expect { post users_url, params: invalid_create_user_2_params, as: :json}
-#           .to change(User, :count).by(0)
+#       it "does not create a new Widget" do
+#         expect {
+#           post widgets_url, params: invalid_attributes, headers: valid_headers, as: :json
+#         }.to change(Widget, :count).by(0)
 #       end
-#       it "renders a JSON error response" do
-#         post users_url, params: invalid_create_user_2_params, as: :json
+
+#       it "renders a JSON response with errors for the new widget" do
+#         post widgets_url, params: invalid_attributes, headers: valid_headers, as: :json
 #         expect(response).to have_http_status(:unprocessable_entity)
-#         expect(response.content_type).to match(a_string_including("application/json"))
-#       end
-#     end
-#     context "with valid auth header" do
-#       it "creates a new User" do
-#         user1 = User.create! valid_create_user_1_params
-#         header = header_from_user(user1,valid_user_1_login_params)
-#         expect { post users_url, headers: header, params: valid_create_user_2_params, as: :json }
-#           .to change(User, :count).by(1)
-#       end
-#       it "renders a JSON response with the new user" do
-#         user1 = User.create! valid_create_user_1_params
-#         header = header_from_user(user1,valid_user_1_login_params)
-#         post users_url, params: valid_create_user_2_params, as: :json
-#         expect(response).to have_http_status(:created)
 #         expect(response.content_type).to match(a_string_including("application/json"))
 #       end
 #     end
@@ -556,741 +1253,43 @@ rspec
 
 #   describe "PATCH /update" do
 #     context "with valid parameters" do
+#       let(:new_attributes) {{ name: "UpdatedName"}}
 
-#       it "updates the requested user's name" do
-#         user1 = User.create! valid_create_user_1_params
-#         user2 = User.create! valid_create_user_2_params
-#         header = header_from_user(user2,valid_user_2_login_params)
-#         patch user_url(user1), params: { name: "Updated Name!!"}, headers: header, as: :json
-#         user1.reload
-#         expect(JSON.parse(response.body)['name']).to eq "Updated Name!!"
+#       it "updates the requested widget" do
+#         widget = widgets(:widget_one)
+#         patch widget_url(widget), params: new_attributes, headers: valid_headers, as: :json
+#         widget.reload
+#         expect(widget.name).to eq("UpdatedName")
+#       end
+
+#       it "renders a JSON response with the widget" do
+#         widget = widgets(:widget_one)
+#         patch widget_url(widget), params: new_attributes, headers: valid_headers, as: :json
 #         expect(response).to have_http_status(:ok)
 #         expect(response.content_type).to match(a_string_including("application/json"))
 #       end
-
-#       it "updates the requested user's avatar" do
-#         avatar = Rack::Test::UploadedFile.new(Rails.root.join("spec/fixtures/files/images/office-avatars/michael-scott.png"))
-#         valid_create_user_1_params['avatar'] = avatar
-#         user1 = User.create! valid_create_user_1_params   
-#         user2 = User.create! valid_create_user_2_params
-#         header = header_from_user(user2,valid_user_2_login_params)
-#         updated_avatar = Rack::Test::UploadedFile.new(Rails.root.join('spec/fixtures/files/images/office-avatars/jim-halpert.png'))
-#         valid_create_user_1_params['avatar'] = updated_avatar
-#         patch user_url(user1), params: valid_create_user_1_params, headers: header
-#         expect(response).to have_http_status(:ok)
-#         expect(response.content_type).to match(a_string_including("application/json"))
-#         expect(JSON.parse(response.body)['name']).to eq("Michael Scott")
-#         expect(JSON.parse(response.body)['avatar']).to be_kind_of(String)
-#         expect(JSON.parse(response.body)['avatar']).to match(/http.*\jim-halpert\.png/)
-#       end
 #     end
 
-#     context "with invalid parameters" do
-#       it "renders a JSON response with errors for the user" do
-#         user1 = User.create! valid_create_user_1_params
-#         user2 = User.create! valid_create_user_2_params
-#         header = header_from_user(user2,valid_user_2_login_params)
-#         patch user_url(user1), params: invalid_patch_params, headers: header, as: :json
-#         expect(response).to have_http_status(:unprocessable_entity)
-#         expect(response.content_type).to match(a_string_including("application/json"))
-#       end
-#     end
+#     # context "with invalid parameters" do
+#     #   it "renders a JSON response with errors for the widget" do
+#     #     widget = widgets(:widget_one)
+#     #     patch widget_url(widget), params: invalid_attributes, headers: valid_headers, as: :json
+#     #     expect(response).to have_http_status(:unprocessable_entity)
+#     #     expect(response.content_type).to match(a_string_including("application/json"))
+#     #   end
+#     # end
 #   end
 
 #   describe "DELETE /destroy" do
-#     it "destroys the requested user (without avatar)" do
-#       user1 = User.create! valid_create_user_1_params
-#       user2 = User.create! valid_create_user_2_params
-#       header = header_from_user(user2,valid_user_2_login_params)
-#       expect {
-#         delete user_url(user1), headers: header, as: :json
-#       }.to change(User, :count).by(-1)
-#     end
-#     it "destroys the requested user (with avatar)" do
-#       file = Rack::Test::UploadedFile.new(Rails.root.join("spec/fixtures/files/images/office-avatars/michael-scott.png"))
-#       valid_create_user_1_params['avatar'] = file
-#       user1 = User.create! valid_create_user_1_params
-#       user2 = User.create! valid_create_user_2_params
-#       header = header_from_user(user2,valid_user_2_login_params)
-#       expect {
-#         delete user_url(user1), headers: header, as: :json
-#       }.to change(User, :count).by(-1)
+#     it "destroys the requested widget" do
+#       widget = Widget.create! valid_attributes
+#       expect { delete widget_url(widget), headers: valid_headers, as: :json
+#       }.to change(Widget, :count).by(-1)
 #     end
 #   end
 # end
-
-# private 
-
-# def token_from_user(user,login_params)
-#   post "/login", params: login_params
-#   token = JSON.parse(response.body)['data']
-# end
-
-# def valid_token(create_user_params)
-#   user = User.create(create_user_params)
-#   post "/login", params: valid_user_1_login_params
-#   token = JSON.parse(response.body)['data']
-# end
-
-# def valid_auth_header_from_token(token)
-#   auth_value = "Bearer " + token
-#   { Authorization: auth_value }
-# end
-
-# def valid_auth_header_from_user_params(create_user_params)
-#   token = valid_token(create_user_params)
-#   auth_value = "Bearer " + token
-#   { Authorization: auth_value }
-# end
-
-# def header_from_user(user,login_params)
-#   token = token_from_user(user,login_params)
-#   auth_value = "Bearer " + token
-#   { Authorization: auth_value }
-# end
-
-# def invalid_auth_header
-#   auth_value = "Bearer " + "xyz"
-#   { Authorization: auth_value }
-# end
-
-# def poorly_formed_header(create_user_params)
-#   token = valid_token(create_user_params)
-#   auth_value = "Bears " + token
-#   { Authorization: auth_value }
-# end
-
-# def blob_for(name)
-#   ActiveStorage::Blob.create_and_upload!(
-#     io: File.open(Rails.root.join(file_fixture(name)), 'rb'),
-#     filename: name,
-#     content_type: 'image/png' # Or figure it out from `name` if you have non-JPEGs
-#   )
-# end
 # ~
 # EOF
-
-echo -e "\n\n🦄  /login Route (Authentications Controller)\n\n"
-rails g controller Authentications
-cat <<'EOF' | puravida app/controllers/authentications_controller.rb ~
-class AuthenticationsController < ApplicationController
-  skip_before_action :require_login
-  
-  def create
-    user = User.find_by(email: params[:email])
-    if user && user.authenticate(params[:password])
-      payload = { user_id: user.id, email: user.email }
-      token = encode_token(payload)
-      render json: { data: token, status: 200, message: 'You are logged in successfully' }
-    else
-      response_unauthorized
-    end
-  end
-end
-~
-EOF
-cat <<'EOF' | puravida spec/requests/authentications_spec.rb ~
-# frozen_string_literal: true
-require 'rails_helper'
-
-RSpec.describe "/login", type: :request do
-  let(:valid_login_params) { { email: "michaelscott@dundermifflin.com",  password: "password" } }
-  let(:invalid_login_params) { { email: "michaelscott@dundermifflin.com",  password: "testing" } }
-  let(:create_user_params) { { name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password" }}
-  describe "POST /login" do
-    context "without params" do
-      it "returns unauthorized" do
-        post "/login"
-        expect(response).to have_http_status(:unauthorized)
-      end
-    end
-  end
-  describe "POST /login" do
-    context "with invalid params" do
-      it "returns unauthorized" do
-        post "/login", params: invalid_login_params
-        expect(response).to have_http_status(:unauthorized)
-      end
-    end
-  end
-  describe "POST /login" do
-    context "with valid params" do
-      it "returns unauthorized" do
-        user = User.create(create_user_params)
-        post "/login", params: valid_login_params
-        expect(response).to have_http_status(:success)
-        expect(JSON.parse(response.body)['message']).to eq "You are logged in successfully"
-        expect(JSON.parse(response.body)['data']).to match(/^(?:[\w-]*\.){2}[\w-]*$/)
-      end
-    end
-  end
-end
-~
-EOF
-cat <<'EOF' | puravida app/controllers/users_controller.rb ~
-class UsersController < ApplicationController
-  before_action :set_user, only: %i[ show update destroy ]
-  skip_before_action :require_login, only: :create
-
-  # GET /users
-  def index
-    @users = User.all.map { |user| prep_raw_user(user) }
-    render json: @users
-  end
-
-  # GET /users/1
-  def show
-    render json: prep_raw_user(@user)
-  end
-
-  # POST /users
-  def create
-    @user = User.new(user_params)
-    if @user.save
-      render json: prep_raw_user(@user), status: :created, location: @user
-    else
-      render json: @user.errors, status: :unprocessable_entity
-    end
-  end
-
-  # PATCH/PUT /users/1
-  def update
-    if @user.update(user_params)
-      render json: prep_raw_user(@user)
-    else
-      render json: @user.errors, status: :unprocessable_entity
-    end
-  end
-
-  # DELETE /users/1
-  def destroy
-    @user.destroy
-  end
-
-  private
-    # Use callbacks to share common setup or constraints between actions.
-    def set_user
-      @user = User.find(params[:id])
-    end
-
-    # Only allow a list of trusted parameters through.
-    def user_params
-      params['avatar'] = params['avatar'].blank? ? nil : params['avatar'] # if no avatar is chosen on signup page, params['avatar'] comes in as a blank string, which throws a 500 error at User.new(user_params). This changes any params['avatar'] blank string to nil, which is fine in User.new(user_params).
-      params.permit(:name, :email, :avatar, :admin, :password)
-    end
-    
-end
-~
-EOF
-cat <<'EOF' | puravida config/routes.rb ~
-Rails.application.routes.draw do
-  resources :users
-  get "health", to: "health#index"
-  post "login", to: "authentications#create"
-  get "me", to: "application#user_from_token"
-end
-~
-EOF
-
-echo -e "\n\n🦄  /me Route (Application Controller)\n\n"
-cat <<'EOF' | puravida app/controllers/application_controller.rb ~
-class ApplicationController < ActionController::API
-  SECRET_KEY_BASE = Rails.application.credentials.secret_key_base
-  before_action :require_login
-  rescue_from Exception, with: :response_internal_server_error
-
-  def require_login
-    response_unauthorized if current_user_raw.blank?
-  end
-
-  # this is safe to send to the frontend, excludes password_digest, created_at, updated_at
-  def user_from_token
-    user = prep_raw_user(current_user_raw)
-    render json: { data: user, status: 200 }
-  end
-
-  # unsafe/internal: includes password_digest, created_at, updated_at - we don't want those going to the frontend
-  def current_user_raw
-    if decoded_token.present?
-      user_id = decoded_token[0]['user_id']
-      @user = User.find_by(id: user_id)
-    else
-      nil
-    end
-  end
-
-  def encode_token(payload)
-    JWT.encode payload, SECRET_KEY_BASE, 'HS256'
-  end
-
-  def decoded_token
-    if auth_header and auth_header.split(' ')[0] == "Bearer"
-      token = auth_header.split(' ')[1]
-      begin
-        JWT.decode token, SECRET_KEY_BASE, true, { algorithm: 'HS256' }
-      rescue JWT::DecodeError
-        []
-      end
-    end
-  end
-
-  def response_unauthorized
-    render status: 401, json: { status: 401, message: 'Unauthorized' }
-  end
-  
-  def response_internal_server_error
-    render status: 500, json: { status: 500, message: 'Internal Server Error' }
-  end
-
-  # We don't want to send the whole user record from the database to the frontend, so we only send what we need.
-  # The db user row has password_digest (unsafe) and created_at and updated_at (extraneous).
-  # We also change avatar from a weird active_storage object to just the avatar url before it gets to the frontend.
-  def prep_raw_user(user)
-    avatar = user.avatar.present? ? url_for(user.avatar) : nil
-    # widgets = Widget.where(user_id: user.id).map { |widget| widget.id }
-    # subwidgets = Subwidget.where(widget_id: widgets).map { |subwidget| subwidget.id }
-    user = user.admin ? user.slice(:id,:email,:name,:admin) : user.slice(:id,:email,:name)
-    user['avatar'] = avatar
-    # user['widget_ids'] = widgets
-    # user['subwidget_ids'] = subwidgets
-    user
-  end
-
-  def prep_raw_widget(widget)
-    user_id = widget.user_id
-    user_name = User.find(widget.user_id).name
-    # subwidgets = Subwidget.where(widget_id: widget.id)
-    # subwidgets = subwidgets.map { |subwidget| subwidget.slice(:id,:name,:description,:widget_id) }
-    image = widget.image.present? ? url_for(widget.image) : nil
-    widget = widget.slice(:id,:name,:description)
-    widget['userId'] = user_id
-    widget['userName'] = user_name
-    widget['image'] = image
-    # widget['subwidgets'] = subwidgets
-    widget
-  end
-
-  def prep_raw_subwidget(subwidget)
-    widget_id = subwidget.widget_id
-    widget = Widget.find(widget_id)
-    user = User.find(widget.user_id)
-    image = subwidget.image.present? ? url_for(subwidget.image) : nil
-    subwidget = subwidget.slice(:id,:name,:description)
-    subwidget['widgetId'] = widget_id
-    subwidget['widgetName'] = widget.name
-    subwidget['widgetDescription'] = widget.description
-    subwidget['userId'] = user.id
-    subwidget['userName'] = user.name
-    subwidget['image'] = image
-    subwidget
-  end
-  
-  private 
-  
-    def auth_header
-      request.headers['Authorization']
-    end
-
-end
-~
-EOF
-cat <<'EOF' | puravida spec/requests/application_spec.rb ~
-# frozen_string_literal: true
-require 'rails_helper'
-
-RSpec.describe "/me", type: :request do
-  fixtures :users
-  let(:valid_headers) {{ Authorization: "Bearer " + @token }}
-  let(:invalid_token_header) {{ Authorization: "Bearer xyz" }}
-  let(:poorly_formed_header) {{ Authorization: "Bear " + @token }}
-  
-  before :all do
-    @token = token_from_email_password("michaelscott@dundermifflin.com", "password")
-  end
-  
-  describe "GET /me" do
-
-    context "without auth header" do
-      it "returns http success" do
-        get "/me"
-        expect(response).to have_http_status(:unauthorized)
-      end
-    end
-    
-    context "with invalid token header" do
-      it "returns http success" do
-        get "/me", headers: invalid_token_header
-        expect(response).to have_http_status(:unauthorized)
-      end
-    end
-
-    context "with valid token, but poorly formed auth header" do
-      it "returns http success" do
-        get "/me", headers: poorly_formed_header
-        expect(response).to have_http_status(:unauthorized)
-      end
-    end
-
-    context "with valid auth header" do
-      it "returns http success" do
-        get "/me", headers: valid_headers
-        expect(response).to have_http_status(:success)
-      end
-    end
-  end
-end
-~
-EOF
-
-echo -e "\n\n🦄  Update users_spec.rb For Auth\n\n"
-cat <<'EOF' | puravida spec/requests/users_spec.rb ~
-# frozen_string_literal: true
-require 'rails_helper'
-
-RSpec.describe "/users", type: :request do
-  fixtures :users
-  let(:valid_headers) {{ Authorization: "Bearer " + @michael_token }}
-  let(:admin_2_headers) {{ Authorization: "Bearer " + @ryan_token }}
-  let(:invalid_token_header) {{ Authorization: "Bearer xyz" }}
-  let(:poorly_formed_header) {{ Authorization: "Bear " + @michael_token }}
-  let(:user_valid_create_params_mock_1) {{ name: "First1 Last1", email: "one@mail.com", admin: "false", password: "password", avatar: fixture_file_upload("spec/fixtures/files/michael-scott.png", "image/png") }}
-  let(:user_invalid_create_params_email_poorly_formed_mock_1) {{ name: "", email: "not_an_email", admin: "false", password: "password", avatar: fixture_file_upload("spec/fixtures/files/michael-scott.png", "image/png") }}
-  let(:valid_user_update_attributes) {{ name: "UpdatedName" }}
-  let(:invalid_user_update_attributes) {{ email: "not_an_email" }}
-  
-  before :all do
-    @michael_token = token_from_email_password("michaelscott@dundermifflin.com", "password")
-    @ryan_token = token_from_email_password("ryanhoward@dundermifflin.com", "password")
-  end
-
-  before :each do
-    @user = users(:michael)
-  end
-
-  describe "GET /index" do
-    it "renders a successful response" do
-      get users_url, headers: valid_headers
-      expect(response).to be_successful
-    end
-
-    it "gets two users" do
-      get users_url, headers: valid_headers
-      expect(JSON.parse(response.body).length).to eq 4
-    end
-  end
-
-  describe "GET /show" do
-    it "renders a successful response" do
-      get user_url(@user), headers: valid_headers
-      expect(response).to be_successful
-    end
-  end
-
-  describe "POST /users" do
-    context "with valid parameters" do
-      it "creates a new User" do
-        expect {
-          post users_url, params: user_valid_create_params_mock_1
-        }.to change(User, :count).by(1)
-      end
-
-      it "renders a successful response" do
-        post users_url, params: user_valid_create_params_mock_1
-        expect(response).to be_successful
-      end
-
-      it "sets user name" do
-        post users_url, params: user_valid_create_params_mock_1
-        user = User.order(:created_at).last
-        expect(user.name).to eq("First1 Last1")
-      end
-
-      it "attaches user avatar" do
-        post users_url, params: user_valid_create_params_mock_1
-        user = User.order(:created_at).last
-        expect(user.avatar.attached?).to eq(true)
-      end
-    end
-
-    context "with invalid parameters (email poorly formed)" do
-      it "does not create a new User" do
-        expect {
-          post users_url, params: user_invalid_create_params_email_poorly_formed_mock_1
-        }.to change(User, :count).by(0)
-      end
-
-    
-      it "renders a 422 response" do
-        post users_url, params: user_invalid_create_params_email_poorly_formed_mock_1
-        expect(response).to have_http_status(:unprocessable_entity)
-      end  
-    end
-  end
-
-  describe "PATCH /update" do
-    context "with valid parameters" do
-
-      it "updates the requested user" do
-        patch user_url(@user), headers: valid_headers, params: valid_user_update_attributes
-        @user.reload
-        expect(@user.name).to eq("UpdatedName")
-      end
-
-      it "is successful" do
-        patch user_url(@user), headers: valid_headers, params: valid_user_update_attributes
-        @user.reload
-        expect(response).to be_successful
-      end
-    end
-
-    context "with invalid parameters" do
-    
-      it "renders a 422 response" do
-        patch user_url(@user), headers: valid_headers, params: invalid_user_update_attributes
-        expect(response).to have_http_status(:unprocessable_entity)
-      end
-    
-    end
-  end
-
-  # TODO: Failing because of casading foreign key issue
-  # describe "DELETE /destroy" do
-    # it "destroys the requested user" do
-    #   expect {
-    #     delete user_url(@user), headers: admin_2_headers
-    #   }.to change(User, :count).by(-1)
-    # end
-    # it "renders a successful response" do
-    #   delete user_url(@user), headers: admin_2_headers
-    #   expect(response).to be_successful
-    # end
-  # end
-
-end
-~
-EOF
-
-echo -e "\n\n🦄  Update Health Controller For Auth\n\n"
-cat <<'EOF' | puravida app/controllers/health_controller.rb ~
-class HealthController < ApplicationController
-  skip_before_action :require_login
-  def index
-    render json: { status: 'online' }
-  end
-end
-~
-EOF
-rspec
-
-echo -e "\n\n🦄  Widgets (Backend)\n\n"
-rails g scaffold widget name description image:attachment user:references
-rails db:migrate
-cat <<'EOF' | puravida app/models/widget.rb ~
-class Widget < ApplicationRecord
-  belongs_to :user
-  has_one_attached :image
-  validates :name, presence: true, allow_blank: false, length: { minimum: 4, maximum: 254 }
-end
-~
-EOF
-
-cat <<'EOF' | puravida app/controllers/widgets_controller.rb ~
-class WidgetsController < ApplicationController
-  before_action :set_widget, only: %i[ show update destroy ]
-
-  # GET /widgets
-  def index
-    if params['user_id'].present?
-      @widgets = Widget.where(user_id: params['user_id']).map { |widget| prep_raw_widget(widget) }
-    else
-      @widgets = Widget.all.map { |widget| prep_raw_widget(widget) }
-    end
-    render json: @widgets
-  end
-
-  # GET /widgets/1
-  def show
-    render json: prep_raw_widget(@widget)
-  end
-
-  # POST /widgets
-  def create
-    create_params = widget_params
-    create_params['image'] = params['image'].blank? ? nil : params['image'] # if no image is chosen on new widget page, params['image'] comes in as a blank string, which throws a 500 error at User.new(user_params). This changes any params['avatar'] blank string to nil, which is fine in User.new(user_params).
-    @widget = Widget.new(create_params)
-    if @widget.save
-      render json: prep_raw_widget(@widget), status: :created, location: @widget
-    else
-      render json: @widget.errors, status: :unprocessable_entity
-    end
-  end
-
-  # PATCH/PUT /widgets/1
-  def update
-    if @widget.update(widget_params)
-      render json: prep_raw_widget(@widget)
-    else
-      render json: @widget.errors, status: :unprocessable_entity
-    end
-  end
-
-  # DELETE /widgets/1
-  def destroy
-    @widget.destroy
-  end
-
-  private
-    # Use callbacks to share common setup or constraints between actions.
-    def set_widget
-      @widget = Widget.find(params[:id])
-    end
-
-    # Only allow a list of trusted parameters through.
-    def widget_params
-      params.permit(:id, :name, :description, :image, :user_id)
-    end
-end
-~
-EOF
-cat <<'EOF' | puravida spec/fixtures/widgets.yml ~
-widget_one:
-  name: widget_one_name
-  description: widget_one_description
-  user_id: <%= User.find_by(email: "michaelscott@dundermifflin.com").id %>
-
-widget_two:
-  name: widget_two_name
-  description: widget_two_description
-  user_id: <%= User.find_by(email: "jimhalpert@dundermifflin.com").id %>
-~
-EOF
-cat <<'EOF' | puravida spec/models/widget_spec.rb ~
-require 'rails_helper'
-
-RSpec.describe "/widgets", type: :request do
-  fixtures :users
-  fixtures :widgets
-  let(:valid_attributes) {{ name: "test1", description: "test1", user_id: User.find_by(email: "michaelscott@dundermifflin.com").id }}
-  let(:invalid_attributes) {{ name: "", description: "invalid_attributes" }}
-  let(:valid_headers) {{ Authorization: "Bearer " + @michael_token }}
-
-  before :all do
-    @michael_token = token_from_email_password("michaelscott@dundermifflin.com", "password")
-  end
-
-  it "is valid with valid attributes" do
-    expect(Widget.new(valid_attributes)).to be_valid
-  end
-  it "is not valid width poorly formed email" do
-    expect(Widget.new(invalid_attributes)).to_not be_valid
-  end
-
-end
-~
-EOF
-
-cat <<'EOF' | puravida spec/requests/widgets_spec.rb ~
-require 'rails_helper'
-
-RSpec.describe "/widgets", type: :request do
-  fixtures :users
-  fixtures :widgets
-  let(:valid_attributes) {{ name: "test1", description: "test1", user_id: User.find_by(email: "michaelscott@dundermifflin.com").id }}
-  let(:invalid_attributes) {{ name: "invalid_attributes", description: "invalid_attributes" }}
-  let(:valid_headers) {{ Authorization: "Bearer " + @michael_token }}
-
-  before :all do
-    @michael_token = token_from_email_password("michaelscott@dundermifflin.com", "password")
-    @ryan_token = token_from_email_password("ryanhoward@dundermifflin.com", "password")
-  end
-
-  describe "GET /index" do
-    it "renders a successful response" do
-      get widgets_url, headers: valid_headers
-      expect(response).to be_successful
-    end
-    it "gets two widgets a successful response" do
-      get widgets_url, headers: valid_headers
-      expect(JSON.parse(response.body).length).to eq 2
-    end
-  end
-
-  describe "GET /show" do
-    it "renders a successful response" do
-      widget = widgets(:widget_one)
-      get widget_url(widget), headers: valid_headers
-      expect(response).to be_successful
-    end
-  end
-
-  describe "POST /create" do
-    context "with valid parameters" do
-      it "creates a new Widget" do
-        expect { post widgets_url, params: valid_attributes, headers: valid_headers, as: :json
-        }.to change(Widget, :count).by(1)
-      end
-
-      it "renders a JSON response with the new widget" do
-        post widgets_url, params: valid_attributes, headers: valid_headers, as: :json
-        expect(response).to have_http_status(:created)
-        expect(response.content_type).to match(a_string_including("application/json"))
-      end
-    end
-
-    context "with invalid parameters" do
-      it "does not create a new Widget" do
-        expect {
-          post widgets_url, params: invalid_attributes, headers: valid_headers, as: :json
-        }.to change(Widget, :count).by(0)
-      end
-
-      it "renders a JSON response with errors for the new widget" do
-        post widgets_url, params: invalid_attributes, headers: valid_headers, as: :json
-        expect(response).to have_http_status(:unprocessable_entity)
-        expect(response.content_type).to match(a_string_including("application/json"))
-      end
-    end
-  end
-
-  describe "PATCH /update" do
-    context "with valid parameters" do
-      let(:new_attributes) {{ name: "UpdatedName"}}
-
-      it "updates the requested widget" do
-        widget = widgets(:widget_one)
-        patch widget_url(widget), params: new_attributes, headers: valid_headers, as: :json
-        widget.reload
-        expect(widget.name).to eq("UpdatedName")
-      end
-
-      it "renders a JSON response with the widget" do
-        widget = widgets(:widget_one)
-        patch widget_url(widget), params: new_attributes, headers: valid_headers, as: :json
-        expect(response).to have_http_status(:ok)
-        expect(response.content_type).to match(a_string_including("application/json"))
-      end
-    end
-
-    # context "with invalid parameters" do
-    #   it "renders a JSON response with errors for the widget" do
-    #     widget = widgets(:widget_one)
-    #     patch widget_url(widget), params: invalid_attributes, headers: valid_headers, as: :json
-    #     expect(response).to have_http_status(:unprocessable_entity)
-    #     expect(response.content_type).to match(a_string_including("application/json"))
-    #   end
-    # end
-  end
-
-  describe "DELETE /destroy" do
-    it "destroys the requested widget" do
-      widget = Widget.create! valid_attributes
-      expect { delete widget_url(widget), headers: valid_headers, as: :json
-      }.to change(Widget, :count).by(-1)
-    end
-  end
-end
-~
-EOF
 
 
 
