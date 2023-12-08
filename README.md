@@ -1202,7 +1202,7 @@ widget_two:
   user_id: <%= User.find_by(email: "jimhalpert@dundermifflin.com").id %>
 ~
 ```
-- `puravida spec/requests/widget_spec.rb ~`
+- `puravida spec/models/widget_spec.rb ~`
 ```
 require 'rails_helper'
 
