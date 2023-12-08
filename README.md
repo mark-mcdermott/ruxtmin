@@ -274,7 +274,7 @@ ryan:
 ```
 test:
   service: Disk
-  root: <%= Rails.root.join("tmp/storage") %>
+  root: <%= Rails.root.join("tmp/storage_fixtures") %>
 
 test_fixtures:
   service: Disk
@@ -288,22 +288,15 @@ local:
 - `puravida spec/fixtures/active_storage`
 - `puravida spec/active_storage/attachments.yml ~`
 ```
-michaels_picture:
+michael_avatar:
   name: avatar
   record: michael (User)
-  blob: michael_picture_blob
+  blob: michael_avatar_blob
 ~
 ```
 - `puravida spec/active_storage/blobs.yml ~`
 ```
-michael_picture_blob:
-  key: <%= ActiveStorage::Blob.generate_unique_secure_token %>
-  filename: michael-scott.png
-  content_type: image/png
-  metadata: '{"identified":true,"analyzed":true}'
-  byte_size: 1000
-  checksum: fdUivZUf74Y6pjAiemuvlg==
-  service_name: local
+michael_avatar_blob: <%= ActiveStorage::FixtureSet.blob filename: "michael-scott.png", service_name: "test_fixtures" %>
 ~
 ```
 `puravida spec/requests/users_spec.rb ~`
