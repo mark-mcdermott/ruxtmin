@@ -286,15 +286,15 @@ local:
 ~
 ```
 - `puravida spec/fixtures/active_storage`
-- `puravida spec active_storage/attachments.yml ~`
+- `puravida spec/active_storage/attachments.yml ~`
 ```
-freds_picture:
+michaels_picture:
   name: avatar
   record: michael (User)
   blob: michael_picture_blob
 ~
 ```
-- `puravida spec active_storage/blobs.yml ~`
+- `puravida spec/active_storage/blobs.yml ~`
 ```
 michael_picture_blob:
   key: <%= ActiveStorage::Blob.generate_unique_secure_token %>
