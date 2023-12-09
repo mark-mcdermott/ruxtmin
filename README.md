@@ -285,20 +285,7 @@ local:
   root: <%= Rails.root.join("storage") %>
 ~
 ```
-- `# puravida spec/fixtures/active_storage`
-- `# puravida spec/active_storage/attachments.yml ~`
-```
-michael_avatar:
-  name: avatar
-  record: michael (User)
-  blob: michael_avatar_blob
-~
-```
-- `# puravida spec/active_storage/blobs.yml ~`
-```
-michael_avatar_blob: <%= ActiveStorage::FixtureSet.blob filename: "michael-scott.png", service_name: "test_fixtures" %>
-~
-```
+
 `puravida spec/requests/users_spec.rb ~`
 ```
 # frozen_string_literal: true

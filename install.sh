@@ -265,7 +265,12 @@ RSpec.describe "/users", type: :request do
   let(:invalid_user_update_attributes) {{ email: "not_an_email" }}
   
   before :each do
-    @user = users(:michael)
+    @user1 = users(:michael)
+    avatar1 = fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'michael-scott.png'),'image/png')
+    @user1.avatar.attach(avatar1)
+    @user2 = users(:jim)
+    avatar2 = fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'jim-halpert.png'),'image/png')
+    @user2.avatar.attach(avatar2)
   end
 
   describe "GET /index" do
@@ -274,16 +279,54 @@ RSpec.describe "/users", type: :request do
       expect(response).to be_successful
     end
 
-    it "gets two users" do
+    it "gets four users" do
       get users_url
       expect(JSON.parse(response.body).length).to eq 4
     end
+
+    it "gets first users' correct details" do
+      get users_url
+      users = JSON.parse(response.body)
+      michael = users.find { |user| user['email'] == "michaelscott@dundermifflin.com" }
+      expect(michael['name']).to eq "Michael Scott"
+      expect(michael['email']).to eq "michaelscott@dundermifflin.com"
+      expect(michael['admin']).to eq true
+      expect(michael['avatar']).to be_kind_of(String)
+      expect(michael['avatar']).to match(/http.*\michael-scott\.png/)
+      expect(michael['password']).to be_nil
+      expect(michael['password_digest']).to be_nil
+    end
+
+    it "gets second users' correct details" do
+      get users_url
+      users = JSON.parse(response.body)
+      jim = users.find { |user| user['email'] == "jimhalpert@dundermifflin.com" }
+      expect(jim['name']).to eq "Jim Halpert"
+      expect(jim['email']).to eq "jimhalpert@dundermifflin.com"
+      expect(jim['admin']).to be_nil or eq false
+      expect(jim['avatar']).to be_kind_of(String)
+      expect(jim['avatar']).to match(/http.*\jim-halpert\.png/)
+      expect(jim['password']).to be_nil
+      expect(jim['password_digest']).to be_nil
+    end
+
   end
 
   describe "GET /show" do
     it "renders a successful response" do
-      get user_url(@user)
+      get user_url(@user1)
       expect(response).to be_successful
+    end
+    it "gets users' correct details" do
+      get user_url(@user1)
+      michael = JSON.parse(response.body)
+      expect(michael['name']).to eq "Michael Scott"
+      expect(michael['email']).to eq "michaelscott@dundermifflin.com"
+      expect(michael['admin']).to eq true
+      expect(michael['avatar']).to be_kind_of(String)
+      expect(michael['avatar']).to match(/http.*\michael-scott\.png/)
+      expect(michael['password']).to be_nil
+      expect(michael['password_digest']).to be_nil
     end
   end
 
@@ -332,14 +375,14 @@ RSpec.describe "/users", type: :request do
     context "with valid parameters" do
 
       it "updates the requested user" do
-        patch user_url(@user), params: valid_user_update_attributes
-        @user.reload
-        expect(@user.name).to eq("UpdatedName")
+        patch user_url(@user1), params: valid_user_update_attributes
+        @user1.reload
+        expect(@user1.name).to eq("UpdatedName")
       end
 
       it "is successful" do
-        patch user_url(@user), params: valid_user_update_attributes
-        @user.reload
+        patch user_url(@user1), params: valid_user_update_attributes
+        @user1.reload
         expect(response).to be_successful
       end
     end
@@ -347,7 +390,7 @@ RSpec.describe "/users", type: :request do
     context "with invalid parameters" do
     
       it "renders a 422 response" do
-        patch user_url(@user), params: invalid_user_update_attributes
+        patch user_url(@user1), params: invalid_user_update_attributes
         expect(response).to have_http_status(:unprocessable_entity)
       end
     
@@ -357,12 +400,12 @@ RSpec.describe "/users", type: :request do
   describe "DELETE /destroy" do
     it "destroys the requested user" do
       expect {
-        delete user_url(@user)
+        delete user_url(@user1)
       }.to change(User, :count).by(-1)
     end
 
     it "renders a successful response" do
-      delete user_url(@user)
+      delete user_url(@user1)
       expect(response).to be_successful
     end
   end
