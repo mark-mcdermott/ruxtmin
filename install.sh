@@ -1213,6 +1213,7 @@ rspec
 
 echo -e "\n\n🦄  Widgets (Backend)\n\n"
 rails g scaffold widget name description image:attachment user:references
+find /Users/mmcdermott/Desktop/backtest/db/migrate/ -name "*_create_widgets.rb" -exec sed -i '' "s/foreign_key: true/foreign_key: {on_delete: :cascade}/g" {} +
 rails db:migrate
 cat <<'EOF' | puravida app/models/widget.rb ~
 class Widget < ApplicationRecord

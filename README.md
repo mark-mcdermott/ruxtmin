@@ -1298,6 +1298,20 @@ end
 
 ### Widgets (Backend)
 - `rails g scaffold widget name description image:attachment user:references`
+- change the migration file (`db/migrate/<timestamp>_create_widgets.rb`) to:
+```
+class CreateWidgets < ActiveRecord::Migration[7.0]
+  def change
+    create_table :widgets do |t|
+      t.string :name
+      t.string :description
+      t.references :user, null: false, foreign_key: {on_delete: :cascade}
+      t.timestamps
+    end
+  end
+end
+~
+```
 - `rails db:migrate`
 - `puravida app/models/widget.rb ~`
 ```
