@@ -1505,14 +1505,14 @@ RSpec.describe "/widgets", type: :request do
       end
     end
 
-    # context "with invalid parameters" do
-    #   it "renders a JSON response with errors for the widget" do
-    #     widget = widgets(:widget_one)
-    #     patch widget_url(widget), params: invalid_attributes, headers: valid_headers, as: :json
-    #     expect(response).to have_http_status(:unprocessable_entity)
-    #     expect(response.content_type).to match(a_string_including("application/json"))
-    #   end
-    # end
+    context "with invalid parameters" do
+      it "renders a JSON response with errors for the widget" do
+        widget = widgets(:widget_one)
+        patch widget_url(widget), params: invalid_attributes, headers: valid_headers, as: :json
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.content_type).to match(a_string_including("application/json"))
+      end
+    end
   end
 
   describe "DELETE /destroy" do
