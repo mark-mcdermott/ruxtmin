@@ -1211,215 +1211,317 @@ end
 EOF
 rspec
 
-# echo -e "\n\n🦄  Widgets (Backend)\n\n"
-# rails g scaffold widget name description image:attachment user:references
-# rails db:migrate
-# cat <<'EOF' | puravida app/models/widget.rb ~
-# class Widget < ApplicationRecord
-#   belongs_to :user
-#   has_one_attached :image
-#   validates :name, presence: true, allow_blank: false, length: { minimum: 4, maximum: 254 }
-# end
-# ~
-# EOF
+echo -e "\n\n🦄  Widgets (Backend)\n\n"
+rails g scaffold widget name description image:attachment user:references
+rails db:migrate
+cat <<'EOF' | puravida app/models/widget.rb ~
+class Widget < ApplicationRecord
+  belongs_to :user
+  has_one_attached :image
+  validates :name, presence: true, allow_blank: false, length: { minimum: 4, maximum: 254 }
+end
+~
+EOF
 
-# cat <<'EOF' | puravida app/controllers/widgets_controller.rb ~
-# class WidgetsController < ApplicationController
-#   before_action :set_widget, only: %i[ show update destroy ]
+cat <<'EOF' | puravida app/controllers/application_controller.rb ~
+class ApplicationController < ActionController::API
+  SECRET_KEY_BASE = Rails.application.credentials.secret_key_base
+  before_action :require_login
+  rescue_from Exception, with: :response_internal_server_error
 
-#   # GET /widgets
-#   def index
-#     if params['user_id'].present?
-#       @widgets = Widget.where(user_id: params['user_id']).map { |widget| prep_raw_widget(widget) }
-#     else
-#       @widgets = Widget.all.map { |widget| prep_raw_widget(widget) }
-#     end
-#     render json: @widgets
-#   end
+  def require_login
+    response_unauthorized if current_user_raw.blank?
+  end
 
-#   # GET /widgets/1
-#   def show
-#     render json: prep_raw_widget(@widget)
-#   end
+  # this is safe to send to the frontend, excludes password_digest, created_at, updated_at
+  def user_from_token
+    user = prep_raw_user(current_user_raw)
+    render json: { data: user, status: 200 }
+  end
 
-#   # POST /widgets
-#   def create
-#     create_params = widget_params
-#     create_params['image'] = params['image'].blank? ? nil : params['image'] # if no image is chosen on new widget page, params['image'] comes in as a blank string, which throws a 500 error at User.new(user_params). This changes any params['avatar'] blank string to nil, which is fine in User.new(user_params).
-#     @widget = Widget.new(create_params)
-#     if @widget.save
-#       render json: prep_raw_widget(@widget), status: :created, location: @widget
-#     else
-#       render json: @widget.errors, status: :unprocessable_entity
-#     end
-#   end
+  # unsafe/internal: includes password_digest, created_at, updated_at - we don't want those going to the frontend
+  def current_user_raw
+    if decoded_token.present?
+      user_id = decoded_token[0]['user_id']
+      @user = User.find_by(id: user_id)
+    else
+      nil
+    end
+  end
 
-#   # PATCH/PUT /widgets/1
-#   def update
-#     if @widget.update(widget_params)
-#       render json: prep_raw_widget(@widget)
-#     else
-#       render json: @widget.errors, status: :unprocessable_entity
-#     end
-#   end
+  def encode_token(payload)
+    JWT.encode payload, SECRET_KEY_BASE, 'HS256'
+  end
 
-#   # DELETE /widgets/1
-#   def destroy
-#     @widget.destroy
-#   end
+  def decoded_token
+    if auth_header and auth_header.split(' ')[0] == "Bearer"
+      token = auth_header.split(' ')[1]
+      begin
+        JWT.decode token, SECRET_KEY_BASE, true, { algorithm: 'HS256' }
+      rescue JWT::DecodeError
+        []
+      end
+    end
+  end
 
-#   private
-#     # Use callbacks to share common setup or constraints between actions.
-#     def set_widget
-#       @widget = Widget.find(params[:id])
-#     end
+  def response_unauthorized
+    render status: 401, json: { status: 401, message: 'Unauthorized' }
+  end
+  
+  def response_internal_server_error
+    render status: 500, json: { status: 500, message: 'Internal Server Error' }
+  end
 
-#     # Only allow a list of trusted parameters through.
-#     def widget_params
-#       params.permit(:id, :name, :description, :image, :user_id)
-#     end
-# end
-# ~
-# EOF
-# cat <<'EOF' | puravida spec/fixtures/widgets.yml ~
-# widget_one:
-#   name: widget_one_name
-#   description: widget_one_description
-#   user_id: <%= User.find_by(email: "michaelscott@dundermifflin.com").id %>
+  # We don't want to send the whole user record from the database to the frontend, so we only send what we need.
+  # The db user row has password_digest (unsafe) and created_at and updated_at (extraneous).
+  # We also change avatar from a weird active_storage object to just the avatar url before it gets to the frontend.
+  def prep_raw_user(user)
+    avatar = user.avatar.present? ? url_for(user.avatar) : nil
+    widgets = Widget.where(user_id: user.id).map { |widget| widget.id }
+    # subwidgets = Subwidget.where(widget_id: widgets).map { |subwidget| subwidget.id }
+    user = user.admin ? user.slice(:id,:email,:name,:admin) : user.slice(:id,:email,:name)
+    user['avatar'] = avatar
+    user['widget_ids'] = widgets
+    # user['subwidget_ids'] = subwidgets
+    user
+  end
 
-# widget_two:
-#   name: widget_two_name
-#   description: widget_two_description
-#   user_id: <%= User.find_by(email: "jimhalpert@dundermifflin.com").id %>
-# ~
-# EOF
-# cat <<'EOF' | puravida spec/models/widget_spec.rb ~
-# require 'rails_helper'
+  def prep_raw_widget(widget)
+    user_id = widget.user_id
+    user_name = User.find(widget.user_id).name
+    # subwidgets = Subwidget.where(widget_id: widget.id)
+    # subwidgets = subwidgets.map { |subwidget| subwidget.slice(:id,:name,:description,:widget_id) }
+    image = widget.image.present? ? url_for(widget.image) : nil
+    widget = widget.slice(:id,:name,:description)
+    widget['userId'] = user_id
+    widget['userName'] = user_name
+    widget['image'] = image
+    # widget['subwidgets'] = subwidgets
+    widget
+  end
 
-# RSpec.describe "/widgets", type: :request do
-#   fixtures :users
-#   fixtures :widgets
-#   let(:valid_attributes) {{ name: "test1", description: "test1", user_id: User.find_by(email: "michaelscott@dundermifflin.com").id }}
-#   let(:invalid_attributes) {{ name: "", description: "invalid_attributes" }}
-#   let(:valid_headers) {{ Authorization: "Bearer " + @michael_token }}
+  def prep_raw_subwidget(subwidget)
+    widget_id = subwidget.widget_id
+    widget = Widget.find(widget_id)
+    user = User.find(widget.user_id)
+    image = subwidget.image.present? ? url_for(subwidget.image) : nil
+    subwidget = subwidget.slice(:id,:name,:description)
+    subwidget['widgetId'] = widget_id
+    subwidget['widgetName'] = widget.name
+    subwidget['widgetDescription'] = widget.description
+    subwidget['userId'] = user.id
+    subwidget['userName'] = user.name
+    subwidget['image'] = image
+    subwidget
+  end
+  
+  private 
+  
+    def auth_header
+      request.headers['Authorization']
+    end
 
-#   before :all do
-#     @michael_token = token_from_email_password("michaelscott@dundermifflin.com", "password")
-#   end
+end
+~
+EOF
 
-#   it "is valid with valid attributes" do
-#     expect(Widget.new(valid_attributes)).to be_valid
-#   end
-#   it "is not valid width poorly formed email" do
-#     expect(Widget.new(invalid_attributes)).to_not be_valid
-#   end
+cat <<'EOF' | puravida app/controllers/widgets_controller.rb ~
+class WidgetsController < ApplicationController
+  before_action :set_widget, only: %i[ show update destroy ]
 
-# end
-# ~
-# EOF
+  # GET /widgets
+  def index
+    if params['user_id'].present?
+      @widgets = Widget.where(user_id: params['user_id']).map { |widget| prep_raw_widget(widget) }
+    else
+      @widgets = Widget.all.map { |widget| prep_raw_widget(widget) }
+    end
+    render json: @widgets
+  end
 
-# cat <<'EOF' | puravida spec/requests/widgets_spec.rb ~
-# require 'rails_helper'
+  # GET /widgets/1
+  def show
+    render json: prep_raw_widget(@widget)
+  end
 
-# RSpec.describe "/widgets", type: :request do
-#   fixtures :users
-#   fixtures :widgets
-#   let(:valid_attributes) {{ name: "test1", description: "test1", user_id: User.find_by(email: "michaelscott@dundermifflin.com").id }}
-#   let(:invalid_attributes) {{ name: "invalid_attributes", description: "invalid_attributes" }}
-#   let(:valid_headers) {{ Authorization: "Bearer " + @michael_token }}
+  # POST /widgets
+  def create
+    create_params = widget_params
+    create_params['image'] = params['image'].blank? ? nil : params['image'] # if no image is chosen on new widget page, params['image'] comes in as a blank string, which throws a 500 error at User.new(user_params). This changes any params['avatar'] blank string to nil, which is fine in User.new(user_params).
+    @widget = Widget.new(create_params)
+    if @widget.save
+      render json: prep_raw_widget(@widget), status: :created, location: @widget
+    else
+      render json: @widget.errors, status: :unprocessable_entity
+    end
+  end
 
-#   before :all do
-#     @michael_token = token_from_email_password("michaelscott@dundermifflin.com", "password")
-#     @ryan_token = token_from_email_password("ryanhoward@dundermifflin.com", "password")
-#   end
+  # PATCH/PUT /widgets/1
+  def update
+    if @widget.update(widget_params)
+      render json: prep_raw_widget(@widget)
+    else
+      render json: @widget.errors, status: :unprocessable_entity
+    end
+  end
 
-#   describe "GET /index" do
-#     it "renders a successful response" do
-#       get widgets_url, headers: valid_headers
-#       expect(response).to be_successful
-#     end
-#     it "gets two widgets a successful response" do
-#       get widgets_url, headers: valid_headers
-#       expect(JSON.parse(response.body).length).to eq 2
-#     end
-#   end
+  # DELETE /widgets/1
+  def destroy
+    @widget.destroy
+  end
 
-#   describe "GET /show" do
-#     it "renders a successful response" do
-#       widget = widgets(:widget_one)
-#       get widget_url(widget), headers: valid_headers
-#       expect(response).to be_successful
-#     end
-#   end
+  private
+    # Use callbacks to share common setup or constraints between actions.
+    def set_widget
+      @widget = Widget.find(params[:id])
+    end
 
-#   describe "POST /create" do
-#     context "with valid parameters" do
-#       it "creates a new Widget" do
-#         expect { post widgets_url, params: valid_attributes, headers: valid_headers, as: :json
-#         }.to change(Widget, :count).by(1)
-#       end
+    # Only allow a list of trusted parameters through.
+    def widget_params
+      params.permit(:id, :name, :description, :image, :user_id)
+    end
+end
+~
+EOF
+cat <<'EOF' | puravida spec/fixtures/widgets.yml ~
+widget_one:
+  name: widget_one_name
+  description: widget_one_description
+  user_id: <%= User.find_by(email: "michaelscott@dundermifflin.com").id %>
 
-#       it "renders a JSON response with the new widget" do
-#         post widgets_url, params: valid_attributes, headers: valid_headers, as: :json
-#         expect(response).to have_http_status(:created)
-#         expect(response.content_type).to match(a_string_including("application/json"))
-#       end
-#     end
+widget_two:
+  name: widget_two_name
+  description: widget_two_description
+  user_id: <%= User.find_by(email: "jimhalpert@dundermifflin.com").id %>
+~
+EOF
+cat <<'EOF' | puravida spec/models/widget_spec.rb ~
+require 'rails_helper'
 
-#     context "with invalid parameters" do
-#       it "does not create a new Widget" do
-#         expect {
-#           post widgets_url, params: invalid_attributes, headers: valid_headers, as: :json
-#         }.to change(Widget, :count).by(0)
-#       end
+RSpec.describe "/widgets", type: :request do
+  fixtures :users
+  fixtures :widgets
+  let(:valid_attributes) {{ name: "test1", description: "test1", user_id: User.find_by(email: "michaelscott@dundermifflin.com").id }}
+  let(:invalid_attributes) {{ name: "", description: "invalid_attributes" }}
+  let(:valid_headers) {{ Authorization: "Bearer " + @michael_token }}
 
-#       it "renders a JSON response with errors for the new widget" do
-#         post widgets_url, params: invalid_attributes, headers: valid_headers, as: :json
-#         expect(response).to have_http_status(:unprocessable_entity)
-#         expect(response.content_type).to match(a_string_including("application/json"))
-#       end
-#     end
-#   end
+  before :all do
+    @michael_token = token_from_email_password("michaelscott@dundermifflin.com", "password")
+  end
 
-#   describe "PATCH /update" do
-#     context "with valid parameters" do
-#       let(:new_attributes) {{ name: "UpdatedName"}}
+  it "is valid with valid attributes" do
+    expect(Widget.new(valid_attributes)).to be_valid
+  end
+  it "is not valid width poorly formed email" do
+    expect(Widget.new(invalid_attributes)).to_not be_valid
+  end
 
-#       it "updates the requested widget" do
-#         widget = widgets(:widget_one)
-#         patch widget_url(widget), params: new_attributes, headers: valid_headers, as: :json
-#         widget.reload
-#         expect(widget.name).to eq("UpdatedName")
-#       end
+end
+~
+EOF
 
-#       it "renders a JSON response with the widget" do
-#         widget = widgets(:widget_one)
-#         patch widget_url(widget), params: new_attributes, headers: valid_headers, as: :json
-#         expect(response).to have_http_status(:ok)
-#         expect(response.content_type).to match(a_string_including("application/json"))
-#       end
-#     end
+cat <<'EOF' | puravida spec/requests/widgets_spec.rb ~
+require 'rails_helper'
 
-#     # context "with invalid parameters" do
-#     #   it "renders a JSON response with errors for the widget" do
-#     #     widget = widgets(:widget_one)
-#     #     patch widget_url(widget), params: invalid_attributes, headers: valid_headers, as: :json
-#     #     expect(response).to have_http_status(:unprocessable_entity)
-#     #     expect(response.content_type).to match(a_string_including("application/json"))
-#     #   end
-#     # end
-#   end
+RSpec.describe "/widgets", type: :request do
+  fixtures :users
+  fixtures :widgets
+  let(:valid_attributes) {{ name: "test1", description: "test1", user_id: User.find_by(email: "michaelscott@dundermifflin.com").id }}
+  let(:invalid_attributes) {{ name: "invalid_attributes", description: "invalid_attributes" }}
+  let(:valid_headers) {{ Authorization: "Bearer " + @michael_token }}
 
-#   describe "DELETE /destroy" do
-#     it "destroys the requested widget" do
-#       widget = Widget.create! valid_attributes
-#       expect { delete widget_url(widget), headers: valid_headers, as: :json
-#       }.to change(Widget, :count).by(-1)
-#     end
-#   end
-# end
-# ~
-# EOF
+  before :all do
+    @michael_token = token_from_email_password("michaelscott@dundermifflin.com", "password")
+    @ryan_token = token_from_email_password("ryanhoward@dundermifflin.com", "password")
+  end
+
+  describe "GET /index" do
+    it "renders a successful response" do
+      get widgets_url, headers: valid_headers
+      expect(response).to be_successful
+    end
+    it "gets two widgets a successful response" do
+      get widgets_url, headers: valid_headers
+      expect(JSON.parse(response.body).length).to eq 2
+    end
+  end
+
+  describe "GET /show" do
+    it "renders a successful response" do
+      widget = widgets(:widget_one)
+      get widget_url(widget), headers: valid_headers
+      expect(response).to be_successful
+    end
+  end
+
+  describe "POST /create" do
+    context "with valid parameters" do
+      it "creates a new Widget" do
+        expect { post widgets_url, params: valid_attributes, headers: valid_headers, as: :json
+        }.to change(Widget, :count).by(1)
+      end
+
+      it "renders a JSON response with the new widget" do
+        post widgets_url, params: valid_attributes, headers: valid_headers, as: :json
+        expect(response).to have_http_status(:created)
+        expect(response.content_type).to match(a_string_including("application/json"))
+      end
+    end
+
+    context "with invalid parameters" do
+      it "does not create a new Widget" do
+        expect {
+          post widgets_url, params: invalid_attributes, headers: valid_headers, as: :json
+        }.to change(Widget, :count).by(0)
+      end
+
+      it "renders a JSON response with errors for the new widget" do
+        post widgets_url, params: invalid_attributes, headers: valid_headers, as: :json
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.content_type).to match(a_string_including("application/json"))
+      end
+    end
+  end
+
+  describe "PATCH /update" do
+    context "with valid parameters" do
+      let(:new_attributes) {{ name: "UpdatedName"}}
+
+      it "updates the requested widget" do
+        widget = widgets(:widget_one)
+        patch widget_url(widget), params: new_attributes, headers: valid_headers, as: :json
+        widget.reload
+        expect(widget.name).to eq("UpdatedName")
+      end
+
+      it "renders a JSON response with the widget" do
+        widget = widgets(:widget_one)
+        patch widget_url(widget), params: new_attributes, headers: valid_headers, as: :json
+        expect(response).to have_http_status(:ok)
+        expect(response.content_type).to match(a_string_including("application/json"))
+      end
+    end
+
+    # context "with invalid parameters" do
+    #   it "renders a JSON response with errors for the widget" do
+    #     widget = widgets(:widget_one)
+    #     patch widget_url(widget), params: invalid_attributes, headers: valid_headers, as: :json
+    #     expect(response).to have_http_status(:unprocessable_entity)
+    #     expect(response.content_type).to match(a_string_including("application/json"))
+    #   end
+    # end
+  end
+
+  describe "DELETE /destroy" do
+    it "destroys the requested widget" do
+      widget = Widget.create! valid_attributes
+      expect { delete widget_url(widget), headers: valid_headers, as: :json
+      }.to change(Widget, :count).by(-1)
+    end
+  end
+end
+~
+EOF
 
 
 
