@@ -1395,6 +1395,7 @@ widget_two:
   user_id: <%= User.find_by(email: "jimhalpert@dundermifflin.com").id %>
 ~
 EOF
+rails db:fixtures:load
 cat <<'EOF' | puravida spec/models/widget_spec.rb ~
 require 'rails_helper'
 
