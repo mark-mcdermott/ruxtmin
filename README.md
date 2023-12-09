@@ -765,6 +765,7 @@ end
 ```
 # frozen_string_literal: true
 require 'rails_helper'
+require 'spec_helper'
 
 RSpec.describe "/users", type: :request do
   fixtures :users
@@ -1998,6 +1999,7 @@ def blob_for(name)
 end
 ~
 ```
+- `rspec`
 
 ### Subwidgets (Backend)
 - `rails g scaffold subwidget name description image:attachment widget:references`

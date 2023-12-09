@@ -980,6 +980,7 @@ echo -e "\n\n🦄  Update users_spec.rb For Auth\n\n"
 cat <<'EOF' | puravida spec/requests/users_spec.rb ~
 # frozen_string_literal: true
 require 'rails_helper'
+require 'spec_helper'
 
 RSpec.describe "/users", type: :request do
   fixtures :users
@@ -1523,6 +1524,7 @@ RSpec.describe "/widgets", type: :request do
 end
 ~
 EOF
+
 
 
 
