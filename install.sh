@@ -1390,12 +1390,12 @@ cat <<'EOF' | puravida spec/fixtures/widgets.yml ~
 widget_one:
   name: widget_one_name
   description: widget_one_description
-  user_id: <%= User.find_by(email: "michaelscott@dundermifflin.com").id %>
+  user: michael
 
 widget_two:
   name: widget_two_name
   description: widget_two_description
-  user_id: <%= User.find_by(email: "jimhalpert@dundermifflin.com").id %>
+  user: jim
 ~
 EOF
 cat <<'EOF' | puravida spec/models/widget_spec.rb ~
@@ -1525,14 +1525,7 @@ RSpec.describe "/widgets", type: :request do
 end
 ~
 EOF
-
-
-
-
-
-
-
-
+rspec
 
 
 # echo -e "\n\n🦄  Subwidgets (Backend)\n\n"
