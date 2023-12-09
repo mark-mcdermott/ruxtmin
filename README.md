@@ -1531,7 +1531,7 @@ RSpec.describe "/widgets", type: :request do
   fixtures :users
   fixtures :widgets
   let(:valid_attributes) {{ name: "test1", description: "test1", user_id: User.find_by(email: "michaelscott@dundermifflin.com").id }}
-  let(:invalid_attributes) {{ name: "invalid_attributes", description: "invalid_attributes" }}
+  let(:invalid_attributes) {{ name: "", description: "invalid_attributes" }}
   let(:valid_headers) {{ Authorization: "Bearer " + @michael_token }}
 
   before :all do
