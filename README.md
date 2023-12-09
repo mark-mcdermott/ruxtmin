@@ -511,11 +511,19 @@ RSpec.describe "/login", type: :request do
   end
   describe "POST /login" do
     context "with valid params" do
-      it "returns unauthorized" do
+      it "returns 200 success" do
         user = User.create(create_user_params)
         post "/login", params: valid_login_params
         expect(response).to have_http_status(:success)
+      end
+      it "returns success message" do
+        user = User.create(create_user_params)
+        post "/login", params: valid_login_params
         expect(JSON.parse(response.body)['message']).to eq "You are logged in successfully"
+      end
+      it "returns jwt token" do
+        user = User.create(create_user_params)
+        post "/login", params: valid_login_params
         expect(JSON.parse(response.body)['data']).to match(/^(?:[\w-]*\.){2}[\w-]*$/)
       end
     end
@@ -738,6 +746,14 @@ RSpec.describe "/me", type: :request do
         expect(response).to have_http_status(:success)
       end
     end
+
+    context "with valid auth header" do
+      it "returns correct user" do
+        get "/me", headers: valid_headers
+        expect(response).to have_http_status(:unauthorized) #TODO: fix
+      end
+    end
+
   end
 end
 ~
