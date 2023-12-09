@@ -343,10 +343,15 @@ RSpec.describe "/users", type: :request do
         expect(response).to be_successful
       end
 
-      it "sets user name" do
+      it "sets correct user details" do
         post users_url, params: user_valid_create_params_mock_1
         user = User.order(:created_at).last
-        expect(user.name).to eq("First1 Last1")
+        expect(user['name']).to eq "First1 Last1"
+        expect(user['email']).to eq "one@mail.com"
+        expect(user['admin']).to eq(false).or(be_nil)
+        expect(user['avatar']).to be_nil
+        expect(user['password']).to be_nil
+        expect(user['password_digest']).to be_kind_of(String)
       end
 
       it "attaches user avatar" do
@@ -362,7 +367,6 @@ RSpec.describe "/users", type: :request do
           post users_url, params: user_invalid_create_params_email_poorly_formed_mock_1
         }.to change(User, :count).by(0)
       end
-
     
       it "renders a 422 response" do
         post users_url, params: user_invalid_create_params_email_poorly_formed_mock_1
@@ -374,10 +378,20 @@ RSpec.describe "/users", type: :request do
   describe "PATCH /update" do
     context "with valid parameters" do
 
-      it "updates the requested user" do
+      it "updates the requested user attribute" do
         patch user_url(@user1), params: valid_user_update_attributes
         @user1.reload
         expect(@user1.name).to eq("UpdatedName")
+      end
+
+      it "doesn't change the other user attributes" do
+        patch user_url(@user1), params: valid_user_update_attributes
+        @user1.reload
+        expect(@user1['email']).to eq "michaelscott@dundermifflin.com"
+        expect(@user1['admin']).to eq true
+        expect(@user1['avatar']).to be_nil
+        expect(@user1['password']).to be_nil
+        expect(@user1['password_digest']).to be_kind_of(String)
       end
 
       it "is successful" do
@@ -389,10 +403,10 @@ RSpec.describe "/users", type: :request do
 
     context "with invalid parameters" do
     
-      it "renders a 422 response" do
-        patch user_url(@user1), params: invalid_user_update_attributes
-        expect(response).to have_http_status(:unprocessable_entity)
-      end
+       it "renders a 422 response" do
+         patch user_url(@user1), params: invalid_user_update_attributes
+         expect(response).to have_http_status(:unprocessable_entity)
+       end
     
     end
   end
