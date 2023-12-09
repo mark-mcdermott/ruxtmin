@@ -1482,7 +1482,6 @@ widget_two:
   user_id: <%= User.find_by(email: "jimhalpert@dundermifflin.com").id %>
 ~
 ```
-- `rails db:fixtures:load`
 - `puravida spec/models/widget_spec.rb ~`
 ```
 require 'rails_helper'
