@@ -1387,15 +1387,40 @@ end
 ~
 EOF
 cat <<'EOF' | puravida spec/fixtures/widgets.yml ~
-widget_one:
-  name: widget_one_name
-  description: widget_one_description
+wrenches:
+  name: Wrenches
+  description: Michael's wrench
   user: michael
 
-widget_two:
-  name: widget_two_name
-  description: widget_two_description
+bolts:
+  name: Bolts
+  description: Michael's bolt
+  user: michael
+
+brackets:
+  name: Brackets
+  description: Jim's bracket
   user: jim
+
+nuts:
+  name: Nuts
+  description: Jim's nut
+  user: jim
+
+pipes:
+  name: Pipes
+  description: Jim's pipe
+  user: jim
+
+screws:
+  name: Screws
+  description: Pam's screw
+  user: pam
+
+washers:
+  name: Washers
+  description: Pam's washer
+  user: pam
 ~
 EOF
 cat <<'EOF' | puravida spec/models/widget_spec.rb ~
@@ -1445,13 +1470,13 @@ RSpec.describe "/widgets", type: :request do
     end
     it "gets two widgets a successful response" do
       get widgets_url, headers: valid_headers
-      expect(JSON.parse(response.body).length).to eq 2
+      expect(JSON.parse(response.body).length).to eq 7
     end
   end
 
   describe "GET /show" do
     it "renders a successful response" do
-      widget = widgets(:widget_one)
+      widget = widgets(:wrenches)
       get widget_url(widget), headers: valid_headers
       expect(response).to be_successful
     end
@@ -1491,14 +1516,14 @@ RSpec.describe "/widgets", type: :request do
       let(:new_attributes) {{ name: "UpdatedName"}}
 
       it "updates the requested widget" do
-        widget = widgets(:widget_one)
+        widget = widgets(:wrenches)
         patch widget_url(widget), params: new_attributes, headers: valid_headers, as: :json
         widget.reload
         expect(widget.name).to eq("UpdatedName")
       end
 
       it "renders a JSON response with the widget" do
-        widget = widgets(:widget_one)
+        widget = widgets(:wrenches)
         patch widget_url(widget), params: new_attributes, headers: valid_headers, as: :json
         expect(response).to have_http_status(:ok)
         expect(response.content_type).to match(a_string_including("application/json"))
@@ -1507,7 +1532,7 @@ RSpec.describe "/widgets", type: :request do
 
     context "with invalid parameters" do
       it "renders a JSON response with errors for the widget" do
-        widget = widgets(:widget_one)
+        widget = widgets(:wrenches)
         patch widget_url(widget), params: invalid_attributes, headers: valid_headers, as: :json
         expect(response).to have_http_status(:unprocessable_entity)
         expect(response.content_type).to match(a_string_including("application/json"))
