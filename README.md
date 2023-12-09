@@ -763,7 +763,6 @@ end
 
 - `puravida spec/requests/users_spec.rb ~`
 ```
-cat <<'EOF' | puravida spec/requests/users_spec.rb ~
 # frozen_string_literal: true
 require 'rails_helper'
 
@@ -778,7 +777,7 @@ RSpec.describe "/users", type: :request do
   let(:valid_user_update_attributes) {{ name: "UpdatedName" }}
   let(:invalid_user_update_attributes) {{ email: "not_an_email" }}
   
- before :all do
+  before :all do
     @michael_token = token_from_email_password("michaelscott@dundermifflin.com", "password")
     @ryan_token = token_from_email_password("ryanhoward@dundermifflin.com", "password")
   end
@@ -863,6 +862,7 @@ RSpec.describe "/users", type: :request do
         get user_url(@user1), headers: invalid_token_header
         expect(response).to_not be_successful
       end
+    end
   end
 
   describe "POST /users" do
@@ -944,9 +944,9 @@ RSpec.describe "/users", type: :request do
     end
 
     context "with valid parameters but invalid headers" do
-       it "renders a 422 response" do
+       it "renders a 401 response" do
          patch user_url(@user1), params: valid_user_update_attributes, headers: invalid_token_header
-         expect(response).to have_http_status(:unprocessable_entity)
+         expect(response).to have_http_status(:unauthorized)
        end
     end
 
