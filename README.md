@@ -750,7 +750,7 @@ RSpec.describe "/me", type: :request do
     context "with valid auth header" do
       it "returns correct user" do
         get "/me", headers: valid_headers
-        expect(response).to have_http_status(:unauthorized) #TODO: fix
+        expect(response).to have_http_status(:success)
       end
     end
 
