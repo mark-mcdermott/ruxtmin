@@ -1468,7 +1468,7 @@ RSpec.describe "/widgets", type: :request do
       get widgets_url, headers: valid_headers
       expect(response).to be_successful
     end
-    it "gets two widgets a successful response" do
+    it "gets seven widgets" do
       get widgets_url, headers: valid_headers
       expect(JSON.parse(response.body).length).to eq 7
     end
