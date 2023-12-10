@@ -2105,7 +2105,10 @@ RSpec.describe "/users", type: :request do
         get users_url, headers: valid_headers
         users = JSON.parse(response.body)
         michael = users.find { |user| user['email'] == "michaelscott@dundermifflin.com" }
-        require 'pry'; binding.pry
+        widget_ids = michael['widget_ids']
+        widgets = widget_ids.map { |id| Widget.find(id) }
+        wrenches = widgets.find { |widget| widget['name'] == "Wrenches" }
+        bolts = widgets.find { |widget| widget['name'] == "Bolts" }
         expect(michael['name']).to eq "Michael Scott"
         expect(michael['email']).to eq "michaelscott@dundermifflin.com"
         expect(michael['admin']).to eq true
@@ -2113,12 +2116,21 @@ RSpec.describe "/users", type: :request do
         expect(michael['avatar']).to match(/http.*\michael-scott\.png/)
         expect(michael['password']).to be_nil
         expect(michael['password_digest']).to be_nil
+        expect(wrenches['name']).to eq "Wrenches"
+        expect(wrenches['description']).to eq "Michael's wrench"
+        expect(bolts['name']).to eq "Bolts"
+        expect(bolts['description']).to eq "Michael's bolt"
       end
 
       it "gets second users' correct details" do
         get users_url, headers: valid_headers
         users = JSON.parse(response.body)
         jim = users.find { |user| user['email'] == "jimhalpert@dundermifflin.com" }
+        widget_ids = jim['widget_ids']
+        widgets = widget_ids.map { |id| Widget.find(id) }
+        brackets = widgets.find { |widget| widget['name'] == "Brackets" }
+        nuts  = widgets.find { |widget| widget['name'] == "Nuts" }
+        pipes  = widgets.find { |widget| widget['name'] == "Pipes" }
         expect(jim['name']).to eq "Jim Halpert"
         expect(jim['email']).to eq "jimhalpert@dundermifflin.com"
         expect(jim['admin']).to be_nil or eq false
@@ -2126,6 +2138,12 @@ RSpec.describe "/users", type: :request do
         expect(jim['avatar']).to match(/http.*\jim-halpert\.png/)
         expect(jim['password']).to be_nil
         expect(jim['password_digest']).to be_nil
+        expect(brackets['name']).to eq "Brackets"
+        expect(brackets['description']).to eq "Jim's bracket"
+        expect(nuts['name']).to eq "Nuts"
+        expect(nuts['description']).to eq "Jim's nut"
+        expect(pipes['name']).to eq "Pipes"
+        expect(pipes['description']).to eq "Jim's pipe"
       end
     end
 
@@ -2147,6 +2165,10 @@ RSpec.describe "/users", type: :request do
       it "gets users' correct details" do
         get user_url(@user1), headers: valid_headers
         michael = JSON.parse(response.body)
+        widget_ids = michael['widget_ids']
+        widgets = widget_ids.map { |id| Widget.find(id) }
+        wrenches = widgets.find { |widget| widget['name'] == "Wrenches" }
+        bolts = widgets.find { |widget| widget['name'] == "Bolts" }
         expect(michael['name']).to eq "Michael Scott"
         expect(michael['email']).to eq "michaelscott@dundermifflin.com"
         expect(michael['admin']).to eq true
@@ -2154,6 +2176,10 @@ RSpec.describe "/users", type: :request do
         expect(michael['avatar']).to match(/http.*\michael-scott\.png/)
         expect(michael['password']).to be_nil
         expect(michael['password_digest']).to be_nil
+        expect(wrenches['name']).to eq "Wrenches"
+        expect(wrenches['description']).to eq "Michael's wrench"
+        expect(bolts['name']).to eq "Bolts"
+        expect(bolts['description']).to eq "Michael's bolt"
       end
     end
     context "with invalid headers" do
@@ -2221,11 +2247,20 @@ RSpec.describe "/users", type: :request do
       it "doesn't change the other user attributes" do
         patch user_url(@user1), params: valid_user_update_attributes, headers: valid_headers
         @user1.reload
+        get user_url(@user1), headers: valid_headers
+        widget_ids = JSON.parse(response.body)['widget_ids']
+        widgets = widget_ids.map { |id| Widget.find(id) }
+        wrenches = widgets.find { |widget| widget['name'] == "Wrenches" }
+        bolts = widgets.find { |widget| widget['name'] == "Bolts" }
         expect(@user1['email']).to eq "michaelscott@dundermifflin.com"
         expect(@user1['admin']).to eq true
         expect(@user1['avatar']).to be_nil
         expect(@user1['password']).to be_nil
         expect(@user1['password_digest']).to be_kind_of(String)
+        expect(wrenches['name']).to eq "Wrenches"
+        expect(wrenches['description']).to eq "Michael's wrench"
+        expect(bolts['name']).to eq "Bolts"
+        expect(bolts['description']).to eq "Michael's bolt"
       end
 
       it "is successful" do
