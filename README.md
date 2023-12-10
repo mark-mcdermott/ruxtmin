@@ -1569,10 +1569,27 @@ RSpec.describe "/widgets", type: :request do
       get widgets_url, headers: valid_headers
       expect(response).to be_successful
     end
-    it "gets seven widgets" do
+    it "gets two widgets a successful response" do
       get widgets_url, headers: valid_headers
       expect(JSON.parse(response.body).length).to eq 7
     end
+    it "first widget has correct properties" do
+      get widgets_url, headers: valid_headers
+      widgets = JSON.parse(response.body)
+      wrenches = widgets.find { |widget| widget['name'] == "Wrenches" }
+      expect(wrenches['name']).to eq "Wrenches"
+      expect(wrenches['description']).to eq "Michael's wrench"
+      expect(wrenches['userName']).to eq "Michael Scott"
+    end
+    it "second widget has correct properties" do
+      get widgets_url, headers: valid_headers
+      widgets = JSON.parse(response.body)
+      wrenches = widgets.find { |widget| widget['name'] == "Brackets" }
+      expect(wrenches['name']).to eq "Brackets"
+      expect(wrenches['description']).to eq "Jim's bracket"
+      expect(wrenches['userName']).to eq "Jim Halpert"
+    end
+
   end
 
   describe "GET /show" do
@@ -1580,6 +1597,14 @@ RSpec.describe "/widgets", type: :request do
       widget = widgets(:wrenches)
       get widget_url(widget), headers: valid_headers
       expect(response).to be_successful
+    end
+    it "gets correct widget properties" do
+      widget = widgets(:wrenches)
+      get widget_url(widget), headers: valid_headers
+      wrenches = JSON.parse(response.body)
+      expect(wrenches['name']).to eq "Wrenches"
+      expect(wrenches['description']).to eq "Michael's wrench"
+      expect(wrenches['userName']).to eq "Michael Scott"
     end
   end
 
@@ -1629,6 +1654,14 @@ RSpec.describe "/widgets", type: :request do
         expect(response).to have_http_status(:ok)
         expect(response.content_type).to match(a_string_including("application/json"))
       end
+
+      it "widget's other properties are still correct" do
+        widget = widgets(:wrenches)
+        patch widget_url(widget), params: new_attributes, headers: valid_headers, as: :json
+        expect(JSON.parse(response.body)['description']).to eq "Michael's wrench"
+        expect(JSON.parse(response.body)['userName']).to eq "Michael Scott"
+      end
+
     end
 
     context "with invalid parameters" do
