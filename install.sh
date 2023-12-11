@@ -16,6 +16,7 @@ rails db:migrate
 cp -a ~/Desktop/ruxtmin/assets ~/Desktop/backtest/app/
 puravida spec/fixtures/files
 cp -a ~/Desktop/ruxtmin/assets/images/office-avatars/* ~/Desktop/backtest/spec/fixtures/files/
+cp -a ~/Desktop/ruxtmin/assets/images/widgets/* ~/Desktop/backtest/spec/fixtures/files/
 cat <<'EOF' | puravida config/initializers/cors.rb ~
 Rails.application.config.middleware.insert_before 0, Rack::Cors do
   allow do
