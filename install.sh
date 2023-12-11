@@ -1597,7 +1597,7 @@ RSpec.describe "/widgets", type: :request do
 end
 ~
 EOF
-cat <<'EOF' | spec/requests/users_spec.rb ~
+cat <<'EOF' | puravida spec/requests/users_spec.rb ~
 # frozen_string_literal: true
 require 'rails_helper'
 require 'spec_helper'
