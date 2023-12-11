@@ -2376,7 +2376,8 @@ end
 - `rspec`
 
 ### Subwidgets (Backend)
-- `rails g scaffold subwidget name description image:attachment widget:references`
+- `# rails g scaffold subwidget name description image:attachment widget:references`
+- `rails g scaffold subwidget name description image:attachment ref_id:integer ref_type`
 - `rails db:migrate`
 - `puravida app/controllers/subwidgets_controller.rb ~`
 ```

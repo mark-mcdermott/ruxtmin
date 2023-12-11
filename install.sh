@@ -1676,9 +1676,10 @@ EOF
 rspec
 
 
-# echo -e "\n\n🦄  Subwidgets (Backend)\n\n"
+echo -e "\n\n🦄  Subwidgets (Backend)\n\n"
 # rails g scaffold subwidget name description image:attachment widget:references
-# rails db:migrate
+rails g scaffold subwidget name description image:attachment ref_id:integer ref_type
+rails db:migrate
 # cat <<'EOF' | puravida app/controllers/subwidgets_controller.rb ~
 # class SubwidgetsController < ApplicationController
 #   before_action :set_subwidget, only: %i[ show update destroy ]
