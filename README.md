@@ -1564,6 +1564,19 @@ RSpec.describe "/widgets", type: :request do
     @ryan_token = token_from_email_password("ryanhoward@dundermifflin.com", "password")
   end
 
+  before :each do
+    # avatar1 = fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'michael-scott.png'),'image/png')
+    # @user1.avatar.attach(avatar1)
+    @wrenches = widgets(:wrenches)
+    @wrenches.image.attach(fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'michael-scott.png'),'image/png'))
+    @bolts = widgets(:bolts)
+    @brackets = widgets(:brackets)
+    @nuts = widgets(:nuts)
+    @pipes = widgets(:pipes)
+    @screws = widgets(:screws)
+    @washers = widgets(:washers)
+  end
+
   describe "GET /index" do
     it "renders a successful response" do
       get widgets_url, headers: valid_headers
