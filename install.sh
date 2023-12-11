@@ -160,6 +160,12 @@ class ApplicationController < ActionController::API
     request.headers['Authorization']
   end
 end
+
+  private 
+
+  def auth_header
+    request.headers['Authorization']
+  end
 ~
 EOF
 
@@ -260,273 +266,43 @@ local:
 ~
 EOF
 
-cat <<'EOF' | puravida app/controllers/users_spec.rb ~
-# frozen_string_literal: true
-require 'rails_helper'
+# cat <<'EOF' | puravida app/controllers/application_controller.rb ~
+# class ApplicationController < ActionController::API
+#   SECRET_KEY_BASE = Rails.application.credentials.secret_key_base
 
-RSpec.describe "/users", type: :request do
-  fixtures :users
-  let(:user_valid_create_params_mock_1) {{ name: "First1 Last1", email: "one@mail.com", admin: "false", password: "password", avatar: fixture_file_upload("spec/fixtures/files/michael-scott.png", "image/png") }}
-  let(:user_invalid_create_params_email_poorly_formed_mock_1) {{ name: "", email: "not_an_email", admin: "false", password: "password", avatar: fixture_file_upload("spec/fixtures/files/michael-scott.png", "image/png") }}
-  let(:valid_user_update_attributes) {{ name: "UpdatedName" }}
-  let(:invalid_user_update_attributes) {{ email: "not_an_email" }}
-  
-  before :each do
-    @user1 = users(:michael)
-    avatar1 = fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'michael-scott.png'),'image/png')
-    @user1.avatar.attach(avatar1)
-    @user2 = users(:jim)
-    avatar2 = fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'jim-halpert.png'),'image/png')
-    @user2.avatar.attach(avatar2)
-  end
+#   def encode_token(payload)
+#     JWT.encode payload, SECRET_KEY_BASE, 'HS256'
+#   end
 
-  describe "GET /index" do
-    it "renders a successful response" do
-      get users_url
-      expect(response).to be_successful
-    end
+#   def decoded_token
+#     if auth_header and auth_header.split(' ')[0] == "Bearer"
+#       token = auth_header.split(' ')[1]
+#       begin
+#         JWT.decode token, SECRET_KEY_BASE, true, { algorithm: 'HS256' }
+#       rescue JWT::DecodeError
+#         []
+#       end
+#     end
+#   end
 
-    it "gets four users" do
-      get users_url
-      expect(JSON.parse(response.body).length).to eq 4
-    end
+#   # We don't want to send the whole user record from the database to the frontend, so we only send what we need.
+#   # The db user row has password_digest (unsafe) and created_at and updated_at (extraneous).
+#   # We also change avatar from a weird active_storage object to just the avatar url before it gets to the frontend.
+#   def prep_raw_user(user)
+#     avatar = user.avatar.present? ? url_for(user.avatar) : nil
+#     user = user.admin ? user.slice(:id,:email,:name,:admin) : user.slice(:id,:email,:name)
+#     user['avatar'] = avatar
+#     user
+#   end
 
-    it "gets first users' correct details" do
-      get users_url
-      users = JSON.parse(response.body)
-      michael = users.find { |user| user['email'] == "michaelscott@dundermifflin.com" }
-      expect(michael['name']).to eq "Michael Scott"
-      expect(michael['email']).to eq "michaelscott@dundermifflin.com"
-      expect(michael['admin']).to eq true
-      expect(michael['avatar']).to be_kind_of(String)
-      expect(michael['avatar']).to match(/http.*\michael-scott\.png/)
-      expect(michael['password']).to be_nil
-      expect(michael['password_digest']).to be_nil
-    end
+#   private 
 
-    it "gets second users' correct details" do
-      get users_url
-      users = JSON.parse(response.body)
-      jim = users.find { |user| user['email'] == "jimhalpert@dundermifflin.com" }
-      expect(jim['name']).to eq "Jim Halpert"
-      expect(jim['email']).to eq "jimhalpert@dundermifflin.com"
-      expect(jim['admin']).to be_nil or eq false
-      expect(jim['avatar']).to be_kind_of(String)
-      expect(jim['avatar']).to match(/http.*\jim-halpert\.png/)
-      expect(jim['password']).to be_nil
-      expect(jim['password_digest']).to be_nil
-    end
-
-  end
-
-  describe "GET /show" do
-    it "renders a successful response" do
-      get user_url(@user1)
-      expect(response).to be_successful
-    end
-    it "gets users' correct details" do
-      get user_url(@user1)
-      michael = JSON.parse(response.body)
-      expect(michael['name']).to eq "Michael Scott"
-      expect(michael['email']).to eq "michaelscott@dundermifflin.com"
-      expect(michael['admin']).to eq true
-      expect(michael['avatar']).to be_kind_of(String)
-      expect(michael['avatar']).to match(/http.*\michael-scott\.png/)
-      expect(michael['password']).to be_nil
-      expect(michael['password_digest']).to be_nil
-    end
-  end
-
-  describe "POST /users" do
-    context "with valid parameters" do
-      it "creates a new User" do
-        expect {
-          post users_url, params: user_valid_create_params_mock_1
-        }.to change(User, :count).by(1)
-      end
-
-      it "renders a successful response" do
-        post users_url, params: user_valid_create_params_mock_1
-        expect(response).to be_successful
-      end
-
-      it "sets correct user details" do
-        post users_url, params: user_valid_create_params_mock_1
-        user = User.order(:created_at).last
-        expect(user['name']).to eq "First1 Last1"
-        expect(user['email']).to eq "one@mail.com"
-        expect(user['admin']).to eq(false).or(be_nil)
-        expect(user['avatar']).to be_nil
-        expect(user['password']).to be_nil
-        expect(user['password_digest']).to be_kind_of(String)
-      end
-
-      it "attaches user avatar" do
-        post users_url, params: user_valid_create_params_mock_1
-        user = User.order(:created_at).last
-        expect(user.avatar.attached?).to eq(true)
-      end
-    end
-
-    context "with invalid parameters (email poorly formed)" do
-      it "does not create a new User" do
-        expect {
-          post users_url, params: user_invalid_create_params_email_poorly_formed_mock_1
-        }.to change(User, :count).by(0)
-      end
-    
-      it "renders a 422 response" do
-        post users_url, params: user_invalid_create_params_email_poorly_formed_mock_1
-        expect(response).to have_http_status(:unprocessable_entity)
-      end  
-    end
-  end
-
-  describe "PATCH /update" do
-    context "with valid parameters" do
-
-      it "updates the requested user attribute" do
-        patch user_url(@user1), params: valid_user_update_attributes
-        @user1.reload
-        expect(@user1.name).to eq("UpdatedName")
-      end
-
-      it "doesn't change the other user attributes" do
-        patch user_url(@user1), params: valid_user_update_attributes
-        @user1.reload
-        expect(@user1['email']).to eq "michaelscott@dundermifflin.com"
-        expect(@user1['admin']).to eq true
-        expect(@user1['avatar']).to be_nil
-        expect(@user1['password']).to be_nil
-        expect(@user1['password_digest']).to be_kind_of(String)
-      end
-
-      it "is successful" do
-        patch user_url(@user1), params: valid_user_update_attributes
-        @user1.reload
-        expect(response).to be_successful
-      end
-    end
-
-    context "with invalid parameters" do
-    
-       it "renders a 422 response" do
-         patch user_url(@user1), params: invalid_user_update_attributes
-         expect(response).to have_http_status(:unprocessable_entity)
-       end
-    
-    end
-  end
-
-  describe "DELETE /destroy" do
-    it "destroys the requested user" do
-      expect {
-        delete user_url(@user1)
-      }.to change(User, :count).by(-1)
-    end
-
-    it "renders a successful response" do
-      delete user_url(@user1)
-      expect(response).to be_successful
-    end
-  end
-
-end
-~
-EOF
-rspec
-
-cat <<'EOF' | puravida app/controllers/application_controller.rb ~
-class ApplicationController < ActionController::API
-  SECRET_KEY_BASE = Rails.application.credentials.secret_key_base
-
-  def encode_token(payload)
-    JWT.encode payload, SECRET_KEY_BASE, 'HS256'
-  end
-
-  def decoded_token
-    if auth_header and auth_header.split(' ')[0] == "Bearer"
-      token = auth_header.split(' ')[1]
-      begin
-        JWT.decode token, SECRET_KEY_BASE, true, { algorithm: 'HS256' }
-      rescue JWT::DecodeError
-        []
-      end
-    end
-  end
-
-  # We don't want to send the whole user record from the database to the frontend, so we only send what we need.
-  # The db user row has password_digest (unsafe) and created_at and updated_at (extraneous).
-  # We also change avatar from a weird active_storage object to just the avatar url before it gets to the frontend.
-  def prep_raw_user(user)
-    avatar = user.avatar.present? ? url_for(user.avatar) : nil
-    user = user.admin ? user.slice(:id,:email,:name,:admin) : user.slice(:id,:email,:name)
-    user['avatar'] = avatar
-    user
-  end
-
-  private 
-
-  def auth_header
-    request.headers['Authorization']
-  end
-end
-~
-EOF
-cat <<'EOF' | puravida app/controllers/users_controller.rb ~
-class UsersController < ApplicationController
-  before_action :set_user, only: %i[ show update destroy ]
-
-  # GET /users
-  def index
-    @users = User.all.map { |user| prep_raw_user(user) }
-    render json: @users
-  end
-
-  # GET /users/1
-  def show
-    render json: prep_raw_user(@user)
-  end
-
-  # POST /users
-  def create
-    @user = User.new(user_params)
-    if @user.save
-      render json: prep_raw_user(@user), status: :created, location: @user
-    else
-      render json: @user.errors, status: :unprocessable_entity
-    end
-  end
-
-  # PATCH/PUT /users/1
-  def update
-    if @user.update(user_params)
-      render json: prep_raw_user(@user)
-    else
-      render json: @user.errors, status: :unprocessable_entity
-    end
-  end
-
-  # DELETE /users/1
-  def destroy
-    @user.destroy
-  end
-
-  private
-    # Use callbacks to share common setup or constraints between actions.
-    def set_user
-      @user = User.find(params[:id])
-    end
-
-    # Only allow a list of trusted parameters through.
-    def user_params
-      params['avatar'] = params['avatar'].blank? ? nil : params['avatar'] # if no avatar is chosen on signup page, params['avatar'] comes in as a blank string, which throws a 500 error at User.new(user_params). This changes any params['avatar'] blank string to nil, which is fine in User.new(user_params).
-      params.permit(:name, :email, :avatar, :admin, :password)
-    end
-    
-end
-~
-EOF
+#   def auth_header
+#     request.headers['Authorization']
+#   end
+# end
+# ~
+# EOF
 cat <<'EOF' | puravida spec/requests/users_spec.rb ~
 # frozen_string_literal: true
 require 'rails_helper'
