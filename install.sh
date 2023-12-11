@@ -1391,6 +1391,7 @@ require 'spec_helper'
 
 RSpec.describe "/users", type: :request do
   fixtures :users
+  fixtures :widgets
   let(:valid_headers) {{ Authorization: "Bearer " + @michael_token }}
   let(:admin_2_headers) {{ Authorization: "Bearer " + @ryan_token }}
   let(:invalid_token_header) {{ Authorization: "Bearer xyz" }}
@@ -1412,6 +1413,13 @@ RSpec.describe "/users", type: :request do
     @user2 = users(:jim)
     avatar2 = fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'jim-halpert.png'),'image/png')
     @user2.avatar.attach(avatar2)
+    widgets(:wrenches).image.attach(fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'allen-wrenches.jpg'),'image/jpeg'))
+    widgets(:bolts).image.attach(fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'bolts.jpg'),'image/jpeg'))
+    widgets(:brackets).image.attach(fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'brackets.png'),'image/png'))
+    widgets(:nuts).image.attach(fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'nuts.jpg'),'image/jpeg'))
+    widgets(:pipes).image.attach(fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'pipes.jpg'),'image/jpeg'))
+    widgets(:screws).image.attach(fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'screws.jpg'),'image/jpeg'))
+    widgets(:washers).image.attach(fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'washers.jpg'),'image/jpeg'))
   end
 
   describe "GET /index" do
@@ -1431,7 +1439,7 @@ RSpec.describe "/users", type: :request do
         users = JSON.parse(response.body)
         michael = users.find { |user| user['email'] == "michaelscott@dundermifflin.com" }
         widget_ids = michael['widget_ids']
-        widgets = widget_ids.map { |id| Widget.find(id) }
+        widgets = michael['widgets']
         wrenches = widgets.find { |widget| widget['name'] == "Wrenches" }
         bolts = widgets.find { |widget| widget['name'] == "Bolts" }
         expect(michael['name']).to eq "Michael Scott"
@@ -1443,8 +1451,12 @@ RSpec.describe "/users", type: :request do
         expect(michael['password_digest']).to be_nil
         expect(wrenches['name']).to eq "Wrenches"
         expect(wrenches['description']).to eq "Michael's wrench"
+        expect(url_for(wrenches['image'])).to be_kind_of(String)
+        expect(url_for(wrenches['image'])).to match(/http.*allen-wrenches\.jpg/)
         expect(bolts['name']).to eq "Bolts"
         expect(bolts['description']).to eq "Michael's bolt"
+        expect(url_for(bolts['image'])).to be_kind_of(String)
+        expect(url_for(bolts['image'])).to match(/http.*bolts\.jpg/)
       end
 
       it "gets second users' correct details" do
@@ -1452,7 +1464,7 @@ RSpec.describe "/users", type: :request do
         users = JSON.parse(response.body)
         jim = users.find { |user| user['email'] == "jimhalpert@dundermifflin.com" }
         widget_ids = jim['widget_ids']
-        widgets = widget_ids.map { |id| Widget.find(id) }
+        widgets = jim['widgets']
         brackets = widgets.find { |widget| widget['name'] == "Brackets" }
         nuts  = widgets.find { |widget| widget['name'] == "Nuts" }
         pipes  = widgets.find { |widget| widget['name'] == "Pipes" }
@@ -1465,10 +1477,16 @@ RSpec.describe "/users", type: :request do
         expect(jim['password_digest']).to be_nil
         expect(brackets['name']).to eq "Brackets"
         expect(brackets['description']).to eq "Jim's bracket"
+        expect(url_for(brackets['image'])).to be_kind_of(String)
+        expect(url_for(brackets['image'])).to match(/http.*brackets\.png/)
         expect(nuts['name']).to eq "Nuts"
         expect(nuts['description']).to eq "Jim's nut"
+        expect(url_for(nuts['image'])).to be_kind_of(String)
+        expect(url_for(nuts['image'])).to match(/http.*nuts\.jpg/)
         expect(pipes['name']).to eq "Pipes"
         expect(pipes['description']).to eq "Jim's pipe"
+        expect(url_for(pipes['image'])).to be_kind_of(String)
+        expect(url_for(pipes['image'])).to match(/http.*pipes\.jpg/)
       end
     end
 
@@ -1491,7 +1509,7 @@ RSpec.describe "/users", type: :request do
         get user_url(@user1), headers: valid_headers
         michael = JSON.parse(response.body)
         widget_ids = michael['widget_ids']
-        widgets = widget_ids.map { |id| Widget.find(id) }
+        widgets = michael['widgets']
         wrenches = widgets.find { |widget| widget['name'] == "Wrenches" }
         bolts = widgets.find { |widget| widget['name'] == "Bolts" }
         expect(michael['name']).to eq "Michael Scott"
@@ -1503,8 +1521,12 @@ RSpec.describe "/users", type: :request do
         expect(michael['password_digest']).to be_nil
         expect(wrenches['name']).to eq "Wrenches"
         expect(wrenches['description']).to eq "Michael's wrench"
+        expect(url_for(wrenches['image'])).to be_kind_of(String)
+        expect(url_for(wrenches['image'])).to match(/http.*allen-wrenches\.jpg/)
         expect(bolts['name']).to eq "Bolts"
         expect(bolts['description']).to eq "Michael's bolt"
+        expect(url_for(bolts['image'])).to be_kind_of(String)
+        expect(url_for(bolts['image'])).to match(/http.*bolts\.jpg/)
       end
     end
     context "with invalid headers" do
@@ -1543,6 +1565,8 @@ RSpec.describe "/users", type: :request do
         post users_url, params: user_valid_create_params_mock_1
         user = User.order(:created_at).last
         expect(user.avatar.attached?).to eq(true)
+        expect(url_for(user.avatar)).to be_kind_of(String)
+        expect(url_for(user.avatar)).to match(/http.*michael-scott\.png/)
       end
     end
 
@@ -1573,8 +1597,9 @@ RSpec.describe "/users", type: :request do
         patch user_url(@user1), params: valid_user_update_attributes, headers: valid_headers
         @user1.reload
         get user_url(@user1), headers: valid_headers
-        widget_ids = JSON.parse(response.body)['widget_ids']
-        widgets = widget_ids.map { |id| Widget.find(id) }
+        user = JSON.parse(response.body)
+        widget_ids = user['widget_ids']
+        widgets = user['widgets']
         wrenches = widgets.find { |widget| widget['name'] == "Wrenches" }
         bolts = widgets.find { |widget| widget['name'] == "Bolts" }
         expect(@user1['email']).to eq "michaelscott@dundermifflin.com"
@@ -1584,8 +1609,12 @@ RSpec.describe "/users", type: :request do
         expect(@user1['password_digest']).to be_kind_of(String)
         expect(wrenches['name']).to eq "Wrenches"
         expect(wrenches['description']).to eq "Michael's wrench"
+        expect(url_for(wrenches['image'])).to be_kind_of(String)
+        expect(url_for(wrenches['image'])).to match(/http.*allen-wrenches\.jpg/)
         expect(bolts['name']).to eq "Bolts"
         expect(bolts['description']).to eq "Michael's bolt"
+        expect(url_for(bolts['image'])).to be_kind_of(String)
+        expect(url_for(bolts['image'])).to match(/http.*bolts\.jpg/)
       end
 
       it "is successful" do
