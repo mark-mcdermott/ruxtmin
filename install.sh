@@ -1465,16 +1465,20 @@ RSpec.describe "/widgets", type: :request do
   end
 
   before :each do
-    # avatar1 = fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'michael-scott.png'),'image/png')
-    # @user1.avatar.attach(avatar1)
     @wrenches = widgets(:wrenches)
-    @wrenches.image.attach(fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'michael-scott.png'),'image/png'))
+    @wrenches.image.attach(fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'allen-wrenches.jpg'),'image/png'))
     @bolts = widgets(:bolts)
+    @bolts.image.attach(fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'bolts.jpg'),'image/png'))
     @brackets = widgets(:brackets)
+    @brackets.image.attach(fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'brackets.png'),'image/png'))
     @nuts = widgets(:nuts)
+    @nuts.image.attach(fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'nuts.jpg'),'image/png'))
     @pipes = widgets(:pipes)
+    @pipes.image.attach(fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'pipes.jpg'),'image/png'))
     @screws = widgets(:screws)
+    @screws.image.attach(fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'screws.jpg'),'image/png'))
     @washers = widgets(:washers)
+    @washers.image.attach(fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'washers.jpg'),'image/png'))
   end
 
   describe "GET /index" do
@@ -1493,14 +1497,18 @@ RSpec.describe "/widgets", type: :request do
       expect(wrenches['name']).to eq "Wrenches"
       expect(wrenches['description']).to eq "Michael's wrench"
       expect(wrenches['userName']).to eq "Michael Scott"
+      expect(wrenches['image']).to be_kind_of(String)
+      expect(wrenches['image']).to match(/http.*allen-wrenches\.jpg/)
     end
     it "second widget has correct properties" do
       get widgets_url, headers: valid_headers
       widgets = JSON.parse(response.body)
-      wrenches = widgets.find { |widget| widget['name'] == "Brackets" }
-      expect(wrenches['name']).to eq "Brackets"
-      expect(wrenches['description']).to eq "Jim's bracket"
-      expect(wrenches['userName']).to eq "Jim Halpert"
+      brackets = widgets.find { |widget| widget['name'] == "Brackets" }
+      expect(brackets['name']).to eq "Brackets"
+      expect(brackets['description']).to eq "Jim's bracket"
+      expect(brackets['userName']).to eq "Jim Halpert"
+      expect(brackets['image']).to be_kind_of(String)
+      expect(brackets['image']).to match(/http.*brackets\.png/)
     end
 
   end
@@ -1571,8 +1579,11 @@ RSpec.describe "/widgets", type: :request do
       it "widget's other properties are still correct" do
         widget = widgets(:wrenches)
         patch widget_url(widget), params: new_attributes, headers: valid_headers, as: :json
-        expect(JSON.parse(response.body)['description']).to eq "Michael's wrench"
-        expect(JSON.parse(response.body)['userName']).to eq "Michael Scott"
+        wrench = JSON.parse(response.body)
+        expect(wrench['description']).to eq "Michael's wrench"
+        expect(wrench['userName']).to eq "Michael Scott"
+        expect(wrench['image']).to be_kind_of(String)
+        expect(wrench['image']).to match(/http.*allen-wrenches\.jpg/)
       end
 
     end
