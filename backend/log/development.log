@@ -1,0 +1,910 @@
+  [1m[36mActiveRecord::SchemaMigration Load (1.8ms)[0m  [1m[34mSELECT "schema_migrations"."version" FROM "schema_migrations" ORDER BY "schema_migrations"."version" ASC[0m
+  [1m[36mActiveRecord::InternalMetadata Load (1.5ms)[0m  [1m[34mSELECT * FROM "ar_internal_metadata" WHERE "ar_internal_metadata"."key" = $1 ORDER BY "ar_internal_metadata"."key" ASC LIMIT 1[0m  [[nil, "environment"]]
+  [1m[36mActiveRecord::SchemaMigration Load (0.3ms)[0m  [1m[34mSELECT "schema_migrations"."version" FROM "schema_migrations" ORDER BY "schema_migrations"."version" ASC[0m
+  [1m[36mActiveRecord::InternalMetadata Load (0.2ms)[0m  [1m[34mSELECT * FROM "ar_internal_metadata" WHERE "ar_internal_metadata"."key" = $1 ORDER BY "ar_internal_metadata"."key" ASC LIMIT 1[0m  [[nil, "environment"]]
+  [1m[36mActiveRecord::SchemaMigration Load (0.1ms)[0m  [1m[34mSELECT "schema_migrations"."version" FROM "schema_migrations" ORDER BY "schema_migrations"."version" ASC[0m
+  [1m[36mActiveRecord::InternalMetadata Load (0.3ms)[0m  [1m[34mSELECT * FROM "ar_internal_metadata" WHERE "ar_internal_metadata"."key" = $1 ORDER BY "ar_internal_metadata"."key" ASC LIMIT 1[0m  [[nil, "environment"]]
+  [1m[35m (51.1ms)[0m  [1m[35mDROP DATABASE IF EXISTS "backend_development"[0m
+  [1m[35m (40.3ms)[0m  [1m[35mDROP DATABASE IF EXISTS "backend_test"[0m
+  [1m[35m (96.5ms)[0m  [1m[35mCREATE DATABASE "backend_development" ENCODING = 'unicode'[0m
+  [1m[35m (48.3ms)[0m  [1m[35mCREATE DATABASE "backend_test" ENCODING = 'unicode'[0m
+  [1m[35m (3.6ms)[0m  [1m[35mCREATE TABLE "schema_migrations" ("version" character varying NOT NULL PRIMARY KEY)[0m
+  [1m[35m (1.7ms)[0m  [1m[35mCREATE TABLE "ar_internal_metadata" ("key" character varying NOT NULL PRIMARY KEY, "value" character varying, "created_at" timestamp(6) NOT NULL, "updated_at" timestamp(6) NOT NULL)[0m
+  [1m[35m (0.1ms)[0m  [1m[34mSELECT pg_try_advisory_lock(5073945470573576205)[0m
+  [1m[36mActiveRecord::SchemaMigration Load (0.2ms)[0m  [1m[34mSELECT "schema_migrations"."version" FROM "schema_migrations" ORDER BY "schema_migrations"."version" ASC[0m
+  [1m[36mActiveRecord::InternalMetadata Load (0.2ms)[0m  [1m[34mSELECT * FROM "ar_internal_metadata" WHERE "ar_internal_metadata"."key" = $1 ORDER BY "ar_internal_metadata"."key" ASC LIMIT 1[0m  [[nil, "environment"]]
+  [1m[36mActiveRecord::InternalMetadata Create (0.2ms)[0m  [1m[32mINSERT INTO "ar_internal_metadata" ("key", "value", "created_at", "updated_at") VALUES ('environment', 'development', '2024-08-09 03:52:09.105841', '2024-08-09 03:52:09.105843') RETURNING "key"[0m
+  [1m[35m (0.1ms)[0m  [1m[34mSELECT pg_advisory_unlock(5073945470573576205)[0m
+  [1m[36mActiveRecord::SchemaMigration Load (0.1ms)[0m  [1m[34mSELECT "schema_migrations"."version" FROM "schema_migrations" ORDER BY "schema_migrations"."version" ASC[0m
+  [1m[35m (0.2ms)[0m  [1m[34mSELECT pg_try_advisory_lock(5073945470573576205)[0m
+  [1m[36mActiveRecord::SchemaMigration Load (0.6ms)[0m  [1m[34mSELECT "schema_migrations"."version" FROM "schema_migrations" ORDER BY "schema_migrations"."version" ASC[0m
+  [1m[36mActiveRecord::InternalMetadata Load (0.8ms)[0m  [1m[34mSELECT * FROM "ar_internal_metadata" WHERE "ar_internal_metadata"."key" = $1 ORDER BY "ar_internal_metadata"."key" ASC LIMIT 1[0m  [[nil, "environment"]]
+Migrating to EnableUuid (20240809100547)
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mBEGIN[0m
+  [1m[35mSQL (64.4ms)[0m  [1m[35mCREATE EXTENSION IF NOT EXISTS "pgcrypto"[0m
+  [1m[36mActiveRecord::SchemaMigration Create (1.4ms)[0m  [1m[32mINSERT INTO "schema_migrations" ("version") VALUES ('20240809100547') RETURNING "version"[0m
+  [1m[36mTRANSACTION (5.8ms)[0m  [1m[35mCOMMIT[0m
+  [1m[35m (0.4ms)[0m  [1m[34mSELECT pg_advisory_unlock(5073945470573576205)[0m
+  [1m[36mActiveRecord::SchemaMigration Load (0.2ms)[0m  [1m[34mSELECT "schema_migrations"."version" FROM "schema_migrations" ORDER BY "schema_migrations"."version" ASC[0m
+  [1m[35m (0.1ms)[0m  [1m[34mSELECT pg_try_advisory_lock(5073945470573576205)[0m
+  [1m[36mActiveRecord::SchemaMigration Load (0.8ms)[0m  [1m[34mSELECT "schema_migrations"."version" FROM "schema_migrations" ORDER BY "schema_migrations"."version" ASC[0m
+  [1m[36mActiveRecord::InternalMetadata Load (0.8ms)[0m  [1m[34mSELECT * FROM "ar_internal_metadata" WHERE "ar_internal_metadata"."key" = $1 ORDER BY "ar_internal_metadata"."key" ASC LIMIT 1[0m  [[nil, "environment"]]
+Migrating to DeviseCreateUsers (20240809100619)
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mBEGIN[0m
+  [1m[35m (6.5ms)[0m  [1m[35mCREATE TABLE "users" ("id" bigserial primary key, "email" character varying DEFAULT '' NOT NULL, "encrypted_password" character varying DEFAULT '' NOT NULL, "reset_password_token" character varying, "reset_password_sent_at" timestamp(6), "remember_created_at" timestamp(6), "admin" boolean DEFAULT FALSE, "uuid" uuid, "created_at" timestamp(6) NOT NULL, "updated_at" timestamp(6) NOT NULL)[0m
+  [1m[35m (2.0ms)[0m  [1m[35mCREATE UNIQUE INDEX "index_users_on_uuid" ON "users" ("uuid")[0m
+  [1m[35m (0.8ms)[0m  [1m[35mCREATE UNIQUE INDEX "index_users_on_email" ON "users" ("email")[0m
+  [1m[35m (0.8ms)[0m  [1m[35mCREATE UNIQUE INDEX "index_users_on_reset_password_token" ON "users" ("reset_password_token")[0m
+  [1m[36mActiveRecord::SchemaMigration Create (0.2ms)[0m  [1m[32mINSERT INTO "schema_migrations" ("version") VALUES ('20240809100619') RETURNING "version"[0m
+  [1m[36mTRANSACTION (2.0ms)[0m  [1m[35mCOMMIT[0m
+  [1m[35m (0.7ms)[0m  [1m[34mSELECT pg_advisory_unlock(5073945470573576205)[0m
+  [1m[36mActiveRecord::SchemaMigration Load (0.2ms)[0m  [1m[34mSELECT "schema_migrations"."version" FROM "schema_migrations" ORDER BY "schema_migrations"."version" ASC[0m
+  [1m[35m (0.1ms)[0m  [1m[34mSELECT pg_try_advisory_lock(5073945470573576205)[0m
+  [1m[36mActiveRecord::SchemaMigration Load (1.2ms)[0m  [1m[34mSELECT "schema_migrations"."version" FROM "schema_migrations" ORDER BY "schema_migrations"."version" ASC[0m
+  [1m[36mActiveRecord::InternalMetadata Load (0.6ms)[0m  [1m[34mSELECT * FROM "ar_internal_metadata" WHERE "ar_internal_metadata"."key" = $1 ORDER BY "ar_internal_metadata"."key" ASC LIMIT 1[0m  [[nil, "environment"]]
+Migrating to AddJtiToUsers (20240809103744)
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mBEGIN[0m
+  [1m[35m (1.0ms)[0m  [1m[35mALTER TABLE "users" ADD "jti" character varying NOT NULL[0m
+  [1m[35m (1.9ms)[0m  [1m[35mCREATE UNIQUE INDEX "index_users_on_jti" ON "users" ("jti")[0m
+  [1m[36mActiveRecord::SchemaMigration Create (0.2ms)[0m  [1m[32mINSERT INTO "schema_migrations" ("version") VALUES ('20240809103744') RETURNING "version"[0m
+  [1m[36mTRANSACTION (0.5ms)[0m  [1m[35mCOMMIT[0m
+  [1m[35m (0.1ms)[0m  [1m[34mSELECT pg_advisory_unlock(5073945470573576205)[0m
+  [1m[36mActiveRecord::SchemaMigration Load (0.1ms)[0m  [1m[34mSELECT "schema_migrations"."version" FROM "schema_migrations" ORDER BY "schema_migrations"."version" ASC[0m
+Started POST "/api/auth/signup" for ::1 at 2024-08-09 03:40:28 -0700
+  [1m[36mActiveRecord::SchemaMigration Load (1.2ms)[0m  [1m[34mSELECT "schema_migrations"."version" FROM "schema_migrations" ORDER BY "schema_migrations"."version" ASC[0m
+Processing by Users::RegistrationsController#create as */*
+  Parameters: {"user"=>{"email"=>"test@mail.com", "password"=>"[FILTERED]"}, "registration"=>{"user"=>{"email"=>"test@mail.com", "password"=>"[FILTERED]"}}}
+  [1m[36mTRANSACTION (0.4ms)[0m  [1m[35mBEGIN[0m
+  [1m[36mUser Exists? (3.7ms)[0m  [1m[34mSELECT 1 AS one FROM "users" WHERE "users"."email" = $1 LIMIT $2[0m  [["email", "test@mail.com"], ["LIMIT", 1]]
+  [1m[36mUser Create (1.3ms)[0m  [1m[32mINSERT INTO "users" ("email", "encrypted_password", "reset_password_token", "reset_password_sent_at", "remember_created_at", "admin", "uuid", "created_at", "updated_at", "jti") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING "id"[0m  [["email", "test@mail.com"], ["encrypted_password", "[FILTERED]"], ["reset_password_token", "[FILTERED]"], ["reset_password_sent_at", "[FILTERED]"], ["remember_created_at", nil], ["admin", false], ["uuid", "509dc56e-8632-40da-ad8b-ce935f6ec596"], ["created_at", "2024-08-09 10:40:28.776806"], ["updated_at", "2024-08-09 10:40:28.776806"], ["jti", "ec283504-add0-4045-8fe5-26ba189bc3b8"]]
+  [1m[36mTRANSACTION (2.4ms)[0m  [1m[35mCOMMIT[0m
+Completed 200 OK in 313ms (Views: 0.1ms | ActiveRecord: 18.4ms | Allocations: 34207)
+
+
+Started POST "/api/auth/login" for ::1 at 2024-08-09 03:40:32 -0700
+Processing by Users::SessionsController#create as */*
+  Parameters: {"user"=>{"email"=>"test@mail.com", "password"=>"[FILTERED]"}, "session"=>{"user"=>{"email"=>"test@mail.com", "password"=>"[FILTERED]"}}}
+  [1m[36mUser Load (0.7ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."email" = $1 ORDER BY "users"."id" ASC LIMIT $2[0m  [["email", "test@mail.com"], ["LIMIT", 1]]
+Completed 200 OK in 253ms (Views: 0.1ms | ActiveRecord: 0.8ms | Allocations: 2517)
+
+
+  [1m[35m (0.2ms)[0m  [1m[34mSELECT pg_try_advisory_lock(5073945470573576205)[0m
+  [1m[36mActiveRecord::SchemaMigration Load (1.1ms)[0m  [1m[34mSELECT "schema_migrations"."version" FROM "schema_migrations" ORDER BY "schema_migrations"."version" ASC[0m
+  [1m[36mActiveRecord::InternalMetadata Load (1.1ms)[0m  [1m[34mSELECT * FROM "ar_internal_metadata" WHERE "ar_internal_metadata"."key" = $1 ORDER BY "ar_internal_metadata"."key" ASC LIMIT 1[0m  [[nil, "environment"]]
+Migrating to CreateActiveStorageTables (20240809104146)
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mBEGIN[0m
+  [1m[35m (7.6ms)[0m  [1m[35mCREATE TABLE "active_storage_blobs" ("id" bigserial primary key, "key" character varying NOT NULL, "filename" character varying NOT NULL, "content_type" character varying, "metadata" text, "service_name" character varying NOT NULL, "byte_size" bigint NOT NULL, "checksum" character varying, "created_at" timestamp(6) NOT NULL)[0m
+  [1m[35m (1.0ms)[0m  [1m[35mCREATE UNIQUE INDEX "index_active_storage_blobs_on_key" ON "active_storage_blobs" ("key")[0m
+  [1m[35m (7.0ms)[0m  [1m[35mCREATE TABLE "active_storage_attachments" ("id" bigserial primary key, "name" character varying NOT NULL, "record_type" character varying NOT NULL, "record_id" bigint NOT NULL, "blob_id" bigint NOT NULL, "created_at" timestamp(6) NOT NULL, CONSTRAINT "fk_rails_c3b3935057"
+FOREIGN KEY ("blob_id")
+  REFERENCES "active_storage_blobs" ("id")
+)[0m
+  [1m[35m (1.3ms)[0m  [1m[35mCREATE INDEX "index_active_storage_attachments_on_blob_id" ON "active_storage_attachments" ("blob_id")[0m
+  [1m[35m (1.3ms)[0m  [1m[35mCREATE UNIQUE INDEX "index_active_storage_attachments_uniqueness" ON "active_storage_attachments" ("record_type", "record_id", "name", "blob_id")[0m
+  [1m[35m (5.5ms)[0m  [1m[35mCREATE TABLE "active_storage_variant_records" ("id" bigserial primary key, "blob_id" bigint NOT NULL, "variation_digest" character varying NOT NULL, CONSTRAINT "fk_rails_993965df05"
+FOREIGN KEY ("blob_id")
+  REFERENCES "active_storage_blobs" ("id")
+)[0m
+  [1m[35m (1.3ms)[0m  [1m[35mCREATE UNIQUE INDEX "index_active_storage_variant_records_uniqueness" ON "active_storage_variant_records" ("blob_id", "variation_digest")[0m
+  [1m[36mActiveRecord::SchemaMigration Create (0.2ms)[0m  [1m[32mINSERT INTO "schema_migrations" ("version") VALUES ('20240809104146') RETURNING "version"[0m
+  [1m[36mTRANSACTION (3.4ms)[0m  [1m[35mCOMMIT[0m
+  [1m[35m (0.7ms)[0m  [1m[34mSELECT pg_advisory_unlock(5073945470573576205)[0m
+  [1m[36mActiveRecord::SchemaMigration Load (0.1ms)[0m  [1m[34mSELECT "schema_migrations"."version" FROM "schema_migrations" ORDER BY "schema_migrations"."version" ASC[0m
+Started POST "/api/auth/login" for ::1 at 2024-08-09 03:57:50 -0700
+  [1m[36mActiveRecord::SchemaMigration Load (1.4ms)[0m  [1m[34mSELECT "schema_migrations"."version" FROM "schema_migrations" ORDER BY "schema_migrations"."version" ASC[0m
+Processing by Users::SessionsController#create as JSON
+  Parameters: {"user"=>{"email"=>"test@mail.com", "password"=>"[FILTERED]"}, "session"=>{"user"=>{"email"=>"test@mail.com", "password"=>"[FILTERED]"}}}
+  [1m[36mUser Load (1.6ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."email" = $1 ORDER BY "users"."id" ASC LIMIT $2[0m  [["email", "test@mail.com"], ["LIMIT", 1]]
+Completed 200 OK in 302ms (Views: 0.2ms | ActiveRecord: 16.2ms | Allocations: 25732)
+
+
+Started GET "/api/auth/session" for ::1 at 2024-08-09 03:57:50 -0700
+Processing by CurrentUserController#index as */*
+  [1m[36mUser Load (0.3ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."id" = $1 LIMIT $2[0m  [["id", 1], ["LIMIT", 1]]
+  [1m[36mActiveStorage::Attachment Load (1.4ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 1], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/models/user.rb:10:in `avatar_url'
+Completed 200 OK in 22ms (Views: 0.1ms | ActiveRecord: 5.4ms | Allocations: 9295)
+
+
+Started DELETE "/api/auth/logout" for ::1 at 2024-08-09 03:57:53 -0700
+Processing by Users::SessionsController#destroy as */*
+  [1m[36mUser Load (0.3ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."id" = $1 LIMIT $2[0m  [["id", 1], ["LIMIT", 1]]
+  ↳ app/controllers/users/sessions_controller.rb:13:in `respond_to_on_destroy'
+Filter chain halted as :verify_signed_out_user rendered or redirected
+Completed 200 OK in 2ms (Views: 0.1ms | ActiveRecord: 0.3ms | Allocations: 864)
+
+
+  [1m[36mCACHE User Load (0.0ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."id" = $1 LIMIT $2[0m  [["id", 1], ["LIMIT", 1]]
+  [1m[36mUser Update (2.1ms)[0m  [1m[33mUPDATE "users" SET "jti" = $1 WHERE "users"."id" = $2[0m  [["jti", "7f52b23d-296a-4141-ae06-6242d7eeb693"], ["id", 1]]
+Started POST "/api/auth/signup" for ::1 at 2024-08-09 03:58:03 -0700
+Processing by Users::RegistrationsController#create as JSON
+  Parameters: {"user"=>{"email"=>"test2@mail.com", "password"=>"[FILTERED]"}, "registration"=>{"user"=>{"email"=>"test2@mail.com", "password"=>"[FILTERED]"}}}
+  [1m[36mTRANSACTION (0.2ms)[0m  [1m[35mBEGIN[0m
+  [1m[36mUser Exists? (1.3ms)[0m  [1m[34mSELECT 1 AS one FROM "users" WHERE "users"."email" = $1 LIMIT $2[0m  [["email", "test2@mail.com"], ["LIMIT", 1]]
+  [1m[36mUser Create (1.8ms)[0m  [1m[32mINSERT INTO "users" ("email", "encrypted_password", "reset_password_token", "reset_password_sent_at", "remember_created_at", "admin", "uuid", "created_at", "updated_at", "jti") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING "id"[0m  [["email", "test2@mail.com"], ["encrypted_password", "[FILTERED]"], ["reset_password_token", "[FILTERED]"], ["reset_password_sent_at", "[FILTERED]"], ["remember_created_at", nil], ["admin", false], ["uuid", "ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba"], ["created_at", "2024-08-09 10:58:03.526513"], ["updated_at", "2024-08-09 10:58:03.526513"], ["jti", "86df418c-cb80-4b72-a6fa-6c2ad24894b3"]]
+  [1m[36mTRANSACTION (0.4ms)[0m  [1m[35mCOMMIT[0m
+  [1m[36mActiveStorage::Attachment Load (0.3ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 2], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/models/user.rb:10:in `avatar_url'
+Completed 200 OK in 267ms (Views: 0.1ms | ActiveRecord: 4.0ms | Allocations: 6626)
+
+
+Started POST "/api/auth/login" for ::1 at 2024-08-09 03:58:03 -0700
+Processing by Users::SessionsController#create as JSON
+  Parameters: {"user"=>{"email"=>"test2@mail.com", "password"=>"[FILTERED]"}, "session"=>{"user"=>{"email"=>"test2@mail.com", "password"=>"[FILTERED]"}}}
+  [1m[36mUser Load (0.5ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."email" = $1 ORDER BY "users"."id" ASC LIMIT $2[0m  [["email", "test2@mail.com"], ["LIMIT", 1]]
+Completed 200 OK in 243ms (Views: 0.1ms | ActiveRecord: 0.5ms | Allocations: 1471)
+
+
+Started GET "/api/auth/session" for ::1 at 2024-08-09 03:58:03 -0700
+Processing by CurrentUserController#index as */*
+  [1m[36mUser Load (0.3ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."id" = $1 LIMIT $2[0m  [["id", 2], ["LIMIT", 1]]
+  [1m[36mActiveStorage::Attachment Load (0.2ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 2], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/models/user.rb:10:in `avatar_url'
+Completed 200 OK in 4ms (Views: 0.1ms | ActiveRecord: 0.5ms | Allocations: 2018)
+
+
+Started GET "/users/ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba" for ::1 at 2024-08-09 03:58:14 -0700
+Processing by UsersController#show as */*
+  Parameters: {"uuid"=>"ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba"}
+  [1m[36mUser Load (0.2ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."uuid" = $1 LIMIT $2[0m  [["uuid", "ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:54:in `set_user'
+  [1m[36mActiveStorage::Attachment Load (0.3ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 2], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:12:in `show'
+Completed 200 OK in 4ms (Views: 0.1ms | ActiveRecord: 0.6ms | Allocations: 1554)
+
+
+Started PATCH "/users/ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba" for ::1 at 2024-08-09 03:58:14 -0700
+Processing by UsersController#update as */*
+  Parameters: {"user"=>{"email"=>"test2@mail.com", "uuid"=>"ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba"}, "uuid"=>"ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba"}
+  [1m[36mUser Load (0.7ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."uuid" = $1 LIMIT $2[0m  [["uuid", "ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:54:in `set_user'
+  [1m[36mActiveStorage::Attachment Load (0.5ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 2], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:39:in `update'
+Completed 200 OK in 4ms (Views: 0.1ms | ActiveRecord: 1.2ms | Allocations: 1620)
+
+
+Started GET "/users/ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba" for ::1 at 2024-08-09 03:58:15 -0700
+Processing by UsersController#show as */*
+  Parameters: {"uuid"=>"ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba"}
+  [1m[36mUser Load (0.6ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."uuid" = $1 LIMIT $2[0m  [["uuid", "ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:54:in `set_user'
+  [1m[36mActiveStorage::Attachment Load (0.4ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 2], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:12:in `show'
+Completed 200 OK in 4ms (Views: 0.1ms | ActiveRecord: 1.0ms | Allocations: 1321)
+
+
+Started PATCH "/users/ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba" for ::1 at 2024-08-09 03:58:19 -0700
+Processing by UsersController#update as */*
+  Parameters: {"user"=>{"email"=>"test2@mail.com", "uuid"=>"ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba", "avatar"=>#<ActionDispatch::Http::UploadedFile:0x0000000111a9a418 @tempfile=#<Tempfile:/var/folders/h5/bcmmjqhd0rb5j9q32877nb5c0000gn/T/RackMultipart20240809-43097-tta3n.png>, @content_type="image/png", @original_filename="actor-image.png", @headers="Content-Disposition: form-data; name=\"user[avatar]\"; filename=\"actor-image.png\"\r\nContent-Type: image/png\r\n">}, "uuid"=>"ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba"}
+  [1m[36mUser Load (0.3ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."uuid" = $1 LIMIT $2[0m  [["uuid", "ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:54:in `set_user'
+  [1m[36mTRANSACTION (0.9ms)[0m  [1m[35mBEGIN[0m
+  ↳ app/controllers/users_controller.rb:38:in `update'
+  [1m[36mActiveStorage::Blob Load (1.4ms)[0m  [1m[34mSELECT "active_storage_blobs".* FROM "active_storage_blobs" INNER JOIN "active_storage_attachments" ON "active_storage_blobs"."id" = "active_storage_attachments"."blob_id" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 2], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:38:in `update'
+  [1m[36mActiveStorage::Attachment Load (0.6ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 2], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:38:in `update'
+  [1m[36mActiveStorage::Blob Create (2.0ms)[0m  [1m[32mINSERT INTO "active_storage_blobs" ("key", "filename", "content_type", "metadata", "service_name", "byte_size", "checksum", "created_at") VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING "id"[0m  [["key", "kf4leelq5iqq8c73l8lh4dnogow3"], ["filename", "actor-image.png"], ["content_type", "image/png"], ["metadata", "{\"identified\":true}"], ["service_name", "local"], ["byte_size", 49959], ["checksum", "sQm3XgICHbPC6rrEKWIs6w=="], ["created_at", "2024-08-09 10:58:19.681529"]]
+  ↳ app/controllers/users_controller.rb:38:in `update'
+  [1m[36mActiveStorage::Attachment Create (1.5ms)[0m  [1m[32mINSERT INTO "active_storage_attachments" ("name", "record_type", "record_id", "blob_id", "created_at") VALUES ($1, $2, $3, $4, $5) RETURNING "id"[0m  [["name", "avatar"], ["record_type", "User"], ["record_id", 2], ["blob_id", 1], ["created_at", "2024-08-09 10:58:19.684606"]]
+  ↳ app/controllers/users_controller.rb:38:in `update'
+  [1m[36mUser Update (0.3ms)[0m  [1m[33mUPDATE "users" SET "updated_at" = $1 WHERE "users"."id" = $2[0m  [["updated_at", "2024-08-09 10:58:19.686970"], ["id", 2]]
+  ↳ app/controllers/users_controller.rb:38:in `update'
+  [1m[36mTRANSACTION (0.6ms)[0m  [1m[35mCOMMIT[0m
+  ↳ app/controllers/users_controller.rb:38:in `update'
+[36m  Disk Storage (0.8ms) [0m[32mUploaded file to key: kf4leelq5iqq8c73l8lh4dnogow3 (checksum: sQm3XgICHbPC6rrEKWIs6w==)[0m
+[ActiveJob] Enqueued ActiveStorage::AnalyzeJob (Job ID: ca300b46-9596-435b-be11-57d3fc0079db) to Async(default) with arguments: #<GlobalID:0x0000000114f53da8 @uri=#<URI::GID gid://backend/ActiveStorage::Blob/1>>
+[ActiveJob] ↳ app/controllers/users_controller.rb:38:in `update'
+Completed 200 OK in 139ms (Views: 0.1ms | ActiveRecord: 11.6ms | Allocations: 46924)
+
+
+[ActiveJob] [ActiveStorage::AnalyzeJob] [ca300b46-9596-435b-be11-57d3fc0079db]   [1m[36mActiveStorage::Blob Load (0.2ms)[0m  [1m[34mSELECT "active_storage_blobs".* FROM "active_storage_blobs" WHERE "active_storage_blobs"."id" = $1 LIMIT $2[0m  [["id", 1], ["LIMIT", 1]]
+[ActiveJob] [ActiveStorage::AnalyzeJob] [ca300b46-9596-435b-be11-57d3fc0079db] Performing ActiveStorage::AnalyzeJob (Job ID: ca300b46-9596-435b-be11-57d3fc0079db) from Async(default) enqueued at 2024-08-09T10:58:19.748978000Z with arguments: #<GlobalID:0x0000000107549f68 @uri=#<URI::GID gid://backend/ActiveStorage::Blob/1>>
+[ActiveJob] [ActiveStorage::AnalyzeJob] [ca300b46-9596-435b-be11-57d3fc0079db] Skipping image analysis because the ruby-vips gem isn't installed
+[ActiveJob] [ActiveStorage::AnalyzeJob] [ca300b46-9596-435b-be11-57d3fc0079db]   [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mBEGIN[0m
+[ActiveJob] [ActiveStorage::AnalyzeJob] [ca300b46-9596-435b-be11-57d3fc0079db]   [1m[36mActiveStorage::Blob Update (0.9ms)[0m  [1m[33mUPDATE "active_storage_blobs" SET "metadata" = $1 WHERE "active_storage_blobs"."id" = $2[0m  [["metadata", "{\"identified\":true,\"analyzed\":true}"], ["id", 1]]
+[ActiveJob] [ActiveStorage::AnalyzeJob] [ca300b46-9596-435b-be11-57d3fc0079db]   [1m[36mActiveStorage::Attachment Load (0.4ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."blob_id" = $1[0m  [["blob_id", 1]]
+[ActiveJob] [ActiveStorage::AnalyzeJob] [ca300b46-9596-435b-be11-57d3fc0079db]   [1m[36mUser Load (0.3ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."id" = $1[0m  [["id", 2]]
+[ActiveJob] [ActiveStorage::AnalyzeJob] [ca300b46-9596-435b-be11-57d3fc0079db]   [1m[36mUser Update (0.9ms)[0m  [1m[33mUPDATE "users" SET "updated_at" = $1 WHERE "users"."id" = $2[0m  [["updated_at", "2024-08-09 10:58:19.785824"], ["id", 2]]
+[ActiveJob] [ActiveStorage::AnalyzeJob] [ca300b46-9596-435b-be11-57d3fc0079db]   [1m[36mTRANSACTION (0.3ms)[0m  [1m[35mCOMMIT[0m
+[ActiveJob] [ActiveStorage::AnalyzeJob] [ca300b46-9596-435b-be11-57d3fc0079db] Performed ActiveStorage::AnalyzeJob (Job ID: ca300b46-9596-435b-be11-57d3fc0079db) from Async(default) in 34.36ms
+Started GET "/users/ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba" for ::1 at 2024-08-09 03:58:20 -0700
+Processing by UsersController#show as */*
+  Parameters: {"uuid"=>"ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba"}
+  [1m[36mUser Load (0.3ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."uuid" = $1 LIMIT $2[0m  [["uuid", "ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:54:in `set_user'
+  [1m[36mActiveStorage::Attachment Load (0.1ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 2], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:12:in `show'
+  [1m[36mActiveStorage::Blob Load (0.2ms)[0m  [1m[34mSELECT "active_storage_blobs".* FROM "active_storage_blobs" WHERE "active_storage_blobs"."id" = $1 LIMIT $2[0m  [["id", 1], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:12:in `show'
+Completed 200 OK in 4ms (Views: 0.1ms | ActiveRecord: 0.6ms | Allocations: 2298)
+
+
+Started GET "/rails/active_storage/blobs/redirect/eyJfcmFpbHMiOnsiZGF0YSI6MSwicHVyIjoiYmxvYl9pZCJ9fQ==--4959e35641a99c63ec9361d27d079a8797ed217f/actor-image.png?1723201100268" for ::1 at 2024-08-09 03:58:20 -0700
+Processing by ActiveStorage::Blobs::RedirectController#show as PNG
+  Parameters: {"1723201100268"=>nil, "signed_id"=>"eyJfcmFpbHMiOnsiZGF0YSI6MSwicHVyIjoiYmxvYl9pZCJ9fQ==--4959e35641a99c63ec9361d27d079a8797ed217f", "filename"=>"actor-image"}
+  [1m[36mActiveStorage::Blob Load (0.3ms)[0m  [1m[34mSELECT "active_storage_blobs".* FROM "active_storage_blobs" WHERE "active_storage_blobs"."id" = $1 LIMIT $2[0m  [["id", 1], ["LIMIT", 1]]
+[36m  Disk Storage (0.4ms) [0m[34mGenerated URL for file at key: kf4leelq5iqq8c73l8lh4dnogow3 (http://localhost:3000/rails/active_storage/disk/eyJfcmFpbHMiOnsiZGF0YSI6eyJrZXkiOiJrZjRsZWVscTVpcXE4YzczbDhsaDRkbm9nb3czIiwiZGlzcG9zaXRpb24iOiJpbmxpbmU7IGZpbGVuYW1lPVwiYWN0b3ItaW1hZ2UucG5nXCI7IGZpbGVuYW1lKj1VVEYtOCcnYWN0b3ItaW1hZ2UucG5nIiwiY29udGVudF90eXBlIjoiaW1hZ2UvcG5nIiwic2VydmljZV9uYW1lIjoibG9jYWwifSwiZXhwIjoiMjAyNC0wOC0wOVQxMTowMzoyMC4zMDJaIiwicHVyIjoiYmxvYl9rZXkifX0=--cb74f536a64b12af415f17a55fb8c2dfd909378e/actor-image.png)[0m
+Redirected to http://localhost:3000/rails/active_storage/disk/eyJfcmFpbHMiOnsiZGF0YSI6eyJrZXkiOiJrZjRsZWVscTVpcXE4YzczbDhsaDRkbm9nb3czIiwiZGlzcG9zaXRpb24iOiJpbmxpbmU7IGZpbGVuYW1lPVwiYWN0b3ItaW1hZ2UucG5nXCI7IGZpbGVuYW1lKj1VVEYtOCcnYWN0b3ItaW1hZ2UucG5nIiwiY29udGVudF90eXBlIjoiaW1hZ2UvcG5nIiwic2VydmljZV9uYW1lIjoibG9jYWwifSwiZXhwIjoiMjAyNC0wOC0wOVQxMTowMzoyMC4zMDJaIiwicHVyIjoiYmxvYl9rZXkifX0=--cb74f536a64b12af415f17a55fb8c2dfd909378e/actor-image.png
+Completed 302 Found in 12ms (ActiveRecord: 0.3ms | Allocations: 5908)
+
+
+Started GET "/rails/active_storage/disk/eyJfcmFpbHMiOnsiZGF0YSI6eyJrZXkiOiJrZjRsZWVscTVpcXE4YzczbDhsaDRkbm9nb3czIiwiZGlzcG9zaXRpb24iOiJpbmxpbmU7IGZpbGVuYW1lPVwiYWN0b3ItaW1hZ2UucG5nXCI7IGZpbGVuYW1lKj1VVEYtOCcnYWN0b3ItaW1hZ2UucG5nIiwiY29udGVudF90eXBlIjoiaW1hZ2UvcG5nIiwic2VydmljZV9uYW1lIjoibG9jYWwifSwiZXhwIjoiMjAyNC0wOC0wOVQxMTowMzoyMC4zMDJaIiwicHVyIjoiYmxvYl9rZXkifX0=--cb74f536a64b12af415f17a55fb8c2dfd909378e/actor-image.png" for ::1 at 2024-08-09 03:58:20 -0700
+Processing by ActiveStorage::DiskController#show as PNG
+  Parameters: {"encoded_key"=>"[FILTERED]", "filename"=>"actor-image"}
+Completed 200 OK in 0ms (ActiveRecord: 0.0ms | Allocations: 221)
+
+
+Started GET "/users" for ::1 at 2024-08-09 03:58:25 -0700
+Processing by UsersController#index as */*
+  [1m[36mUser Load (0.6ms)[0m  [1m[34mSELECT "users".* FROM "users"[0m
+  ↳ app/controllers/users_controller.rb:7:in `index'
+Completed 200 OK in 2ms (Views: 1.1ms | ActiveRecord: 0.5ms | Allocations: 761)
+
+
+Started GET "/users/ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba" for ::1 at 2024-08-09 03:58:27 -0700
+Processing by UsersController#show as */*
+  Parameters: {"uuid"=>"ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba"}
+  [1m[36mUser Load (0.3ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."uuid" = $1 LIMIT $2[0m  [["uuid", "ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:54:in `set_user'
+  [1m[36mActiveStorage::Attachment Load (0.3ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 2], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:12:in `show'
+  [1m[36mActiveStorage::Blob Load (0.2ms)[0m  [1m[34mSELECT "active_storage_blobs".* FROM "active_storage_blobs" WHERE "active_storage_blobs"."id" = $1 LIMIT $2[0m  [["id", 1], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:12:in `show'
+Completed 200 OK in 5ms (Views: 0.1ms | ActiveRecord: 0.8ms | Allocations: 2071)
+
+
+Started PATCH "/users/ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba" for ::1 at 2024-08-09 03:58:27 -0700
+Processing by UsersController#update as */*
+  Parameters: {"user"=>{"email"=>"test2@mail.com", "uuid"=>"ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba"}, "uuid"=>"ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba"}
+  [1m[36mUser Load (0.2ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."uuid" = $1 LIMIT $2[0m  [["uuid", "ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:54:in `set_user'
+  [1m[36mActiveStorage::Attachment Load (0.1ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 2], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:39:in `update'
+  [1m[36mActiveStorage::Blob Load (0.2ms)[0m  [1m[34mSELECT "active_storage_blobs".* FROM "active_storage_blobs" WHERE "active_storage_blobs"."id" = $1 LIMIT $2[0m  [["id", 1], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:39:in `update'
+Completed 200 OK in 4ms (Views: 0.1ms | ActiveRecord: 0.4ms | Allocations: 2249)
+
+
+Started GET "/rails/active_storage/blobs/redirect/eyJfcmFpbHMiOnsiZGF0YSI6MSwicHVyIjoiYmxvYl9pZCJ9fQ==--4959e35641a99c63ec9361d27d079a8797ed217f/actor-image.png?1723201107127" for ::1 at 2024-08-09 03:58:27 -0700
+Processing by ActiveStorage::Blobs::RedirectController#show as PNG
+  Parameters: {"1723201107127"=>nil, "signed_id"=>"eyJfcmFpbHMiOnsiZGF0YSI6MSwicHVyIjoiYmxvYl9pZCJ9fQ==--4959e35641a99c63ec9361d27d079a8797ed217f", "filename"=>"actor-image"}
+  [1m[36mActiveStorage::Blob Load (0.3ms)[0m  [1m[34mSELECT "active_storage_blobs".* FROM "active_storage_blobs" WHERE "active_storage_blobs"."id" = $1 LIMIT $2[0m  [["id", 1], ["LIMIT", 1]]
+[36m  Disk Storage (0.2ms) [0m[34mGenerated URL for file at key: kf4leelq5iqq8c73l8lh4dnogow3 (http://localhost:3000/rails/active_storage/disk/eyJfcmFpbHMiOnsiZGF0YSI6eyJrZXkiOiJrZjRsZWVscTVpcXE4YzczbDhsaDRkbm9nb3czIiwiZGlzcG9zaXRpb24iOiJpbmxpbmU7IGZpbGVuYW1lPVwiYWN0b3ItaW1hZ2UucG5nXCI7IGZpbGVuYW1lKj1VVEYtOCcnYWN0b3ItaW1hZ2UucG5nIiwiY29udGVudF90eXBlIjoiaW1hZ2UvcG5nIiwic2VydmljZV9uYW1lIjoibG9jYWwifSwiZXhwIjoiMjAyNC0wOC0wOVQxMTowMzoyNy4xNDZaIiwicHVyIjoiYmxvYl9rZXkifX0=--2d2f3c5e6964f1fc9a5d1224bfefdbeb0eb6646a/actor-image.png)[0m
+Redirected to http://localhost:3000/rails/active_storage/disk/eyJfcmFpbHMiOnsiZGF0YSI6eyJrZXkiOiJrZjRsZWVscTVpcXE4YzczbDhsaDRkbm9nb3czIiwiZGlzcG9zaXRpb24iOiJpbmxpbmU7IGZpbGVuYW1lPVwiYWN0b3ItaW1hZ2UucG5nXCI7IGZpbGVuYW1lKj1VVEYtOCcnYWN0b3ItaW1hZ2UucG5nIiwiY29udGVudF90eXBlIjoiaW1hZ2UvcG5nIiwic2VydmljZV9uYW1lIjoibG9jYWwifSwiZXhwIjoiMjAyNC0wOC0wOVQxMTowMzoyNy4xNDZaIiwicHVyIjoiYmxvYl9rZXkifX0=--2d2f3c5e6964f1fc9a5d1224bfefdbeb0eb6646a/actor-image.png
+Completed 302 Found in 2ms (ActiveRecord: 0.3ms | Allocations: 1242)
+
+
+Started GET "/rails/active_storage/disk/eyJfcmFpbHMiOnsiZGF0YSI6eyJrZXkiOiJrZjRsZWVscTVpcXE4YzczbDhsaDRkbm9nb3czIiwiZGlzcG9zaXRpb24iOiJpbmxpbmU7IGZpbGVuYW1lPVwiYWN0b3ItaW1hZ2UucG5nXCI7IGZpbGVuYW1lKj1VVEYtOCcnYWN0b3ItaW1hZ2UucG5nIiwiY29udGVudF90eXBlIjoiaW1hZ2UvcG5nIiwic2VydmljZV9uYW1lIjoibG9jYWwifSwiZXhwIjoiMjAyNC0wOC0wOVQxMTowMzoyNy4xNDZaIiwicHVyIjoiYmxvYl9rZXkifX0=--2d2f3c5e6964f1fc9a5d1224bfefdbeb0eb6646a/actor-image.png" for ::1 at 2024-08-09 03:58:27 -0700
+Processing by ActiveStorage::DiskController#show as PNG
+  Parameters: {"encoded_key"=>"[FILTERED]", "filename"=>"actor-image"}
+Completed 200 OK in 0ms (ActiveRecord: 0.0ms | Allocations: 127)
+
+
+Started GET "/users/ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba" for ::1 at 2024-08-09 03:58:27 -0700
+Processing by UsersController#show as */*
+  Parameters: {"uuid"=>"ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba"}
+  [1m[36mUser Load (0.4ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."uuid" = $1 LIMIT $2[0m  [["uuid", "ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:54:in `set_user'
+  [1m[36mActiveStorage::Attachment Load (0.3ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 2], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:12:in `show'
+  [1m[36mActiveStorage::Blob Load (0.5ms)[0m  [1m[34mSELECT "active_storage_blobs".* FROM "active_storage_blobs" WHERE "active_storage_blobs"."id" = $1 LIMIT $2[0m  [["id", 1], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:12:in `show'
+Completed 200 OK in 7ms (Views: 0.1ms | ActiveRecord: 1.2ms | Allocations: 2069)
+
+
+Started GET "/rails/active_storage/blobs/redirect/eyJfcmFpbHMiOnsiZGF0YSI6MSwicHVyIjoiYmxvYl9pZCJ9fQ==--4959e35641a99c63ec9361d27d079a8797ed217f/actor-image.png?1723201107676" for ::1 at 2024-08-09 03:58:27 -0700
+Processing by ActiveStorage::Blobs::RedirectController#show as PNG
+  Parameters: {"1723201107676"=>nil, "signed_id"=>"eyJfcmFpbHMiOnsiZGF0YSI6MSwicHVyIjoiYmxvYl9pZCJ9fQ==--4959e35641a99c63ec9361d27d079a8797ed217f", "filename"=>"actor-image"}
+  [1m[36mActiveStorage::Blob Load (0.2ms)[0m  [1m[34mSELECT "active_storage_blobs".* FROM "active_storage_blobs" WHERE "active_storage_blobs"."id" = $1 LIMIT $2[0m  [["id", 1], ["LIMIT", 1]]
+[36m  Disk Storage (0.2ms) [0m[34mGenerated URL for file at key: kf4leelq5iqq8c73l8lh4dnogow3 (http://localhost:3000/rails/active_storage/disk/eyJfcmFpbHMiOnsiZGF0YSI6eyJrZXkiOiJrZjRsZWVscTVpcXE4YzczbDhsaDRkbm9nb3czIiwiZGlzcG9zaXRpb24iOiJpbmxpbmU7IGZpbGVuYW1lPVwiYWN0b3ItaW1hZ2UucG5nXCI7IGZpbGVuYW1lKj1VVEYtOCcnYWN0b3ItaW1hZ2UucG5nIiwiY29udGVudF90eXBlIjoiaW1hZ2UvcG5nIiwic2VydmljZV9uYW1lIjoibG9jYWwifSwiZXhwIjoiMjAyNC0wOC0wOVQxMTowMzoyNy42OTRaIiwicHVyIjoiYmxvYl9rZXkifX0=--7e02b6a956632e354a999314215cea36b2810f08/actor-image.png)[0m
+Redirected to http://localhost:3000/rails/active_storage/disk/eyJfcmFpbHMiOnsiZGF0YSI6eyJrZXkiOiJrZjRsZWVscTVpcXE4YzczbDhsaDRkbm9nb3czIiwiZGlzcG9zaXRpb24iOiJpbmxpbmU7IGZpbGVuYW1lPVwiYWN0b3ItaW1hZ2UucG5nXCI7IGZpbGVuYW1lKj1VVEYtOCcnYWN0b3ItaW1hZ2UucG5nIiwiY29udGVudF90eXBlIjoiaW1hZ2UvcG5nIiwic2VydmljZV9uYW1lIjoibG9jYWwifSwiZXhwIjoiMjAyNC0wOC0wOVQxMTowMzoyNy42OTRaIiwicHVyIjoiYmxvYl9rZXkifX0=--7e02b6a956632e354a999314215cea36b2810f08/actor-image.png
+Completed 302 Found in 2ms (ActiveRecord: 0.2ms | Allocations: 1238)
+
+
+Started GET "/rails/active_storage/disk/eyJfcmFpbHMiOnsiZGF0YSI6eyJrZXkiOiJrZjRsZWVscTVpcXE4YzczbDhsaDRkbm9nb3czIiwiZGlzcG9zaXRpb24iOiJpbmxpbmU7IGZpbGVuYW1lPVwiYWN0b3ItaW1hZ2UucG5nXCI7IGZpbGVuYW1lKj1VVEYtOCcnYWN0b3ItaW1hZ2UucG5nIiwiY29udGVudF90eXBlIjoiaW1hZ2UvcG5nIiwic2VydmljZV9uYW1lIjoibG9jYWwifSwiZXhwIjoiMjAyNC0wOC0wOVQxMTowMzoyNy42OTRaIiwicHVyIjoiYmxvYl9rZXkifX0=--7e02b6a956632e354a999314215cea36b2810f08/actor-image.png" for ::1 at 2024-08-09 03:58:27 -0700
+Processing by ActiveStorage::DiskController#show as PNG
+  Parameters: {"encoded_key"=>"[FILTERED]", "filename"=>"actor-image"}
+Completed 200 OK in 0ms (ActiveRecord: 0.0ms | Allocations: 127)
+
+
+Started GET "/users" for ::1 at 2024-08-09 03:58:28 -0700
+Processing by UsersController#index as */*
+  [1m[36mUser Load (0.7ms)[0m  [1m[34mSELECT "users".* FROM "users"[0m
+  ↳ app/controllers/users_controller.rb:7:in `index'
+Completed 200 OK in 2ms (Views: 0.9ms | ActiveRecord: 0.7ms | Allocations: 752)
+
+
+Started GET "/users/509dc56e-8632-40da-ad8b-ce935f6ec596" for ::1 at 2024-08-09 03:58:30 -0700
+Processing by UsersController#show as */*
+  Parameters: {"uuid"=>"509dc56e-8632-40da-ad8b-ce935f6ec596"}
+  [1m[36mUser Load (0.3ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."uuid" = $1 LIMIT $2[0m  [["uuid", "509dc56e-8632-40da-ad8b-ce935f6ec596"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:54:in `set_user'
+  [1m[36mActiveStorage::Attachment Load (0.2ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 1], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:12:in `show'
+Completed 200 OK in 3ms (Views: 0.1ms | ActiveRecord: 0.4ms | Allocations: 1308)
+
+
+Started PATCH "/users/509dc56e-8632-40da-ad8b-ce935f6ec596" for ::1 at 2024-08-09 03:58:30 -0700
+Processing by UsersController#update as */*
+  Parameters: {"user"=>{"email"=>"test@mail.com", "uuid"=>"509dc56e-8632-40da-ad8b-ce935f6ec596"}, "uuid"=>"509dc56e-8632-40da-ad8b-ce935f6ec596"}
+  [1m[36mUser Load (0.2ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."uuid" = $1 LIMIT $2[0m  [["uuid", "509dc56e-8632-40da-ad8b-ce935f6ec596"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:54:in `set_user'
+  [1m[36mActiveStorage::Attachment Load (0.2ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 1], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:39:in `update'
+Completed 200 OK in 3ms (Views: 0.1ms | ActiveRecord: 0.3ms | Allocations: 1487)
+
+
+Started GET "/users/509dc56e-8632-40da-ad8b-ce935f6ec596" for ::1 at 2024-08-09 03:58:30 -0700
+Processing by UsersController#show as */*
+  Parameters: {"uuid"=>"509dc56e-8632-40da-ad8b-ce935f6ec596"}
+  [1m[36mUser Load (0.5ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."uuid" = $1 LIMIT $2[0m  [["uuid", "509dc56e-8632-40da-ad8b-ce935f6ec596"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:54:in `set_user'
+  [1m[36mActiveStorage::Attachment Load (0.4ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 1], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:12:in `show'
+Completed 200 OK in 6ms (Views: 0.2ms | ActiveRecord: 0.8ms | Allocations: 1308)
+
+
+Started GET "/users/509dc56e-8632-40da-ad8b-ce935f6ec596" for ::1 at 2024-08-09 03:58:50 -0700
+  [1m[36mActiveRecord::SchemaMigration Load (0.6ms)[0m  [1m[34mSELECT "schema_migrations"."version" FROM "schema_migrations" ORDER BY "schema_migrations"."version" ASC[0m
+Processing by UsersController#show as */*
+  Parameters: {"uuid"=>"509dc56e-8632-40da-ad8b-ce935f6ec596"}
+  [1m[36mUser Load (1.0ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."uuid" = $1 LIMIT $2[0m  [["uuid", "509dc56e-8632-40da-ad8b-ce935f6ec596"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:54:in `set_user'
+  [1m[36mActiveStorage::Attachment Load (0.6ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 1], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:12:in `show'
+Completed 200 OK in 50ms (Views: 0.2ms | ActiveRecord: 15.7ms | Allocations: 28012)
+
+
+Started PATCH "/users/509dc56e-8632-40da-ad8b-ce935f6ec596" for ::1 at 2024-08-09 03:58:50 -0700
+Processing by UsersController#update as */*
+  Parameters: {"user"=>{"email"=>"test@mail.com", "uuid"=>"509dc56e-8632-40da-ad8b-ce935f6ec596"}, "uuid"=>"509dc56e-8632-40da-ad8b-ce935f6ec596"}
+  [1m[36mUser Load (0.3ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."uuid" = $1 LIMIT $2[0m  [["uuid", "509dc56e-8632-40da-ad8b-ce935f6ec596"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:54:in `set_user'
+  [1m[36mActiveStorage::Attachment Load (0.3ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 1], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:39:in `update'
+Completed 200 OK in 3ms (Views: 0.1ms | ActiveRecord: 0.6ms | Allocations: 2132)
+
+
+Started GET "/users/509dc56e-8632-40da-ad8b-ce935f6ec596" for ::1 at 2024-08-09 03:58:51 -0700
+Processing by UsersController#show as */*
+  Parameters: {"uuid"=>"509dc56e-8632-40da-ad8b-ce935f6ec596"}
+  [1m[36mUser Load (0.5ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."uuid" = $1 LIMIT $2[0m  [["uuid", "509dc56e-8632-40da-ad8b-ce935f6ec596"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:54:in `set_user'
+  [1m[36mActiveStorage::Attachment Load (0.4ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 1], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:12:in `show'
+Completed 200 OK in 4ms (Views: 0.1ms | ActiveRecord: 0.9ms | Allocations: 1321)
+
+
+Started GET "/users/509dc56e-8632-40da-ad8b-ce935f6ec596" for ::1 at 2024-08-09 03:58:51 -0700
+Processing by UsersController#show as */*
+  Parameters: {"uuid"=>"509dc56e-8632-40da-ad8b-ce935f6ec596"}
+  [1m[36mUser Load (0.3ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."uuid" = $1 LIMIT $2[0m  [["uuid", "509dc56e-8632-40da-ad8b-ce935f6ec596"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:54:in `set_user'
+  [1m[36mActiveStorage::Attachment Load (0.4ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 1], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:12:in `show'
+Completed 200 OK in 3ms (Views: 0.1ms | ActiveRecord: 0.7ms | Allocations: 1321)
+
+
+Started PATCH "/users/509dc56e-8632-40da-ad8b-ce935f6ec596" for ::1 at 2024-08-09 03:58:51 -0700
+Processing by UsersController#update as */*
+  Parameters: {"user"=>{"email"=>"test@mail.com", "uuid"=>"509dc56e-8632-40da-ad8b-ce935f6ec596"}, "uuid"=>"509dc56e-8632-40da-ad8b-ce935f6ec596"}
+  [1m[36mUser Load (0.3ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."uuid" = $1 LIMIT $2[0m  [["uuid", "509dc56e-8632-40da-ad8b-ce935f6ec596"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:54:in `set_user'
+  [1m[36mActiveStorage::Attachment Load (0.3ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 1], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:39:in `update'
+Completed 200 OK in 3ms (Views: 0.1ms | ActiveRecord: 0.5ms | Allocations: 1488)
+
+
+Started GET "/users/509dc56e-8632-40da-ad8b-ce935f6ec596" for ::1 at 2024-08-09 03:58:51 -0700
+Processing by UsersController#show as */*
+  Parameters: {"uuid"=>"509dc56e-8632-40da-ad8b-ce935f6ec596"}
+  [1m[36mUser Load (0.4ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."uuid" = $1 LIMIT $2[0m  [["uuid", "509dc56e-8632-40da-ad8b-ce935f6ec596"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:54:in `set_user'
+  [1m[36mActiveStorage::Attachment Load (0.3ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 1], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:12:in `show'
+Completed 200 OK in 6ms (Views: 0.1ms | ActiveRecord: 0.6ms | Allocations: 1321)
+
+
+Started POST "/api/auth/login" for ::1 at 2024-08-09 03:59:03 -0700
+Processing by Users::SessionsController#create as JSON
+  Parameters: {"user"=>{"email"=>"test@mail.com", "password"=>"[FILTERED]"}, "session"=>{"user"=>{"email"=>"test@mail.com", "password"=>"[FILTERED]"}}}
+  [1m[36mUser Load (0.4ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."email" = $1 ORDER BY "users"."id" ASC LIMIT $2[0m  [["email", "test@mail.com"], ["LIMIT", 1]]
+Completed 200 OK in 259ms (Views: 0.2ms | ActiveRecord: 0.4ms | Allocations: 3158)
+
+
+Started GET "/api/auth/session" for ::1 at 2024-08-09 03:59:03 -0700
+Processing by CurrentUserController#index as */*
+  [1m[36mUser Load (0.4ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."id" = $1 LIMIT $2[0m  [["id", 1], ["LIMIT", 1]]
+  [1m[36mActiveStorage::Attachment Load (0.8ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 1], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/models/user.rb:10:in `avatar_url'
+Completed 200 OK in 4ms (Views: 0.1ms | ActiveRecord: 1.1ms | Allocations: 2641)
+
+
+Started GET "/users/509dc56e-8632-40da-ad8b-ce935f6ec596" for ::1 at 2024-08-09 03:59:07 -0700
+Processing by UsersController#show as */*
+  Parameters: {"uuid"=>"509dc56e-8632-40da-ad8b-ce935f6ec596"}
+  [1m[36mUser Load (0.2ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."uuid" = $1 LIMIT $2[0m  [["uuid", "509dc56e-8632-40da-ad8b-ce935f6ec596"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:54:in `set_user'
+  [1m[36mActiveStorage::Attachment Load (0.2ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 1], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:12:in `show'
+Completed 200 OK in 3ms (Views: 0.1ms | ActiveRecord: 0.3ms | Allocations: 1308)
+
+
+Started PATCH "/users/509dc56e-8632-40da-ad8b-ce935f6ec596" for ::1 at 2024-08-09 03:59:07 -0700
+Processing by UsersController#update as */*
+  Parameters: {"user"=>{"email"=>"test@mail.com", "uuid"=>"509dc56e-8632-40da-ad8b-ce935f6ec596"}, "uuid"=>"509dc56e-8632-40da-ad8b-ce935f6ec596"}
+  [1m[36mUser Load (0.2ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."uuid" = $1 LIMIT $2[0m  [["uuid", "509dc56e-8632-40da-ad8b-ce935f6ec596"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:54:in `set_user'
+  [1m[36mActiveStorage::Attachment Load (0.2ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 1], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:39:in `update'
+Completed 200 OK in 3ms (Views: 0.1ms | ActiveRecord: 0.3ms | Allocations: 1488)
+
+
+Started GET "/users/509dc56e-8632-40da-ad8b-ce935f6ec596" for ::1 at 2024-08-09 03:59:08 -0700
+Processing by UsersController#show as */*
+  Parameters: {"uuid"=>"509dc56e-8632-40da-ad8b-ce935f6ec596"}
+  [1m[36mUser Load (0.5ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."uuid" = $1 LIMIT $2[0m  [["uuid", "509dc56e-8632-40da-ad8b-ce935f6ec596"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:54:in `set_user'
+  [1m[36mActiveStorage::Attachment Load (0.4ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 1], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:12:in `show'
+Completed 200 OK in 5ms (Views: 0.2ms | ActiveRecord: 0.9ms | Allocations: 1308)
+
+
+Started DELETE "/api/auth/logout" for ::1 at 2024-08-09 03:59:09 -0700
+Processing by Users::SessionsController#destroy as */*
+  [1m[36mUser Load (0.7ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."id" = $1 LIMIT $2[0m  [["id", 1], ["LIMIT", 1]]
+  ↳ app/controllers/users/sessions_controller.rb:13:in `respond_to_on_destroy'
+Filter chain halted as :verify_signed_out_user rendered or redirected
+Completed 200 OK in 4ms (Views: 0.1ms | ActiveRecord: 0.7ms | Allocations: 850)
+
+
+  [1m[36mCACHE User Load (0.0ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."id" = $1 LIMIT $2[0m  [["id", 1], ["LIMIT", 1]]
+  [1m[36mUser Update (1.2ms)[0m  [1m[33mUPDATE "users" SET "jti" = $1 WHERE "users"."id" = $2[0m  [["jti", "f9d8f8d2-0157-41a2-86a6-3b89b03e093f"], ["id", 1]]
+Started POST "/api/auth/login" for ::1 at 2024-08-09 03:59:14 -0700
+Processing by Users::SessionsController#create as JSON
+  Parameters: {"user"=>{"email"=>"test2@mail.com", "password"=>"[FILTERED]"}, "session"=>{"user"=>{"email"=>"test2@mail.com", "password"=>"[FILTERED]"}}}
+  [1m[36mUser Load (0.8ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."email" = $1 ORDER BY "users"."id" ASC LIMIT $2[0m  [["email", "test2@mail.com"], ["LIMIT", 1]]
+Completed 200 OK in 260ms (Views: 0.1ms | ActiveRecord: 0.8ms | Allocations: 1470)
+
+
+Started GET "/api/auth/session" for ::1 at 2024-08-09 03:59:14 -0700
+Processing by CurrentUserController#index as */*
+  [1m[36mUser Load (1.9ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."id" = $1 LIMIT $2[0m  [["id", 2], ["LIMIT", 1]]
+  [1m[36mActiveStorage::Attachment Load (0.2ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 2], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/models/user.rb:10:in `avatar_url'
+  [1m[36mActiveStorage::Blob Load (0.5ms)[0m  [1m[34mSELECT "active_storage_blobs".* FROM "active_storage_blobs" WHERE "active_storage_blobs"."id" = $1 LIMIT $2[0m  [["id", 1], ["LIMIT", 1]]
+  ↳ app/models/user.rb:10:in `avatar_url'
+Completed 200 OK in 30ms (Views: 0.1ms | ActiveRecord: 7.2ms | Allocations: 24527)
+
+
+Started GET "/users/ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba" for ::1 at 2024-08-09 03:59:19 -0700
+Processing by UsersController#show as */*
+  Parameters: {"uuid"=>"ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba"}
+  [1m[36mUser Load (0.4ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."uuid" = $1 LIMIT $2[0m  [["uuid", "ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:54:in `set_user'
+  [1m[36mActiveStorage::Attachment Load (0.3ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 2], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:12:in `show'
+  [1m[36mActiveStorage::Blob Load (0.2ms)[0m  [1m[34mSELECT "active_storage_blobs".* FROM "active_storage_blobs" WHERE "active_storage_blobs"."id" = $1 LIMIT $2[0m  [["id", 1], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:12:in `show'
+Completed 200 OK in 4ms (Views: 0.1ms | ActiveRecord: 0.9ms | Allocations: 2151)
+
+
+Started PATCH "/users/ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba" for ::1 at 2024-08-09 03:59:19 -0700
+Processing by UsersController#update as */*
+  Parameters: {"user"=>{"email"=>"test2@mail.com", "uuid"=>"ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba"}, "uuid"=>"ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba"}
+  [1m[36mUser Load (0.3ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."uuid" = $1 LIMIT $2[0m  [["uuid", "ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:54:in `set_user'
+  [1m[36mActiveStorage::Attachment Load (0.2ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 2], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:39:in `update'
+  [1m[36mActiveStorage::Blob Load (0.4ms)[0m  [1m[34mSELECT "active_storage_blobs".* FROM "active_storage_blobs" WHERE "active_storage_blobs"."id" = $1 LIMIT $2[0m  [["id", 1], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:39:in `update'
+Completed 200 OK in 4ms (Views: 0.1ms | ActiveRecord: 0.8ms | Allocations: 2249)
+
+
+Started GET "/rails/active_storage/blobs/redirect/eyJfcmFpbHMiOnsiZGF0YSI6MSwicHVyIjoiYmxvYl9pZCJ9fQ==--4959e35641a99c63ec9361d27d079a8797ed217f/actor-image.png?1723201159445" for ::1 at 2024-08-09 03:59:19 -0700
+Processing by ActiveStorage::Blobs::RedirectController#show as PNG
+  Parameters: {"1723201159445"=>nil, "signed_id"=>"eyJfcmFpbHMiOnsiZGF0YSI6MSwicHVyIjoiYmxvYl9pZCJ9fQ==--4959e35641a99c63ec9361d27d079a8797ed217f", "filename"=>"actor-image"}
+  [1m[36mActiveStorage::Blob Load (0.3ms)[0m  [1m[34mSELECT "active_storage_blobs".* FROM "active_storage_blobs" WHERE "active_storage_blobs"."id" = $1 LIMIT $2[0m  [["id", 1], ["LIMIT", 1]]
+[36m  Disk Storage (2.3ms) [0m[34mGenerated URL for file at key: kf4leelq5iqq8c73l8lh4dnogow3 (http://localhost:3000/rails/active_storage/disk/eyJfcmFpbHMiOnsiZGF0YSI6eyJrZXkiOiJrZjRsZWVscTVpcXE4YzczbDhsaDRkbm9nb3czIiwiZGlzcG9zaXRpb24iOiJpbmxpbmU7IGZpbGVuYW1lPVwiYWN0b3ItaW1hZ2UucG5nXCI7IGZpbGVuYW1lKj1VVEYtOCcnYWN0b3ItaW1hZ2UucG5nIiwiY29udGVudF90eXBlIjoiaW1hZ2UvcG5nIiwic2VydmljZV9uYW1lIjoibG9jYWwifSwiZXhwIjoiMjAyNC0wOC0wOVQxMTowNDoxOS41MDdaIiwicHVyIjoiYmxvYl9rZXkifX0=--00cf47f7dcc7b0587add5a0ce5657520864c891e/actor-image.png)[0m
+Redirected to http://localhost:3000/rails/active_storage/disk/eyJfcmFpbHMiOnsiZGF0YSI6eyJrZXkiOiJrZjRsZWVscTVpcXE4YzczbDhsaDRkbm9nb3czIiwiZGlzcG9zaXRpb24iOiJpbmxpbmU7IGZpbGVuYW1lPVwiYWN0b3ItaW1hZ2UucG5nXCI7IGZpbGVuYW1lKj1VVEYtOCcnYWN0b3ItaW1hZ2UucG5nIiwiY29udGVudF90eXBlIjoiaW1hZ2UvcG5nIiwic2VydmljZV9uYW1lIjoibG9jYWwifSwiZXhwIjoiMjAyNC0wOC0wOVQxMTowNDoxOS41MDdaIiwicHVyIjoiYmxvYl9rZXkifX0=--00cf47f7dcc7b0587add5a0ce5657520864c891e/actor-image.png
+Completed 302 Found in 8ms (ActiveRecord: 0.3ms | Allocations: 4662)
+
+
+Started GET "/rails/active_storage/disk/eyJfcmFpbHMiOnsiZGF0YSI6eyJrZXkiOiJrZjRsZWVscTVpcXE4YzczbDhsaDRkbm9nb3czIiwiZGlzcG9zaXRpb24iOiJpbmxpbmU7IGZpbGVuYW1lPVwiYWN0b3ItaW1hZ2UucG5nXCI7IGZpbGVuYW1lKj1VVEYtOCcnYWN0b3ItaW1hZ2UucG5nIiwiY29udGVudF90eXBlIjoiaW1hZ2UvcG5nIiwic2VydmljZV9uYW1lIjoibG9jYWwifSwiZXhwIjoiMjAyNC0wOC0wOVQxMTowNDoxOS41MDdaIiwicHVyIjoiYmxvYl9rZXkifX0=--00cf47f7dcc7b0587add5a0ce5657520864c891e/actor-image.png" for ::1 at 2024-08-09 03:59:19 -0700
+Processing by ActiveStorage::DiskController#show as PNG
+  Parameters: {"encoded_key"=>"[FILTERED]", "filename"=>"actor-image"}
+Completed 200 OK in 0ms (ActiveRecord: 0.0ms | Allocations: 237)
+
+
+Started GET "/users/ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba" for ::1 at 2024-08-09 03:59:19 -0700
+Processing by UsersController#show as */*
+  Parameters: {"uuid"=>"ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba"}
+  [1m[36mUser Load (0.5ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."uuid" = $1 LIMIT $2[0m  [["uuid", "ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:54:in `set_user'
+  [1m[36mActiveStorage::Attachment Load (0.2ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 2], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:12:in `show'
+  [1m[36mActiveStorage::Blob Load (0.3ms)[0m  [1m[34mSELECT "active_storage_blobs".* FROM "active_storage_blobs" WHERE "active_storage_blobs"."id" = $1 LIMIT $2[0m  [["id", 1], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:12:in `show'
+Completed 200 OK in 6ms (Views: 0.1ms | ActiveRecord: 1.0ms | Allocations: 2070)
+
+
+Started GET "/rails/active_storage/blobs/redirect/eyJfcmFpbHMiOnsiZGF0YSI6MSwicHVyIjoiYmxvYl9pZCJ9fQ==--4959e35641a99c63ec9361d27d079a8797ed217f/actor-image.png?1723201159988" for ::1 at 2024-08-09 03:59:19 -0700
+Processing by ActiveStorage::Blobs::RedirectController#show as PNG
+  Parameters: {"1723201159988"=>nil, "signed_id"=>"eyJfcmFpbHMiOnsiZGF0YSI6MSwicHVyIjoiYmxvYl9pZCJ9fQ==--4959e35641a99c63ec9361d27d079a8797ed217f", "filename"=>"actor-image"}
+  [1m[36mActiveStorage::Blob Load (0.4ms)[0m  [1m[34mSELECT "active_storage_blobs".* FROM "active_storage_blobs" WHERE "active_storage_blobs"."id" = $1 LIMIT $2[0m  [["id", 1], ["LIMIT", 1]]
+[36m  Disk Storage (0.2ms) [0m[34mGenerated URL for file at key: kf4leelq5iqq8c73l8lh4dnogow3 (http://localhost:3000/rails/active_storage/disk/eyJfcmFpbHMiOnsiZGF0YSI6eyJrZXkiOiJrZjRsZWVscTVpcXE4YzczbDhsaDRkbm9nb3czIiwiZGlzcG9zaXRpb24iOiJpbmxpbmU7IGZpbGVuYW1lPVwiYWN0b3ItaW1hZ2UucG5nXCI7IGZpbGVuYW1lKj1VVEYtOCcnYWN0b3ItaW1hZ2UucG5nIiwiY29udGVudF90eXBlIjoiaW1hZ2UvcG5nIiwic2VydmljZV9uYW1lIjoibG9jYWwifSwiZXhwIjoiMjAyNC0wOC0wOVQxMTowNDoyMC4wMDhaIiwicHVyIjoiYmxvYl9rZXkifX0=--ddf6f1cb5b8e8be25bc4d248d56e182eccb4fec0/actor-image.png)[0m
+Redirected to http://localhost:3000/rails/active_storage/disk/eyJfcmFpbHMiOnsiZGF0YSI6eyJrZXkiOiJrZjRsZWVscTVpcXE4YzczbDhsaDRkbm9nb3czIiwiZGlzcG9zaXRpb24iOiJpbmxpbmU7IGZpbGVuYW1lPVwiYWN0b3ItaW1hZ2UucG5nXCI7IGZpbGVuYW1lKj1VVEYtOCcnYWN0b3ItaW1hZ2UucG5nIiwiY29udGVudF90eXBlIjoiaW1hZ2UvcG5nIiwic2VydmljZV9uYW1lIjoibG9jYWwifSwiZXhwIjoiMjAyNC0wOC0wOVQxMTowNDoyMC4wMDhaIiwicHVyIjoiYmxvYl9rZXkifX0=--ddf6f1cb5b8e8be25bc4d248d56e182eccb4fec0/actor-image.png
+Completed 302 Found in 9ms (ActiveRecord: 0.3ms | Allocations: 1242)
+
+
+Started GET "/rails/active_storage/disk/eyJfcmFpbHMiOnsiZGF0YSI6eyJrZXkiOiJrZjRsZWVscTVpcXE4YzczbDhsaDRkbm9nb3czIiwiZGlzcG9zaXRpb24iOiJpbmxpbmU7IGZpbGVuYW1lPVwiYWN0b3ItaW1hZ2UucG5nXCI7IGZpbGVuYW1lKj1VVEYtOCcnYWN0b3ItaW1hZ2UucG5nIiwiY29udGVudF90eXBlIjoiaW1hZ2UvcG5nIiwic2VydmljZV9uYW1lIjoibG9jYWwifSwiZXhwIjoiMjAyNC0wOC0wOVQxMTowNDoyMC4wMDhaIiwicHVyIjoiYmxvYl9rZXkifX0=--ddf6f1cb5b8e8be25bc4d248d56e182eccb4fec0/actor-image.png" for ::1 at 2024-08-09 03:59:20 -0700
+Processing by ActiveStorage::DiskController#show as PNG
+  Parameters: {"encoded_key"=>"[FILTERED]", "filename"=>"actor-image"}
+Completed 200 OK in 0ms (ActiveRecord: 0.0ms | Allocations: 128)
+
+
+Started GET "/users" for ::1 at 2024-08-09 03:59:33 -0700
+Processing by UsersController#index as */*
+  [1m[36mUser Load (0.5ms)[0m  [1m[34mSELECT "users".* FROM "users"[0m
+  ↳ app/controllers/users_controller.rb:7:in `index'
+Completed 200 OK in 2ms (Views: 0.9ms | ActiveRecord: 0.5ms | Allocations: 761)
+
+
+Started DELETE "/api/auth/logout" for ::1 at 2024-08-09 03:59:43 -0700
+Processing by Users::SessionsController#destroy as */*
+  [1m[36mUser Load (0.6ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."id" = $1 LIMIT $2[0m  [["id", 2], ["LIMIT", 1]]
+  ↳ app/controllers/users/sessions_controller.rb:13:in `respond_to_on_destroy'
+Filter chain halted as :verify_signed_out_user rendered or redirected
+Completed 200 OK in 4ms (Views: 0.2ms | ActiveRecord: 0.6ms | Allocations: 824)
+
+
+  [1m[36mCACHE User Load (0.0ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."id" = $1 LIMIT $2[0m  [["id", 2], ["LIMIT", 1]]
+  [1m[36mUser Update (2.1ms)[0m  [1m[33mUPDATE "users" SET "jti" = $1 WHERE "users"."id" = $2[0m  [["jti", "06def088-3da4-4b1a-82a7-2e7c8038d2e0"], ["id", 2]]
+Started POST "/api/auth/signup" for ::1 at 2024-08-09 03:59:54 -0700
+Processing by Users::RegistrationsController#create as JSON
+  Parameters: {"user"=>{"email"=>"", "password"=>"[FILTERED]"}, "registration"=>{"user"=>{"email"=>"", "password"=>"[FILTERED]"}}}
+Completed 422 Unprocessable Content in 2ms (Views: 0.1ms | ActiveRecord: 0.0ms | Allocations: 1581)
+
+
+Started POST "/api/auth/login" for ::1 at 2024-08-09 04:00:00 -0700
+Processing by Users::SessionsController#create as JSON
+  Parameters: {"user"=>{"email"=>"test@mail.com", "password"=>"[FILTERED]"}, "session"=>{"user"=>{"email"=>"test@mail.com", "password"=>"[FILTERED]"}}}
+  [1m[36mUser Load (0.3ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."email" = $1 ORDER BY "users"."id" ASC LIMIT $2[0m  [["email", "test@mail.com"], ["LIMIT", 1]]
+Completed 200 OK in 245ms (Views: 0.1ms | ActiveRecord: 0.3ms | Allocations: 1478)
+
+
+Started GET "/api/auth/session" for ::1 at 2024-08-09 04:00:00 -0700
+Processing by CurrentUserController#index as */*
+  [1m[36mUser Load (0.9ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."id" = $1 LIMIT $2[0m  [["id", 1], ["LIMIT", 1]]
+  [1m[36mActiveStorage::Attachment Load (0.2ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 1], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/models/user.rb:10:in `avatar_url'
+Completed 200 OK in 5ms (Views: 0.1ms | ActiveRecord: 1.1ms | Allocations: 2018)
+
+
+Started GET "/users" for ::1 at 2024-08-09 04:00:03 -0700
+Processing by UsersController#index as */*
+  [1m[36mUser Load (0.5ms)[0m  [1m[34mSELECT "users".* FROM "users"[0m
+  ↳ app/controllers/users_controller.rb:7:in `index'
+Completed 200 OK in 2ms (Views: 1.3ms | ActiveRecord: 0.5ms | Allocations: 753)
+
+
+Started GET "/users/509dc56e-8632-40da-ad8b-ce935f6ec596" for ::1 at 2024-08-09 04:00:06 -0700
+Processing by UsersController#show as */*
+  Parameters: {"uuid"=>"509dc56e-8632-40da-ad8b-ce935f6ec596"}
+  [1m[36mUser Load (0.2ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."uuid" = $1 LIMIT $2[0m  [["uuid", "509dc56e-8632-40da-ad8b-ce935f6ec596"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:54:in `set_user'
+  [1m[36mActiveStorage::Attachment Load (0.1ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 1], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:12:in `show'
+Completed 200 OK in 2ms (Views: 0.1ms | ActiveRecord: 0.3ms | Allocations: 1308)
+
+
+Started PATCH "/users/509dc56e-8632-40da-ad8b-ce935f6ec596" for ::1 at 2024-08-09 04:00:06 -0700
+Processing by UsersController#update as */*
+  Parameters: {"user"=>{"email"=>"test@mail.com", "uuid"=>"509dc56e-8632-40da-ad8b-ce935f6ec596"}, "uuid"=>"509dc56e-8632-40da-ad8b-ce935f6ec596"}
+  [1m[36mUser Load (0.2ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."uuid" = $1 LIMIT $2[0m  [["uuid", "509dc56e-8632-40da-ad8b-ce935f6ec596"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:54:in `set_user'
+  [1m[36mActiveStorage::Attachment Load (0.4ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 1], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:39:in `update'
+Completed 200 OK in 3ms (Views: 0.1ms | ActiveRecord: 0.6ms | Allocations: 1488)
+
+
+Started GET "/users/509dc56e-8632-40da-ad8b-ce935f6ec596" for ::1 at 2024-08-09 04:00:06 -0700
+Processing by UsersController#show as */*
+  Parameters: {"uuid"=>"509dc56e-8632-40da-ad8b-ce935f6ec596"}
+  [1m[36mUser Load (0.4ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."uuid" = $1 LIMIT $2[0m  [["uuid", "509dc56e-8632-40da-ad8b-ce935f6ec596"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:54:in `set_user'
+  [1m[36mActiveStorage::Attachment Load (0.9ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 1], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:12:in `show'
+Completed 200 OK in 6ms (Views: 0.2ms | ActiveRecord: 1.3ms | Allocations: 1308)
+
+
+Started PATCH "/users/509dc56e-8632-40da-ad8b-ce935f6ec596" for ::1 at 2024-08-09 04:00:09 -0700
+Processing by UsersController#update as */*
+  Parameters: {"user"=>{"email"=>"test@mail.com", "uuid"=>"509dc56e-8632-40da-ad8b-ce935f6ec596", "avatar"=>#<ActionDispatch::Http::UploadedFile:0x00000001163947e0 @tempfile=#<Tempfile:/var/folders/h5/bcmmjqhd0rb5j9q32877nb5c0000gn/T/RackMultipart20240809-43223-b08qpf.png>, @content_type="image/png", @original_filename="actor-image.png", @headers="Content-Disposition: form-data; name=\"user[avatar]\"; filename=\"actor-image.png\"\r\nContent-Type: image/png\r\n">}, "uuid"=>"509dc56e-8632-40da-ad8b-ce935f6ec596"}
+  [1m[36mUser Load (0.1ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."uuid" = $1 LIMIT $2[0m  [["uuid", "509dc56e-8632-40da-ad8b-ce935f6ec596"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:54:in `set_user'
+  [1m[36mTRANSACTION (0.6ms)[0m  [1m[35mBEGIN[0m
+  ↳ app/controllers/users_controller.rb:38:in `update'
+  [1m[36mActiveStorage::Blob Load (1.0ms)[0m  [1m[34mSELECT "active_storage_blobs".* FROM "active_storage_blobs" INNER JOIN "active_storage_attachments" ON "active_storage_blobs"."id" = "active_storage_attachments"."blob_id" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 1], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:38:in `update'
+  [1m[36mActiveStorage::Attachment Load (0.2ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 1], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:38:in `update'
+  [1m[36mActiveStorage::Blob Create (0.6ms)[0m  [1m[32mINSERT INTO "active_storage_blobs" ("key", "filename", "content_type", "metadata", "service_name", "byte_size", "checksum", "created_at") VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING "id"[0m  [["key", "up5pek8kwsgnr33ulyydtijaq9hg"], ["filename", "actor-image.png"], ["content_type", "image/png"], ["metadata", "{\"identified\":true}"], ["service_name", "local"], ["byte_size", 49959], ["checksum", "sQm3XgICHbPC6rrEKWIs6w=="], ["created_at", "2024-08-09 11:00:09.519406"]]
+  ↳ app/controllers/users_controller.rb:38:in `update'
+  [1m[36mActiveStorage::Attachment Create (0.3ms)[0m  [1m[32mINSERT INTO "active_storage_attachments" ("name", "record_type", "record_id", "blob_id", "created_at") VALUES ($1, $2, $3, $4, $5) RETURNING "id"[0m  [["name", "avatar"], ["record_type", "User"], ["record_id", 1], ["blob_id", 2], ["created_at", "2024-08-09 11:00:09.521238"]]
+  ↳ app/controllers/users_controller.rb:38:in `update'
+  [1m[36mUser Update (0.3ms)[0m  [1m[33mUPDATE "users" SET "updated_at" = $1 WHERE "users"."id" = $2[0m  [["updated_at", "2024-08-09 11:00:09.522407"], ["id", 1]]
+  ↳ app/controllers/users_controller.rb:38:in `update'
+  [1m[36mTRANSACTION (0.3ms)[0m  [1m[35mCOMMIT[0m
+  ↳ app/controllers/users_controller.rb:38:in `update'
+[36m  Disk Storage (0.6ms) [0m[32mUploaded file to key: up5pek8kwsgnr33ulyydtijaq9hg (checksum: sQm3XgICHbPC6rrEKWIs6w==)[0m
+[ActiveJob] Enqueued ActiveStorage::AnalyzeJob (Job ID: 29f6d383-0d83-49a6-b6e1-43f499022e66) to Async(default) with arguments: #<GlobalID:0x0000000115598f38 @uri=#<URI::GID gid://backend/ActiveStorage::Blob/2>>
+[ActiveJob] ↳ app/controllers/users_controller.rb:38:in `update'
+Completed 200 OK in 24ms (Views: 0.1ms | ActiveRecord: 3.6ms | Allocations: 15725)
+
+
+[ActiveJob] [ActiveStorage::AnalyzeJob] [29f6d383-0d83-49a6-b6e1-43f499022e66]   [1m[36mActiveStorage::Blob Load (1.1ms)[0m  [1m[34mSELECT "active_storage_blobs".* FROM "active_storage_blobs" WHERE "active_storage_blobs"."id" = $1 LIMIT $2[0m  [["id", 2], ["LIMIT", 1]]
+[ActiveJob] [ActiveStorage::AnalyzeJob] [29f6d383-0d83-49a6-b6e1-43f499022e66] Performing ActiveStorage::AnalyzeJob (Job ID: 29f6d383-0d83-49a6-b6e1-43f499022e66) from Async(default) enqueued at 2024-08-09T11:00:09.531878000Z with arguments: #<GlobalID:0x0000000115930470 @uri=#<URI::GID gid://backend/ActiveStorage::Blob/2>>
+[ActiveJob] [ActiveStorage::AnalyzeJob] [29f6d383-0d83-49a6-b6e1-43f499022e66] Skipping image analysis because the ruby-vips gem isn't installed
+[ActiveJob] [ActiveStorage::AnalyzeJob] [29f6d383-0d83-49a6-b6e1-43f499022e66]   [1m[36mTRANSACTION (0.6ms)[0m  [1m[35mBEGIN[0m
+[ActiveJob] [ActiveStorage::AnalyzeJob] [29f6d383-0d83-49a6-b6e1-43f499022e66]   [1m[36mActiveStorage::Blob Update (2.0ms)[0m  [1m[33mUPDATE "active_storage_blobs" SET "metadata" = $1 WHERE "active_storage_blobs"."id" = $2[0m  [["metadata", "{\"identified\":true,\"analyzed\":true}"], ["id", 2]]
+[ActiveJob] [ActiveStorage::AnalyzeJob] [29f6d383-0d83-49a6-b6e1-43f499022e66]   [1m[36mActiveStorage::Attachment Load (0.2ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."blob_id" = $1[0m  [["blob_id", 2]]
+[ActiveJob] [ActiveStorage::AnalyzeJob] [29f6d383-0d83-49a6-b6e1-43f499022e66]   [1m[36mUser Load (0.2ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."id" = $1[0m  [["id", 1]]
+[ActiveJob] [ActiveStorage::AnalyzeJob] [29f6d383-0d83-49a6-b6e1-43f499022e66]   [1m[36mUser Update (0.2ms)[0m  [1m[33mUPDATE "users" SET "updated_at" = $1 WHERE "users"."id" = $2[0m  [["updated_at", "2024-08-09 11:00:09.551365"], ["id", 1]]
+[ActiveJob] [ActiveStorage::AnalyzeJob] [29f6d383-0d83-49a6-b6e1-43f499022e66]   [1m[36mTRANSACTION (0.3ms)[0m  [1m[35mCOMMIT[0m
+[ActiveJob] [ActiveStorage::AnalyzeJob] [29f6d383-0d83-49a6-b6e1-43f499022e66] Performed ActiveStorage::AnalyzeJob (Job ID: 29f6d383-0d83-49a6-b6e1-43f499022e66) from Async(default) in 15.75ms
+Started GET "/users/509dc56e-8632-40da-ad8b-ce935f6ec596" for ::1 at 2024-08-09 04:00:10 -0700
+Processing by UsersController#show as */*
+  Parameters: {"uuid"=>"509dc56e-8632-40da-ad8b-ce935f6ec596"}
+  [1m[36mUser Load (0.4ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."uuid" = $1 LIMIT $2[0m  [["uuid", "509dc56e-8632-40da-ad8b-ce935f6ec596"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:54:in `set_user'
+  [1m[36mActiveStorage::Attachment Load (0.2ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 1], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:12:in `show'
+  [1m[36mActiveStorage::Blob Load (0.3ms)[0m  [1m[34mSELECT "active_storage_blobs".* FROM "active_storage_blobs" WHERE "active_storage_blobs"."id" = $1 LIMIT $2[0m  [["id", 2], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:12:in `show'
+Completed 200 OK in 7ms (Views: 0.1ms | ActiveRecord: 0.9ms | Allocations: 2074)
+
+
+Started GET "/rails/active_storage/blobs/redirect/eyJfcmFpbHMiOnsiZGF0YSI6MiwicHVyIjoiYmxvYl9pZCJ9fQ==--f8d35704a5db6359ea75c4ef25495113fbfa4554/actor-image.png?1723201210061" for ::1 at 2024-08-09 04:00:10 -0700
+Processing by ActiveStorage::Blobs::RedirectController#show as PNG
+  Parameters: {"1723201210061"=>nil, "signed_id"=>"eyJfcmFpbHMiOnsiZGF0YSI6MiwicHVyIjoiYmxvYl9pZCJ9fQ==--f8d35704a5db6359ea75c4ef25495113fbfa4554", "filename"=>"actor-image"}
+  [1m[36mActiveStorage::Blob Load (0.5ms)[0m  [1m[34mSELECT "active_storage_blobs".* FROM "active_storage_blobs" WHERE "active_storage_blobs"."id" = $1 LIMIT $2[0m  [["id", 2], ["LIMIT", 1]]
+[36m  Disk Storage (0.2ms) [0m[34mGenerated URL for file at key: up5pek8kwsgnr33ulyydtijaq9hg (http://localhost:3000/rails/active_storage/disk/eyJfcmFpbHMiOnsiZGF0YSI6eyJrZXkiOiJ1cDVwZWs4a3dzZ25yMzN1bHl5ZHRpamFxOWhnIiwiZGlzcG9zaXRpb24iOiJpbmxpbmU7IGZpbGVuYW1lPVwiYWN0b3ItaW1hZ2UucG5nXCI7IGZpbGVuYW1lKj1VVEYtOCcnYWN0b3ItaW1hZ2UucG5nIiwiY29udGVudF90eXBlIjoiaW1hZ2UvcG5nIiwic2VydmljZV9uYW1lIjoibG9jYWwifSwiZXhwIjoiMjAyNC0wOC0wOVQxMTowNToxMC4wODhaIiwicHVyIjoiYmxvYl9rZXkifX0=--ebd78e2cbd38df6b49083d6d614e51484ee3ceea/actor-image.png)[0m
+Redirected to http://localhost:3000/rails/active_storage/disk/eyJfcmFpbHMiOnsiZGF0YSI6eyJrZXkiOiJ1cDVwZWs4a3dzZ25yMzN1bHl5ZHRpamFxOWhnIiwiZGlzcG9zaXRpb24iOiJpbmxpbmU7IGZpbGVuYW1lPVwiYWN0b3ItaW1hZ2UucG5nXCI7IGZpbGVuYW1lKj1VVEYtOCcnYWN0b3ItaW1hZ2UucG5nIiwiY29udGVudF90eXBlIjoiaW1hZ2UvcG5nIiwic2VydmljZV9uYW1lIjoibG9jYWwifSwiZXhwIjoiMjAyNC0wOC0wOVQxMTowNToxMC4wODhaIiwicHVyIjoiYmxvYl9rZXkifX0=--ebd78e2cbd38df6b49083d6d614e51484ee3ceea/actor-image.png
+Completed 302 Found in 6ms (ActiveRecord: 0.5ms | Allocations: 1238)
+
+
+Started GET "/rails/active_storage/disk/eyJfcmFpbHMiOnsiZGF0YSI6eyJrZXkiOiJ1cDVwZWs4a3dzZ25yMzN1bHl5ZHRpamFxOWhnIiwiZGlzcG9zaXRpb24iOiJpbmxpbmU7IGZpbGVuYW1lPVwiYWN0b3ItaW1hZ2UucG5nXCI7IGZpbGVuYW1lKj1VVEYtOCcnYWN0b3ItaW1hZ2UucG5nIiwiY29udGVudF90eXBlIjoiaW1hZ2UvcG5nIiwic2VydmljZV9uYW1lIjoibG9jYWwifSwiZXhwIjoiMjAyNC0wOC0wOVQxMTowNToxMC4wODhaIiwicHVyIjoiYmxvYl9rZXkifX0=--ebd78e2cbd38df6b49083d6d614e51484ee3ceea/actor-image.png" for ::1 at 2024-08-09 04:00:10 -0700
+Processing by ActiveStorage::DiskController#show as PNG
+  Parameters: {"encoded_key"=>"[FILTERED]", "filename"=>"actor-image"}
+Completed 200 OK in 0ms (ActiveRecord: 0.0ms | Allocations: 127)
+
+
+Started GET "/users" for ::1 at 2024-08-09 04:00:13 -0700
+Processing by UsersController#index as */*
+  [1m[36mUser Load (0.5ms)[0m  [1m[34mSELECT "users".* FROM "users"[0m
+  ↳ app/controllers/users_controller.rb:7:in `index'
+Completed 200 OK in 2ms (Views: 1.4ms | ActiveRecord: 0.5ms | Allocations: 752)
+
+
+Started GET "/users/ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba" for ::1 at 2024-08-09 04:00:14 -0700
+Processing by UsersController#show as */*
+  Parameters: {"uuid"=>"ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba"}
+  [1m[36mUser Load (0.2ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."uuid" = $1 LIMIT $2[0m  [["uuid", "ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:54:in `set_user'
+  [1m[36mActiveStorage::Attachment Load (0.1ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 2], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:12:in `show'
+  [1m[36mActiveStorage::Blob Load (0.1ms)[0m  [1m[34mSELECT "active_storage_blobs".* FROM "active_storage_blobs" WHERE "active_storage_blobs"."id" = $1 LIMIT $2[0m  [["id", 1], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:12:in `show'
+Completed 200 OK in 4ms (Views: 0.1ms | ActiveRecord: 0.4ms | Allocations: 2069)
+
+
+Started PATCH "/users/ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba" for ::1 at 2024-08-09 04:00:14 -0700
+Processing by UsersController#update as */*
+  Parameters: {"user"=>{"email"=>"test2@mail.com", "uuid"=>"ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba"}, "uuid"=>"ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba"}
+  [1m[36mUser Load (0.4ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."uuid" = $1 LIMIT $2[0m  [["uuid", "ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:54:in `set_user'
+  [1m[36mActiveStorage::Attachment Load (0.2ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 2], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:39:in `update'
+  [1m[36mActiveStorage::Blob Load (0.1ms)[0m  [1m[34mSELECT "active_storage_blobs".* FROM "active_storage_blobs" WHERE "active_storage_blobs"."id" = $1 LIMIT $2[0m  [["id", 1], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:39:in `update'
+Completed 200 OK in 4ms (Views: 0.1ms | ActiveRecord: 0.7ms | Allocations: 2249)
+
+
+Started GET "/rails/active_storage/blobs/redirect/eyJfcmFpbHMiOnsiZGF0YSI6MSwicHVyIjoiYmxvYl9pZCJ9fQ==--4959e35641a99c63ec9361d27d079a8797ed217f/actor-image.png?1723201214737" for ::1 at 2024-08-09 04:00:14 -0700
+Processing by ActiveStorage::Blobs::RedirectController#show as PNG
+  Parameters: {"1723201214737"=>nil, "signed_id"=>"eyJfcmFpbHMiOnsiZGF0YSI6MSwicHVyIjoiYmxvYl9pZCJ9fQ==--4959e35641a99c63ec9361d27d079a8797ed217f", "filename"=>"actor-image"}
+  [1m[36mActiveStorage::Blob Load (0.2ms)[0m  [1m[34mSELECT "active_storage_blobs".* FROM "active_storage_blobs" WHERE "active_storage_blobs"."id" = $1 LIMIT $2[0m  [["id", 1], ["LIMIT", 1]]
+[36m  Disk Storage (0.2ms) [0m[34mGenerated URL for file at key: kf4leelq5iqq8c73l8lh4dnogow3 (http://localhost:3000/rails/active_storage/disk/eyJfcmFpbHMiOnsiZGF0YSI6eyJrZXkiOiJrZjRsZWVscTVpcXE4YzczbDhsaDRkbm9nb3czIiwiZGlzcG9zaXRpb24iOiJpbmxpbmU7IGZpbGVuYW1lPVwiYWN0b3ItaW1hZ2UucG5nXCI7IGZpbGVuYW1lKj1VVEYtOCcnYWN0b3ItaW1hZ2UucG5nIiwiY29udGVudF90eXBlIjoiaW1hZ2UvcG5nIiwic2VydmljZV9uYW1lIjoibG9jYWwifSwiZXhwIjoiMjAyNC0wOC0wOVQxMTowNToxNC43NTZaIiwicHVyIjoiYmxvYl9rZXkifX0=--268fff162b4e71e9e69f2432644bd069a51c7d04/actor-image.png)[0m
+Redirected to http://localhost:3000/rails/active_storage/disk/eyJfcmFpbHMiOnsiZGF0YSI6eyJrZXkiOiJrZjRsZWVscTVpcXE4YzczbDhsaDRkbm9nb3czIiwiZGlzcG9zaXRpb24iOiJpbmxpbmU7IGZpbGVuYW1lPVwiYWN0b3ItaW1hZ2UucG5nXCI7IGZpbGVuYW1lKj1VVEYtOCcnYWN0b3ItaW1hZ2UucG5nIiwiY29udGVudF90eXBlIjoiaW1hZ2UvcG5nIiwic2VydmljZV9uYW1lIjoibG9jYWwifSwiZXhwIjoiMjAyNC0wOC0wOVQxMTowNToxNC43NTZaIiwicHVyIjoiYmxvYl9rZXkifX0=--268fff162b4e71e9e69f2432644bd069a51c7d04/actor-image.png
+Completed 302 Found in 2ms (ActiveRecord: 0.2ms | Allocations: 1238)
+
+
+Started GET "/rails/active_storage/disk/eyJfcmFpbHMiOnsiZGF0YSI6eyJrZXkiOiJrZjRsZWVscTVpcXE4YzczbDhsaDRkbm9nb3czIiwiZGlzcG9zaXRpb24iOiJpbmxpbmU7IGZpbGVuYW1lPVwiYWN0b3ItaW1hZ2UucG5nXCI7IGZpbGVuYW1lKj1VVEYtOCcnYWN0b3ItaW1hZ2UucG5nIiwiY29udGVudF90eXBlIjoiaW1hZ2UvcG5nIiwic2VydmljZV9uYW1lIjoibG9jYWwifSwiZXhwIjoiMjAyNC0wOC0wOVQxMTowNToxNC43NTZaIiwicHVyIjoiYmxvYl9rZXkifX0=--268fff162b4e71e9e69f2432644bd069a51c7d04/actor-image.png" for ::1 at 2024-08-09 04:00:14 -0700
+Processing by ActiveStorage::DiskController#show as PNG
+  Parameters: {"encoded_key"=>"[FILTERED]", "filename"=>"actor-image"}
+Completed 200 OK in 0ms (ActiveRecord: 0.0ms | Allocations: 129)
+
+
+Started GET "/users/ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba" for ::1 at 2024-08-09 04:00:15 -0700
+Processing by UsersController#show as */*
+  Parameters: {"uuid"=>"ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba"}
+  [1m[36mUser Load (0.2ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."uuid" = $1 LIMIT $2[0m  [["uuid", "ce6015d1-86d0-424f-9f50-f4d2a8e8e6ba"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:54:in `set_user'
+  [1m[36mActiveStorage::Attachment Load (0.1ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 2], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:12:in `show'
+  [1m[36mActiveStorage::Blob Load (0.2ms)[0m  [1m[34mSELECT "active_storage_blobs".* FROM "active_storage_blobs" WHERE "active_storage_blobs"."id" = $1 LIMIT $2[0m  [["id", 1], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:12:in `show'
+Completed 200 OK in 4ms (Views: 0.1ms | ActiveRecord: 0.4ms | Allocations: 2070)
+
+
+Started GET "/rails/active_storage/blobs/redirect/eyJfcmFpbHMiOnsiZGF0YSI6MSwicHVyIjoiYmxvYl9pZCJ9fQ==--4959e35641a99c63ec9361d27d079a8797ed217f/actor-image.png?1723201215264" for ::1 at 2024-08-09 04:00:15 -0700
+Processing by ActiveStorage::Blobs::RedirectController#show as PNG
+  Parameters: {"1723201215264"=>nil, "signed_id"=>"eyJfcmFpbHMiOnsiZGF0YSI6MSwicHVyIjoiYmxvYl9pZCJ9fQ==--4959e35641a99c63ec9361d27d079a8797ed217f", "filename"=>"actor-image"}
+  [1m[36mActiveStorage::Blob Load (0.2ms)[0m  [1m[34mSELECT "active_storage_blobs".* FROM "active_storage_blobs" WHERE "active_storage_blobs"."id" = $1 LIMIT $2[0m  [["id", 1], ["LIMIT", 1]]
+[36m  Disk Storage (0.2ms) [0m[34mGenerated URL for file at key: kf4leelq5iqq8c73l8lh4dnogow3 (http://localhost:3000/rails/active_storage/disk/eyJfcmFpbHMiOnsiZGF0YSI6eyJrZXkiOiJrZjRsZWVscTVpcXE4YzczbDhsaDRkbm9nb3czIiwiZGlzcG9zaXRpb24iOiJpbmxpbmU7IGZpbGVuYW1lPVwiYWN0b3ItaW1hZ2UucG5nXCI7IGZpbGVuYW1lKj1VVEYtOCcnYWN0b3ItaW1hZ2UucG5nIiwiY29udGVudF90eXBlIjoiaW1hZ2UvcG5nIiwic2VydmljZV9uYW1lIjoibG9jYWwifSwiZXhwIjoiMjAyNC0wOC0wOVQxMTowNToxNS4yNzRaIiwicHVyIjoiYmxvYl9rZXkifX0=--4166d05f6ac93c85c2fbd73f4fd12f64d2fa90fd/actor-image.png)[0m
+Redirected to http://localhost:3000/rails/active_storage/disk/eyJfcmFpbHMiOnsiZGF0YSI6eyJrZXkiOiJrZjRsZWVscTVpcXE4YzczbDhsaDRkbm9nb3czIiwiZGlzcG9zaXRpb24iOiJpbmxpbmU7IGZpbGVuYW1lPVwiYWN0b3ItaW1hZ2UucG5nXCI7IGZpbGVuYW1lKj1VVEYtOCcnYWN0b3ItaW1hZ2UucG5nIiwiY29udGVudF90eXBlIjoiaW1hZ2UvcG5nIiwic2VydmljZV9uYW1lIjoibG9jYWwifSwiZXhwIjoiMjAyNC0wOC0wOVQxMTowNToxNS4yNzRaIiwicHVyIjoiYmxvYl9rZXkifX0=--4166d05f6ac93c85c2fbd73f4fd12f64d2fa90fd/actor-image.png
+Completed 302 Found in 2ms (ActiveRecord: 0.1ms | Allocations: 1238)
+
+
+Started GET "/rails/active_storage/disk/eyJfcmFpbHMiOnsiZGF0YSI6eyJrZXkiOiJrZjRsZWVscTVpcXE4YzczbDhsaDRkbm9nb3czIiwiZGlzcG9zaXRpb24iOiJpbmxpbmU7IGZpbGVuYW1lPVwiYWN0b3ItaW1hZ2UucG5nXCI7IGZpbGVuYW1lKj1VVEYtOCcnYWN0b3ItaW1hZ2UucG5nIiwiY29udGVudF90eXBlIjoiaW1hZ2UvcG5nIiwic2VydmljZV9uYW1lIjoibG9jYWwifSwiZXhwIjoiMjAyNC0wOC0wOVQxMTowNToxNS4yNzRaIiwicHVyIjoiYmxvYl9rZXkifX0=--4166d05f6ac93c85c2fbd73f4fd12f64d2fa90fd/actor-image.png" for ::1 at 2024-08-09 04:00:15 -0700
+Processing by ActiveStorage::DiskController#show as PNG
+  Parameters: {"encoded_key"=>"[FILTERED]", "filename"=>"actor-image"}
+Completed 200 OK in 0ms (ActiveRecord: 0.0ms | Allocations: 127)
+
+
+Started GET "/users" for ::1 at 2024-08-09 04:00:15 -0700
+Processing by UsersController#index as */*
+  [1m[36mUser Load (0.5ms)[0m  [1m[34mSELECT "users".* FROM "users"[0m
+  ↳ app/controllers/users_controller.rb:7:in `index'
+Completed 200 OK in 3ms (Views: 1.9ms | ActiveRecord: 0.5ms | Allocations: 752)
+
+
+Started GET "/users/509dc56e-8632-40da-ad8b-ce935f6ec596" for ::1 at 2024-08-09 04:00:16 -0700
+Processing by UsersController#show as */*
+  Parameters: {"uuid"=>"509dc56e-8632-40da-ad8b-ce935f6ec596"}
+  [1m[36mUser Load (0.2ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."uuid" = $1 LIMIT $2[0m  [["uuid", "509dc56e-8632-40da-ad8b-ce935f6ec596"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:54:in `set_user'
+  [1m[36mActiveStorage::Attachment Load (0.1ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 1], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:12:in `show'
+  [1m[36mActiveStorage::Blob Load (0.1ms)[0m  [1m[34mSELECT "active_storage_blobs".* FROM "active_storage_blobs" WHERE "active_storage_blobs"."id" = $1 LIMIT $2[0m  [["id", 2], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:12:in `show'
+Completed 200 OK in 4ms (Views: 0.1ms | ActiveRecord: 0.4ms | Allocations: 2069)
+
+
+Started PATCH "/users/509dc56e-8632-40da-ad8b-ce935f6ec596" for ::1 at 2024-08-09 04:00:17 -0700
+Processing by UsersController#update as */*
+  Parameters: {"user"=>{"email"=>"test@mail.com", "uuid"=>"509dc56e-8632-40da-ad8b-ce935f6ec596"}, "uuid"=>"509dc56e-8632-40da-ad8b-ce935f6ec596"}
+  [1m[36mUser Load (0.2ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."uuid" = $1 LIMIT $2[0m  [["uuid", "509dc56e-8632-40da-ad8b-ce935f6ec596"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:54:in `set_user'
+  [1m[36mActiveStorage::Attachment Load (0.3ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 1], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:39:in `update'
+  [1m[36mActiveStorage::Blob Load (0.2ms)[0m  [1m[34mSELECT "active_storage_blobs".* FROM "active_storage_blobs" WHERE "active_storage_blobs"."id" = $1 LIMIT $2[0m  [["id", 2], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:39:in `update'
+Completed 200 OK in 4ms (Views: 0.1ms | ActiveRecord: 0.6ms | Allocations: 2248)
+
+
+Started GET "/rails/active_storage/blobs/redirect/eyJfcmFpbHMiOnsiZGF0YSI6MiwicHVyIjoiYmxvYl9pZCJ9fQ==--f8d35704a5db6359ea75c4ef25495113fbfa4554/actor-image.png?1723201217014" for ::1 at 2024-08-09 04:00:17 -0700
+Processing by ActiveStorage::Blobs::RedirectController#show as PNG
+  Parameters: {"1723201217014"=>nil, "signed_id"=>"eyJfcmFpbHMiOnsiZGF0YSI6MiwicHVyIjoiYmxvYl9pZCJ9fQ==--f8d35704a5db6359ea75c4ef25495113fbfa4554", "filename"=>"actor-image"}
+  [1m[36mActiveStorage::Blob Load (0.3ms)[0m  [1m[34mSELECT "active_storage_blobs".* FROM "active_storage_blobs" WHERE "active_storage_blobs"."id" = $1 LIMIT $2[0m  [["id", 2], ["LIMIT", 1]]
+[36m  Disk Storage (0.2ms) [0m[34mGenerated URL for file at key: up5pek8kwsgnr33ulyydtijaq9hg (http://localhost:3000/rails/active_storage/disk/eyJfcmFpbHMiOnsiZGF0YSI6eyJrZXkiOiJ1cDVwZWs4a3dzZ25yMzN1bHl5ZHRpamFxOWhnIiwiZGlzcG9zaXRpb24iOiJpbmxpbmU7IGZpbGVuYW1lPVwiYWN0b3ItaW1hZ2UucG5nXCI7IGZpbGVuYW1lKj1VVEYtOCcnYWN0b3ItaW1hZ2UucG5nIiwiY29udGVudF90eXBlIjoiaW1hZ2UvcG5nIiwic2VydmljZV9uYW1lIjoibG9jYWwifSwiZXhwIjoiMjAyNC0wOC0wOVQxMTowNToxNy4wMzJaIiwicHVyIjoiYmxvYl9rZXkifX0=--bedc21a365b6d5dc32c32f8c6ebf0c58c147fe54/actor-image.png)[0m
+Redirected to http://localhost:3000/rails/active_storage/disk/eyJfcmFpbHMiOnsiZGF0YSI6eyJrZXkiOiJ1cDVwZWs4a3dzZ25yMzN1bHl5ZHRpamFxOWhnIiwiZGlzcG9zaXRpb24iOiJpbmxpbmU7IGZpbGVuYW1lPVwiYWN0b3ItaW1hZ2UucG5nXCI7IGZpbGVuYW1lKj1VVEYtOCcnYWN0b3ItaW1hZ2UucG5nIiwiY29udGVudF90eXBlIjoiaW1hZ2UvcG5nIiwic2VydmljZV9uYW1lIjoibG9jYWwifSwiZXhwIjoiMjAyNC0wOC0wOVQxMTowNToxNy4wMzJaIiwicHVyIjoiYmxvYl9rZXkifX0=--bedc21a365b6d5dc32c32f8c6ebf0c58c147fe54/actor-image.png
+Completed 302 Found in 2ms (ActiveRecord: 0.3ms | Allocations: 1238)
+
+
+Started GET "/rails/active_storage/disk/eyJfcmFpbHMiOnsiZGF0YSI6eyJrZXkiOiJ1cDVwZWs4a3dzZ25yMzN1bHl5ZHRpamFxOWhnIiwiZGlzcG9zaXRpb24iOiJpbmxpbmU7IGZpbGVuYW1lPVwiYWN0b3ItaW1hZ2UucG5nXCI7IGZpbGVuYW1lKj1VVEYtOCcnYWN0b3ItaW1hZ2UucG5nIiwiY29udGVudF90eXBlIjoiaW1hZ2UvcG5nIiwic2VydmljZV9uYW1lIjoibG9jYWwifSwiZXhwIjoiMjAyNC0wOC0wOVQxMTowNToxNy4wMzJaIiwicHVyIjoiYmxvYl9rZXkifX0=--bedc21a365b6d5dc32c32f8c6ebf0c58c147fe54/actor-image.png" for ::1 at 2024-08-09 04:00:17 -0700
+Processing by ActiveStorage::DiskController#show as PNG
+  Parameters: {"encoded_key"=>"[FILTERED]", "filename"=>"actor-image"}
+Completed 200 OK in 0ms (ActiveRecord: 0.0ms | Allocations: 127)
+
+
+Started GET "/users/509dc56e-8632-40da-ad8b-ce935f6ec596" for ::1 at 2024-08-09 04:00:17 -0700
+Processing by UsersController#show as */*
+  Parameters: {"uuid"=>"509dc56e-8632-40da-ad8b-ce935f6ec596"}
+  [1m[36mUser Load (0.3ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."uuid" = $1 LIMIT $2[0m  [["uuid", "509dc56e-8632-40da-ad8b-ce935f6ec596"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:54:in `set_user'
+  [1m[36mActiveStorage::Attachment Load (0.3ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 1], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:12:in `show'
+  [1m[36mActiveStorage::Blob Load (2.4ms)[0m  [1m[34mSELECT "active_storage_blobs".* FROM "active_storage_blobs" WHERE "active_storage_blobs"."id" = $1 LIMIT $2[0m  [["id", 2], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:12:in `show'
+Completed 200 OK in 10ms (Views: 0.1ms | ActiveRecord: 3.0ms | Allocations: 2070)
+
+
+Started GET "/rails/active_storage/blobs/redirect/eyJfcmFpbHMiOnsiZGF0YSI6MiwicHVyIjoiYmxvYl9pZCJ9fQ==--f8d35704a5db6359ea75c4ef25495113fbfa4554/actor-image.png?1723201217561" for ::1 at 2024-08-09 04:00:17 -0700
+Processing by ActiveStorage::Blobs::RedirectController#show as PNG
+  Parameters: {"1723201217561"=>nil, "signed_id"=>"eyJfcmFpbHMiOnsiZGF0YSI6MiwicHVyIjoiYmxvYl9pZCJ9fQ==--f8d35704a5db6359ea75c4ef25495113fbfa4554", "filename"=>"actor-image"}
+  [1m[36mActiveStorage::Blob Load (0.2ms)[0m  [1m[34mSELECT "active_storage_blobs".* FROM "active_storage_blobs" WHERE "active_storage_blobs"."id" = $1 LIMIT $2[0m  [["id", 2], ["LIMIT", 1]]
+[36m  Disk Storage (0.3ms) [0m[34mGenerated URL for file at key: up5pek8kwsgnr33ulyydtijaq9hg (http://localhost:3000/rails/active_storage/disk/eyJfcmFpbHMiOnsiZGF0YSI6eyJrZXkiOiJ1cDVwZWs4a3dzZ25yMzN1bHl5ZHRpamFxOWhnIiwiZGlzcG9zaXRpb24iOiJpbmxpbmU7IGZpbGVuYW1lPVwiYWN0b3ItaW1hZ2UucG5nXCI7IGZpbGVuYW1lKj1VVEYtOCcnYWN0b3ItaW1hZ2UucG5nIiwiY29udGVudF90eXBlIjoiaW1hZ2UvcG5nIiwic2VydmljZV9uYW1lIjoibG9jYWwifSwiZXhwIjoiMjAyNC0wOC0wOVQxMTowNToxNy41NzdaIiwicHVyIjoiYmxvYl9rZXkifX0=--7426ebd1d9249bd01d9ef3710e29e7da15b8b425/actor-image.png)[0m
+Redirected to http://localhost:3000/rails/active_storage/disk/eyJfcmFpbHMiOnsiZGF0YSI6eyJrZXkiOiJ1cDVwZWs4a3dzZ25yMzN1bHl5ZHRpamFxOWhnIiwiZGlzcG9zaXRpb24iOiJpbmxpbmU7IGZpbGVuYW1lPVwiYWN0b3ItaW1hZ2UucG5nXCI7IGZpbGVuYW1lKj1VVEYtOCcnYWN0b3ItaW1hZ2UucG5nIiwiY29udGVudF90eXBlIjoiaW1hZ2UvcG5nIiwic2VydmljZV9uYW1lIjoibG9jYWwifSwiZXhwIjoiMjAyNC0wOC0wOVQxMTowNToxNy41NzdaIiwicHVyIjoiYmxvYl9rZXkifX0=--7426ebd1d9249bd01d9ef3710e29e7da15b8b425/actor-image.png
+Completed 302 Found in 3ms (ActiveRecord: 0.2ms | Allocations: 1244)
+
+
+Started GET "/rails/active_storage/disk/eyJfcmFpbHMiOnsiZGF0YSI6eyJrZXkiOiJ1cDVwZWs4a3dzZ25yMzN1bHl5ZHRpamFxOWhnIiwiZGlzcG9zaXRpb24iOiJpbmxpbmU7IGZpbGVuYW1lPVwiYWN0b3ItaW1hZ2UucG5nXCI7IGZpbGVuYW1lKj1VVEYtOCcnYWN0b3ItaW1hZ2UucG5nIiwiY29udGVudF90eXBlIjoiaW1hZ2UvcG5nIiwic2VydmljZV9uYW1lIjoibG9jYWwifSwiZXhwIjoiMjAyNC0wOC0wOVQxMTowNToxNy41NzdaIiwicHVyIjoiYmxvYl9rZXkifX0=--7426ebd1d9249bd01d9ef3710e29e7da15b8b425/actor-image.png" for ::1 at 2024-08-09 04:00:17 -0700
+Processing by ActiveStorage::DiskController#show as PNG
+  Parameters: {"encoded_key"=>"[FILTERED]", "filename"=>"actor-image"}
+Completed 200 OK in 0ms (ActiveRecord: 0.0ms | Allocations: 127)
+
+
+Started GET "/api/auth/session" for ::1 at 2024-08-09 04:00:21 -0700
+Processing by CurrentUserController#index as */*
+  [1m[36mUser Load (0.2ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."id" = $1 LIMIT $2[0m  [["id", 1], ["LIMIT", 1]]
+  [1m[36mActiveStorage::Attachment Load (0.2ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 1], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/models/user.rb:10:in `avatar_url'
+  [1m[36mActiveStorage::Blob Load (0.1ms)[0m  [1m[34mSELECT "active_storage_blobs".* FROM "active_storage_blobs" WHERE "active_storage_blobs"."id" = $1 LIMIT $2[0m  [["id", 2], ["LIMIT", 1]]
+  ↳ app/models/user.rb:10:in `avatar_url'
+Completed 200 OK in 5ms (Views: 0.1ms | ActiveRecord: 0.5ms | Allocations: 2817)
+
+
+Started GET "/users/509dc56e-8632-40da-ad8b-ce935f6ec596" for ::1 at 2024-08-09 04:00:21 -0700
+Processing by UsersController#show as */*
+  Parameters: {"uuid"=>"509dc56e-8632-40da-ad8b-ce935f6ec596"}
+  [1m[36mUser Load (0.5ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."uuid" = $1 LIMIT $2[0m  [["uuid", "509dc56e-8632-40da-ad8b-ce935f6ec596"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:54:in `set_user'
+  [1m[36mActiveStorage::Attachment Load (1.5ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 1], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:12:in `show'
+  [1m[36mActiveStorage::Blob Load (0.9ms)[0m  [1m[34mSELECT "active_storage_blobs".* FROM "active_storage_blobs" WHERE "active_storage_blobs"."id" = $1 LIMIT $2[0m  [["id", 2], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:12:in `show'
+Completed 200 OK in 11ms (Views: 0.1ms | ActiveRecord: 2.8ms | Allocations: 2069)
+
+
+Started PATCH "/users/509dc56e-8632-40da-ad8b-ce935f6ec596" for ::1 at 2024-08-09 04:00:21 -0700
+Processing by UsersController#update as */*
+  Parameters: {"user"=>{"email"=>"test@mail.com", "uuid"=>"509dc56e-8632-40da-ad8b-ce935f6ec596"}, "uuid"=>"509dc56e-8632-40da-ad8b-ce935f6ec596"}
+  [1m[36mUser Load (0.2ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."uuid" = $1 LIMIT $2[0m  [["uuid", "509dc56e-8632-40da-ad8b-ce935f6ec596"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:54:in `set_user'
+  [1m[36mActiveStorage::Attachment Load (0.2ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 1], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:39:in `update'
+  [1m[36mActiveStorage::Blob Load (0.3ms)[0m  [1m[34mSELECT "active_storage_blobs".* FROM "active_storage_blobs" WHERE "active_storage_blobs"."id" = $1 LIMIT $2[0m  [["id", 2], ["LIMIT", 1]]
+Started GET "/rails/active_storage/blobs/redirect/eyJfcmFpbHMiOnsiZGF0YSI6MiwicHVyIjoiYmxvYl9pZCJ9fQ==--f8d35704a5db6359ea75c4ef25495113fbfa4554/actor-image.png?1723201221625" for ::1 at 2024-08-09 04:00:21 -0700
+  ↳ app/controllers/users_controller.rb:39:in `update'
+Completed 200 OK in 6ms (Views: 0.1ms | ActiveRecord: 0.7ms | Allocations: 2567)
+
+
+Processing by ActiveStorage::Blobs::RedirectController#show as PNG
+  Parameters: {"1723201221625"=>nil, "signed_id"=>"eyJfcmFpbHMiOnsiZGF0YSI6MiwicHVyIjoiYmxvYl9pZCJ9fQ==--f8d35704a5db6359ea75c4ef25495113fbfa4554", "filename"=>"actor-image"}
+  [1m[36mActiveStorage::Blob Load (0.1ms)[0m  [1m[34mSELECT "active_storage_blobs".* FROM "active_storage_blobs" WHERE "active_storage_blobs"."id" = $1 LIMIT $2[0m  [["id", 2], ["LIMIT", 1]]
+[36m  Disk Storage (0.2ms) [0m[34mGenerated URL for file at key: up5pek8kwsgnr33ulyydtijaq9hg (http://localhost:3000/rails/active_storage/disk/eyJfcmFpbHMiOnsiZGF0YSI6eyJrZXkiOiJ1cDVwZWs4a3dzZ25yMzN1bHl5ZHRpamFxOWhnIiwiZGlzcG9zaXRpb24iOiJpbmxpbmU7IGZpbGVuYW1lPVwiYWN0b3ItaW1hZ2UucG5nXCI7IGZpbGVuYW1lKj1VVEYtOCcnYWN0b3ItaW1hZ2UucG5nIiwiY29udGVudF90eXBlIjoiaW1hZ2UvcG5nIiwic2VydmljZV9uYW1lIjoibG9jYWwifSwiZXhwIjoiMjAyNC0wOC0wOVQxMTowNToyMS42NTFaIiwicHVyIjoiYmxvYl9rZXkifX0=--bde03bed1263bf246335d6549882cf2efdbc7434/actor-image.png)[0m
+Redirected to http://localhost:3000/rails/active_storage/disk/eyJfcmFpbHMiOnsiZGF0YSI6eyJrZXkiOiJ1cDVwZWs4a3dzZ25yMzN1bHl5ZHRpamFxOWhnIiwiZGlzcG9zaXRpb24iOiJpbmxpbmU7IGZpbGVuYW1lPVwiYWN0b3ItaW1hZ2UucG5nXCI7IGZpbGVuYW1lKj1VVEYtOCcnYWN0b3ItaW1hZ2UucG5nIiwiY29udGVudF90eXBlIjoiaW1hZ2UvcG5nIiwic2VydmljZV9uYW1lIjoibG9jYWwifSwiZXhwIjoiMjAyNC0wOC0wOVQxMTowNToyMS42NTFaIiwicHVyIjoiYmxvYl9rZXkifX0=--bde03bed1263bf246335d6549882cf2efdbc7434/actor-image.png
+Completed 302 Found in 2ms (ActiveRecord: 0.1ms | Allocations: 1238)
+
+
+Started GET "/rails/active_storage/disk/eyJfcmFpbHMiOnsiZGF0YSI6eyJrZXkiOiJ1cDVwZWs4a3dzZ25yMzN1bHl5ZHRpamFxOWhnIiwiZGlzcG9zaXRpb24iOiJpbmxpbmU7IGZpbGVuYW1lPVwiYWN0b3ItaW1hZ2UucG5nXCI7IGZpbGVuYW1lKj1VVEYtOCcnYWN0b3ItaW1hZ2UucG5nIiwiY29udGVudF90eXBlIjoiaW1hZ2UvcG5nIiwic2VydmljZV9uYW1lIjoibG9jYWwifSwiZXhwIjoiMjAyNC0wOC0wOVQxMTowNToyMS42NTFaIiwicHVyIjoiYmxvYl9rZXkifX0=--bde03bed1263bf246335d6549882cf2efdbc7434/actor-image.png" for ::1 at 2024-08-09 04:00:21 -0700
+Processing by ActiveStorage::DiskController#show as PNG
+  Parameters: {"encoded_key"=>"[FILTERED]", "filename"=>"actor-image"}
+Completed 200 OK in 0ms (ActiveRecord: 0.0ms | Allocations: 127)
+
+
+Started GET "/users/509dc56e-8632-40da-ad8b-ce935f6ec596" for ::1 at 2024-08-09 04:00:22 -0700
+Processing by UsersController#show as */*
+  Parameters: {"uuid"=>"509dc56e-8632-40da-ad8b-ce935f6ec596"}
+  [1m[36mUser Load (0.2ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."uuid" = $1 LIMIT $2[0m  [["uuid", "509dc56e-8632-40da-ad8b-ce935f6ec596"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:54:in `set_user'
+  [1m[36mActiveStorage::Attachment Load (0.5ms)[0m  [1m[34mSELECT "active_storage_attachments".* FROM "active_storage_attachments" WHERE "active_storage_attachments"."record_id" = $1 AND "active_storage_attachments"."record_type" = $2 AND "active_storage_attachments"."name" = $3 LIMIT $4[0m  [["record_id", 1], ["record_type", "User"], ["name", "avatar"], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:12:in `show'
+  [1m[36mActiveStorage::Blob Load (0.1ms)[0m  [1m[34mSELECT "active_storage_blobs".* FROM "active_storage_blobs" WHERE "active_storage_blobs"."id" = $1 LIMIT $2[0m  [["id", 2], ["LIMIT", 1]]
+  ↳ app/controllers/users_controller.rb:12:in `show'
+Completed 200 OK in 4ms (Views: 0.1ms | ActiveRecord: 0.8ms | Allocations: 2069)
+
+
+Started GET "/rails/active_storage/blobs/redirect/eyJfcmFpbHMiOnsiZGF0YSI6MiwicHVyIjoiYmxvYl9pZCJ9fQ==--f8d35704a5db6359ea75c4ef25495113fbfa4554/actor-image.png?1723201222157" for ::1 at 2024-08-09 04:00:22 -0700
+Processing by ActiveStorage::Blobs::RedirectController#show as PNG
+  Parameters: {"1723201222157"=>nil, "signed_id"=>"eyJfcmFpbHMiOnsiZGF0YSI6MiwicHVyIjoiYmxvYl9pZCJ9fQ==--f8d35704a5db6359ea75c4ef25495113fbfa4554", "filename"=>"actor-image"}
+  [1m[36mActiveStorage::Blob Load (0.1ms)[0m  [1m[34mSELECT "active_storage_blobs".* FROM "active_storage_blobs" WHERE "active_storage_blobs"."id" = $1 LIMIT $2[0m  [["id", 2], ["LIMIT", 1]]
+[36m  Disk Storage (0.2ms) [0m[34mGenerated URL for file at key: up5pek8kwsgnr33ulyydtijaq9hg (http://localhost:3000/rails/active_storage/disk/eyJfcmFpbHMiOnsiZGF0YSI6eyJrZXkiOiJ1cDVwZWs4a3dzZ25yMzN1bHl5ZHRpamFxOWhnIiwiZGlzcG9zaXRpb24iOiJpbmxpbmU7IGZpbGVuYW1lPVwiYWN0b3ItaW1hZ2UucG5nXCI7IGZpbGVuYW1lKj1VVEYtOCcnYWN0b3ItaW1hZ2UucG5nIiwiY29udGVudF90eXBlIjoiaW1hZ2UvcG5nIiwic2VydmljZV9uYW1lIjoibG9jYWwifSwiZXhwIjoiMjAyNC0wOC0wOVQxMTowNToyMi4xNjVaIiwicHVyIjoiYmxvYl9rZXkifX0=--1382744d2ec1611ff2a525b7e14c79474603e7da/actor-image.png)[0m
+Redirected to http://localhost:3000/rails/active_storage/disk/eyJfcmFpbHMiOnsiZGF0YSI6eyJrZXkiOiJ1cDVwZWs4a3dzZ25yMzN1bHl5ZHRpamFxOWhnIiwiZGlzcG9zaXRpb24iOiJpbmxpbmU7IGZpbGVuYW1lPVwiYWN0b3ItaW1hZ2UucG5nXCI7IGZpbGVuYW1lKj1VVEYtOCcnYWN0b3ItaW1hZ2UucG5nIiwiY29udGVudF90eXBlIjoiaW1hZ2UvcG5nIiwic2VydmljZV9uYW1lIjoibG9jYWwifSwiZXhwIjoiMjAyNC0wOC0wOVQxMTowNToyMi4xNjVaIiwicHVyIjoiYmxvYl9rZXkifX0=--1382744d2ec1611ff2a525b7e14c79474603e7da/actor-image.png
+Completed 302 Found in 2ms (ActiveRecord: 0.1ms | Allocations: 1242)
+
+
+Started GET "/rails/active_storage/disk/eyJfcmFpbHMiOnsiZGF0YSI6eyJrZXkiOiJ1cDVwZWs4a3dzZ25yMzN1bHl5ZHRpamFxOWhnIiwiZGlzcG9zaXRpb24iOiJpbmxpbmU7IGZpbGVuYW1lPVwiYWN0b3ItaW1hZ2UucG5nXCI7IGZpbGVuYW1lKj1VVEYtOCcnYWN0b3ItaW1hZ2UucG5nIiwiY29udGVudF90eXBlIjoiaW1hZ2UvcG5nIiwic2VydmljZV9uYW1lIjoibG9jYWwifSwiZXhwIjoiMjAyNC0wOC0wOVQxMTowNToyMi4xNjVaIiwicHVyIjoiYmxvYl9rZXkifX0=--1382744d2ec1611ff2a525b7e14c79474603e7da/actor-image.png" for ::1 at 2024-08-09 04:00:22 -0700
+Processing by ActiveStorage::DiskController#show as PNG
+  Parameters: {"encoded_key"=>"[FILTERED]", "filename"=>"actor-image"}
+Completed 200 OK in 0ms (ActiveRecord: 0.0ms | Allocations: 127)
+
+
+Started GET "/api/auth/session" for ::1 at 2024-08-09 08:24:08 -0700
+Processing by CurrentUserController#index as */*
+Completed 401 Unauthorized in 0ms (ActiveRecord: 0.0ms | Allocations: 201)
+
+

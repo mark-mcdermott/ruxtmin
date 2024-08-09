@@ -1,5429 +1,1926 @@
-![Ruxtmin Mech Diagram](https://github.com/mark-mcdermott/ruxtmin/blob/main/assets/images/mechs/ruxtmin-mech-diagram.png)
+# Rails API & Nuxt 3 App
+- Rails 7 postgres backend, Nuxt 3 frontend using tailwindcss
+- Hosted on fly.io
 
-# Ruxtmin - Rails 7 Nuxt 2 Admin Boilerplate (With Active Storage Avatars)
+# To Run Locally
+- clone this repo (`git clone <reponame>`)
+- `cd` into repo
+- `cd frontend`
+- `npm install`
+- `npm run dev`
+- split your terminal and in the new terminal pane do:
+  - `cd ../backend`
+  - `bundle install`
+  - `rails server`
+- in a browser, go to `http://localhost:3001`
+- `^ + c` (to kill server)
 
-Nuxt 2 frontend, Rails 7 backend API and a simple implementation of Rail's Active Storage for uploading and displaying avatars. It uses bcrypt and jwt for backend auth and Nuxt's auth module for frontend auth. Uses rspec for API tests and cypress for end-to-end tests.
+# To Create This Project From Scratch
 
-## Requirements
-This readme uses a small custom bash command called [puravida](#user-content-puravida).
+## Init App
+- `cd ~`
+- `mkdir app`
+- `cd app`
+- `wget https://raw.githubusercontent.com/mark-mcdermott/drivetracks-wip-nuxt3/main/README.md`
+- `npx nuxi@latest init frontend`
+  - package manager: `npm`
+  - init git repo: `no`
+- `rails new backend --api --database=postgresql --skip-git`
 
-## BACKEND
-- `cd ~/Desktop`
-- `rails new back --api --database=postgresql --skip-test-unit`
-- `cd back`
-- create database
-  - if first time doing this: `rails db:create`
-  - if database already exists: `rails db:drop db:create`
-- `bundle add rack-cors bcrypt jwt pry`
-- `bundle add rspec-rails --group "development, test"`
-- `bundle add database_cleaner-active_record --group "test"`
-- `bundle`
-- `rails active_storage:install`
-- `rails generate rspec:install`
-- `rails db:migrate`
-- `puravida spec/fixtures/files`
-- copy `assets` folder into `app` folder
-- copy the contents of the `office-avatars` folder into `spec/fixtures/files` folder
-- copy the contents of the `widgets` folder into `spec/fixtures/files` folder
-- `puravida config/initializers/cors.rb ~`
+## Frontend 
+
+### ESLint AutoSave
+- install VSCode extension `ESLint`
+- `cd ~/app`
+- `npm init` (hit enter for all prompts)
+- `pnpm dlx @antfu/eslint-config@latest`
+  - uncommitted changes, continue? `yes`
+  - framework: `Vue`
+  - extra utils: `none`
+  - update `.vscode/settings.json`: `yes`
+- `npm install`
+- in `~/app/.vscode/settings.json`, change the `codeActionsOnSave` section (lines 7-10) to:
+```
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "always",
+    "source.organizeImports": "always"
+  },
+```
+- `touch .gitignore`
+- make `~/app/.gitignore` look like this:
+```
+.DS_Store
+node_modules
+```
+- open `package.json`
+  - you should see some red underlines for ESLint violations
+  - hit `command + s` to save and you should see ESLint automatically fix the issues
+
+### ESLint Commands
+- `cd ~/app/frontend`
+- `pnpm dlx @antfu/eslint-config@latest`
+  - uncommitted changes, continue? `yes`
+  - framework: `Vue`
+  - extra utils: `none`
+  - update `.vscode/settings.json`: `no`
+- `npm install`
+- in `~/app/frontend/package.json` in the `scripts` section add:
+```
+"lint": "npx eslint .",
+"lint:fix": "npx eslint . --fix"
+```
+- `npm run lint` -> it will flag a trailing comma issue on `nuxt.config.ts`
+- open `~/app/frontend/nuxt.config.ts`
+- `npm run lint:fix` -> you will see it add a trailing comma to fix the ESLint violation
+
+### Vitest
+- install VSCode `Vitest` extension
+- `cd ~/app/frontend`
+- `npm install --save-dev @nuxt/test-utils vitest @vue/test-utils happy-dom eslint-plugin-vitest`
+- `touch vitest.config.ts`
+- make `~/app/frontend/vitest.config.ts` look like this:
+```
+import { defineConfig } from 'vitest/config'
+import vue from '@vitejs/plugin-vue'
+
+export default defineConfig({
+  plugins: [vue({ template: { compilerOptions: { isCustomElement: (tag) => ['Icon','NuxtLink'].includes(tag) }}})],
+  test: { environment: 'happy-dom', setupFiles: ["./spec/mocks/mocks.js"] },
+})
+```
+- add `plugins: ['vitest'],` to `~/app/frontend/eslint.config.js` so it looks like this:
+```
+import antfu from '@antfu/eslint-config'
+
+export default antfu({
+  vue: true,
+  plugins: ['vitest'],
+})
+```
+- to `~/app/frontend/package.json` in the `scripts` section add:
+```
+"test": "npx vitest"
+```
+- `npm run test` -> vitest should run (it will try to run, but there are no tests yet)
+
+### Stub Specs
+- `cd ~/app/frontend`
+- `mkdir spec`
+- `cd spec`
+- `mkdir components layouts pages`
+- `cd components`
+- `touch Header.spec.js`
+- `cd ../pages`
+- `touch home.spec.js public.spec.js private.spec.js`
+
+### Mocks
+- `cd ~/app/frontend`
+- `mkdir spec/mocks`
+- `touch spec/mocks/mocks.js`
+- make `~/app/frontend/spec/mocks/mocks.js` look like this:
+```
+import { vi } from 'vitest';
+
+// mocks 
+global.definePageMeta = vi.fn(() => { });
+global.ref = vi.fn((initialValue) => { return { value: initialValue } })
+global.useAuth = vi.fn(() => { return { status: 'unauthenticated' } })
+```
+
+### Components Specs
+- make `~/app/frontend/specs/components/Header.spec.js` look like this:
+```
+import { mount } from '@vue/test-utils'
+import { describe, expect, it } from 'vitest'
+import Header from './../../components/Header.vue'
+
+describe('Header', () => {
+  const wrapper = mount(Header)
+  const h1 = wrapper.find("h1")
+
+  it('is a Vue instance', () => {
+    expect(wrapper.vm).toBeTruthy()
+  })
+
+  it('has correct title text', () => {
+    const title = wrapper.find(".nav-header")
+    expect(title.text()).toBe('Test App');
+  })
+
+})
+```
+
+### Page Specs
+- make `~/app/frontend/specs/pages/home.spec.js` look like this:
+```
+import { mount } from '@vue/test-utils'
+import { describe, expect, it } from 'vitest'
+import homePage from './../../pages/index.vue'
+
+describe('Home page', () => {
+  it('is a Vue instance', () => {
+    expect(mount(homePage).vm).toBeTruthy()
+  })
+})
+
+describe('Home page has correct copy', () => {
+  it('has correct h4 text', () => {
+    expect(mount(homePage).find("h4").text()).toBe('Test App');
+  })
+  it('has correct p text', () => {
+    expect(mount(homePage).find("p").text()).toContain('Here you can read do anything your little heart desires.');
+  })
+})
+```
+- make `~/app/frontend/specs/pages/public.spec.js` look like this:
+```
+import { mount } from '@vue/test-utils'
+import { describe, expect, it } from 'vitest'
+import publicPage from './../../pages/public.vue'
+
+describe('Public page has correct copy', () => {
+  it('has correct h4 text', () => {
+    expect(mount(publicPage).find("h4").text()).toBe('Public');
+  })
+  it('has correct p text', () => {
+    expect(mount(publicPage).find("p").text()).toContain("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi a aliquet metus, non lacinia ligula. Vestibulum convallis massa vitae arcu fringilla rhoncus. In ut ligula posuere, fringilla leo sit amet, fringilla nisl. Nam orci odio, finibus a hendrerit sit amet, dapibus in risus. Phasellus maximus mattis turpis vitae gravida. Donec nec tellus elit. Mauris luctus mi ut est porta, sit amet lobortis felis imperdiet. Quisque ut eros pellentesque, vestibulum eros vel, cursus ligula. Nulla tortor purus, sollicitudin id gravida eu, efficitur eu elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer dictum congue nibh vel egestas. Nulla vel lacinia sem.");
+  })
+})
+```
+- make `~/app/frontend/specs/pages/private.spec.js` look like this:
+```
+import { expect, describe, it, vi } from 'vitest'
+import { mount } from '@vue/test-utils'
+import privatePage from './../../pages/private.vue'
+
+vi.stubGlobal("definePageMeta", () => {})
+vi.stubGlobal("ref", (initialValue) => { return { value: initialValue } })
+
+describe('Private page has correct copy', () => {
+  it('has correct h2 text', () => {
+    expect(mount(privatePage).find("h2").text()).toBe('Private');
+  })
+  it('has correct p text', () => {
+    expect(mount(privatePage).find("p").text()).toContain("We know that you, as a bee, have worked your whole life to get to the point where you can work for your whole life. Honey begins when our valiant Pollen Jocks bring the nectar to the hive. Our top-secret formula is automatically color-corrected, scent-adjusted and bubble-contoured into this soothing sweet syrup with its distinctive golden glow you know as Honey!");
+  })
+})
+```
+
+### Barebones Hello World
+- `cd ~/app/frontend`
+- make `~/app/frontend/nuxt.config.ts` look like this:
+```
+export default defineNuxtConfig({
+  runtimeConfig: { public: { apiBase: 'http://localhost:3000' }},
+  devServer: { port: 3001 },
+  devtools: { enabled: true },
+})
+```
+- `npm run dev` -> should see Nuxt starter app at http://localhost:3001
+- `^ + c` -> to kill the server
+- change `~/app/frontend/app.vue` to:
+```
+<template>
+  <div>
+    <h1>Hello World</h1>
+  </div>
+</template>
+```
+- `npm run dev` -> "Hello World" in Times New Roman
+- `^ + c`
+
+### Tailwind
+- install the VSCode extension `vscode-tailwind-magic`
+- `cd ~/app/frontend`
+- `npx nuxi@latest module add tailwindcss`
+- add these to your `~/app/.vscode/settings.json`:
+```
+"files.associations": {
+    "*.css": "tailwindcss"
+},
+"editor.quickSuggestions": {
+    "strings": true
+}
+```
+
+### UI Thing
+- `cd ~/app/frontend`
+- `npx ui-thing@latest init`
+  - hit `y` to proceed
+  - pick a theme color when prompted
+  - you can hit enter for all the other questions
+- `npm i -D @iconify-json/lucide`
+
+### Home Page
+- `cd ~/app/frontend`
+- `npx ui-thing@latest add container badge button gradient-divider`
+- `touch components/Home.vue`
+- make `~/app/frontend/components/Home.vue` look like this:
+```
+<template>
+  <UiContainer class="relative flex flex-col items-center py-10 text-center lg:py-20">
+    <h1 class="mb-4 mt-7 text-4xl font-bold lg:mb-6 lg:mt-5 lg:text-center lg:text-5xl xl:text-6xl">
+      There was a wall.<br>It did not look important.
+    </h1>
+    <p class="mx-auto max-w-[768px] tracking-tight text-lg text-muted-foreground lg:text-center lg:text-xl">
+      It was built of uncut rocks roughly mortared. An adult could look right over it, and even a child could climb it. Where it crossed the roadway, instead of having a gate it degenerated into mere geometry, a line, an idea of boundary. But the idea was real.
+    </p>
+    <div class="mt-8 grid w-full grid-cols-1 items-center gap-3 sm:flex sm:justify-center lg:mt-10">
+      <UiButton to="/login" size="lg" variant="outline">
+        Login
+      </UiButton>
+      <UiButton to="/signup" size="lg">
+        Sign up
+      </UiButton>
+    </div>
+  </UiContainer>
+</template>
+```
+- make `~/app/frontend/app.vue` look like this: 
+```
+<template>
+  <Home />
+</template>
+```
+- `npm run dev` -> Should be a decent looking homepage now
+- `^ + c`
+
+### Layout
+- `cd ~/app/frontend`
+- `mkdir layouts`
+- `touch layouts/default.vue`
+- add this to `~/app/frontend/layouts/default.vue`:
+```
+<template>
+  <NuxtPage />
+</template>
+```
+- `mkdir pages`
+- `touch pages/index.vue`
+- add this to `~/app/frontend/pages/index.vue`:
+```
+<template>
+  <Home />
+</template>
+```
+- `rm app.vue`
+- `npm run dev` -> Homepage should look same as above
+- `^ + c`
+
+### Header & Footer
+- `cd ~/app/frontend`
+- `npx ui-thing@latest add container navigation-menu sheet scroll-area collapsible`
+- `cd components`
+- `touch Logo.vue Header.vue Footer.vue`
+- make `~/app/frontend/components/Logo.vue` look like this:
+```
+<template>
+  <NuxtLink to="/" class="flex items-center gap-3">
+    <!-- from https://www.untitledui.com/logos -->
+    <svg fill="none" height="48" viewBox="0 0 168 48" width="168" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><clipPath id="a"><path d="m0 0h40v48h-40z" /></clipPath><g clip-path="url(#a)" fill="#ff4405"><path d="m25.0887 5.05386-3.933-1.05386-3.3145 12.3696-2.9923-11.16736-3.9331 1.05386 3.233 12.0655-8.05262-8.0526-2.87919 2.8792 8.83271 8.8328-10.99975-2.9474-1.05385625 3.933 12.01860625 3.2204c-.1376-.5935-.2104-1.2119-.2104-1.8473 0-4.4976 3.646-8.1436 8.1437-8.1436 4.4976 0 8.1436 3.646 8.1436 8.1436 0 .6313-.0719 1.2459-.2078 1.8359l10.9227 2.9267 1.0538-3.933-12.0664-3.2332 11.0005-2.9476-1.0539-3.933-12.0659 3.233 8.0526-8.0526-2.8792-2.87916-8.7102 8.71026z" /><path d="m27.8723 26.2214c-.3372 1.4256-1.0491 2.7063-2.0259 3.7324l7.913 7.9131 2.8792-2.8792z" /><path d="m25.7665 30.0366c-.9886 1.0097-2.2379 1.7632-3.6389 2.1515l2.8794 10.746 3.933-1.0539z" /><path d="m21.9807 32.2274c-.65.1671-1.3313.2559-2.0334.2559-.7522 0-1.4806-.102-2.1721-.2929l-2.882 10.7558 3.933 1.0538z" /><path d="m17.6361 32.1507c-1.3796-.4076-2.6067-1.1707-3.5751-2.1833l-7.9325 7.9325 2.87919 2.8792z" /><path d="m13.9956 29.8973c-.9518-1.019-1.6451-2.2826-1.9751-3.6862l-10.95836 2.9363 1.05385 3.933z" /></g><g fill="#0c111d"><path d="m50 33v-18.522h3.699l7.452 9.99c.108.126.243.306.405.54.162.216.315.432.459.648s.243.387.297.513h.135c0-.306 0-.603 0-.891 0-.306 0-.576 0-.81v-9.99h3.807v18.522h-3.699l-7.614-10.233c-.18-.252-.369-.531-.567-.837s-.342-.54-.432-.702h-.135v.81.729 10.233z" /><path d="m68.9515 16.719v-3.24h3.753v3.24zm0 16.281v-14.202h3.753v14.202z" /><path d="m81.5227 33.324c-1.566 0-2.88-.261-3.942-.783-1.062-.54-1.863-1.359-2.403-2.457s-.81-2.493-.81-4.185c0-1.71.27-3.105.81-4.185.54-1.098 1.332-1.908 2.376-2.43 1.062-.54 2.358-.81 3.888-.81 1.44 0 2.655.261 3.645.783.99.504 1.737 1.296 2.241 2.376.504 1.062.756 2.439.756 4.131v.972h-9.909c.036.828.162 1.53.378 2.106.234.576.585 1.008 1.053 1.296.486.27 1.125.405 1.917.405.432 0 .819-.054 1.161-.162.36-.108.666-.27.918-.486s.45-.486.594-.81.216-.693.216-1.107h3.672c0 .9-.162 1.683-.486 2.349s-.774 1.224-1.35 1.674c-.576.432-1.269.765-2.079.999-.792.216-1.674.324-2.646.324zm-3.294-8.964h5.994c0-.54-.072-1.008-.216-1.404-.126-.396-.306-.72-.54-.972s-.522-.432-.864-.54c-.324-.126-.693-.189-1.107-.189-.684 0-1.26.117-1.728.351-.45.216-.801.558-1.053 1.026-.234.45-.396 1.026-.486 1.728z" /><path d="m93.9963 33.324c-.9 0-1.629-.162-2.187-.486s-.963-.756-1.215-1.296c-.252-.558-.378-1.17-.378-1.836v-8.019h-1.755v-2.889h1.89l.702-4.05h2.916v4.05h2.592v2.889h-2.592v7.398c0 .432.099.765.297.999.198.216.522.324.972.324h1.323v2.484c-.216.072-.468.135-.756.189-.288.072-.594.126-.918.162-.324.054-.621.081-.891.081z" /><path d="m96.7988 33v-1.593l6.9392-9.72h-6.5072v-2.889h11.9342v1.539l-6.966 9.747h7.236v2.916z" /><path d="m116.578 33.324c-.99 0-1.881-.108-2.673-.324s-1.467-.513-2.025-.891c-.558-.396-.99-.864-1.296-1.404-.288-.54-.432-1.152-.432-1.836 0-.072 0-.144 0-.216s.009-.126.027-.162h3.618v.108.108c.018.45.162.819.432 1.107.27.27.621.468 1.053.594.45.126.918.189 1.404.189.432 0 .846-.036 1.242-.108.414-.09.756-.243 1.026-.459.288-.216.432-.495.432-.837 0-.432-.18-.765-.54-.999-.342-.234-.801-.423-1.377-.567-.558-.144-1.17-.306-1.836-.486-.612-.144-1.224-.306-1.836-.486-.612-.198-1.17-.45-1.674-.756-.486-.306-.882-.702-1.188-1.188-.306-.504-.459-1.134-.459-1.89 0-.738.162-1.377.486-1.917.324-.558.765-1.017 1.323-1.377.576-.36 1.242-.621 1.998-.783.774-.18 1.602-.27 2.484-.27.828 0 1.602.09 2.322.27.72.162 1.35.414 1.89.756.54.324.963.738 1.269 1.242.306.486.459 1.035.459 1.647v.351c0 .108-.009.18-.027.216h-3.591v-.216c0-.324-.099-.594-.297-.81-.198-.234-.486-.414-.864-.54-.36-.126-.801-.189-1.323-.189-.36 0-.693.027-.999.081-.288.054-.54.135-.756.243s-.387.243-.513.405c-.108.144-.162.324-.162.54 0 .306.126.558.378.756.27.18.621.333 1.053.459s.909.261 1.431.405c.648.18 1.323.36 2.025.54.72.162 1.386.387 1.998.675s1.107.702 1.485 1.242c.378.522.567 1.233.567 2.133 0 .864-.171 1.593-.513 2.187-.324.594-.783 1.071-1.377 1.431s-1.287.621-2.079.783-1.647.243-2.565.243z" /><path d="m130.987 33.324c-1.512 0-2.781-.261-3.807-.783-1.026-.54-1.809-1.359-2.349-2.457-.522-1.116-.783-2.511-.783-4.185 0-1.71.261-3.105.783-4.185.54-1.098 1.323-1.917 2.349-2.457 1.044-.54 2.313-.81 3.807-.81.972 0 1.845.117 2.619.351.792.234 1.476.594 2.052 1.08s1.008 1.089 1.296 1.809c.306.702.459 1.539.459 2.511h-3.753c0-.648-.099-1.179-.297-1.593s-.504-.729-.918-.945c-.396-.216-.9-.324-1.512-.324-.72 0-1.305.162-1.755.486s-.783.801-.999 1.431-.324 1.413-.324 2.349v.621c0 .918.108 1.692.324 2.322.234.63.585 1.107 1.053 1.431.468.306 1.08.459 1.836.459.612 0 1.116-.108 1.512-.324.414-.216.729-.54.945-.972s.324-.954.324-1.566h3.564c0 .918-.153 1.737-.459 2.457-.288.72-.72 1.323-1.296 1.809-.558.486-1.233.855-2.025 1.107s-1.674.378-2.646.378z" /><path d="m139.147 33v-19.521h3.753v6.885h.189c.306-.378.666-.702 1.08-.972.432-.288.909-.513 1.431-.675.54-.162 1.125-.243 1.755-.243.936 0 1.755.171 2.457.513s1.242.882 1.62 1.62c.396.738.594 1.701.594 2.889v9.504h-3.753v-8.91c0-.45-.054-.828-.162-1.134-.108-.324-.27-.585-.486-.783-.198-.216-.45-.369-.756-.459s-.648-.135-1.026-.135c-.558 0-1.062.135-1.512.405s-.801.639-1.053 1.107-.378 1.008-.378 1.62v8.289z" /><path d="m160.762 33.324c-1.566 0-2.88-.261-3.942-.783-1.062-.54-1.863-1.359-2.403-2.457s-.81-2.493-.81-4.185c0-1.71.27-3.105.81-4.185.54-1.098 1.332-1.908 2.376-2.43 1.062-.54 2.358-.81 3.888-.81 1.44 0 2.655.261 3.645.783.99.504 1.737 1.296 2.241 2.376.504 1.062.756 2.439.756 4.131v.972h-9.909c.036.828.162 1.53.378 2.106.234.576.585 1.008 1.053 1.296.486.27 1.125.405 1.917.405.432 0 .819-.054 1.161-.162.36-.108.666-.27.918-.486s.45-.486.594-.81.216-.693.216-1.107h3.672c0 .9-.162 1.683-.486 2.349s-.774 1.224-1.35 1.674c-.576.432-1.269.765-2.079.999-.792.216-1.674.324-2.646.324zm-3.294-8.964h5.994c0-.54-.072-1.008-.216-1.404-.126-.396-.306-.72-.54-.972s-.522-.432-.864-.54c-.324-.126-.693-.189-1.107-.189-.684 0-1.26.117-1.728.351-.45.216-.801.558-1.053 1.026-.234.45-.396 1.026-.486 1.728z" /></g>
+    </svg>
+  </NuxtLink>
+</template>
+```
+- make `~/app/frontend/components/Header.vue` look like this:
+```
+<template>
+  <header class="z-20 border-b bg-background/90 backdrop-blur">
+    <UiContainer class="flex h-16 items-center justify-between md:h-20">
+      <div class="flex items-center gap-10">
+        <Logo />
+        <UiNavigationMenu as="nav" class="hidden items-center justify-start gap-8 md:flex">
+          <UiNavigationMenuList class="gap-2">
+            <UiNavigationMenuItem>
+              <UiNavigationMenuLink as-child>
+                <UiButton to="/" variant="ghost" size="sm">
+                  Home
+                </UiButton>
+              </UiNavigationMenuLink>
+            </UiNavigationMenuItem>
+            <UiNavigationMenuItem>
+              <UiNavigationMenuLink as-child>
+                <UiButton to="/public" variant="ghost" size="sm">
+                  Public
+                </UiButton>
+              </UiNavigationMenuLink>
+            </UiNavigationMenuItem>
+            <UiNavigationMenuItem>
+              <UiNavigationMenuLink as-child>
+                <UiButton to="/private" variant="ghost" size="sm">
+                  Private
+                </UiButton>
+              </UiNavigationMenuLink>
+            </UiNavigationMenuItem>
+          </UiNavigationMenuList>
+        </UiNavigationMenu>
+      </div>
+      <div class="md:hidden">
+        <UiSheet>
+          <UiSheetTrigger as-child>
+            <UiButton variant="ghost" size="icon-sm">
+              <Icon name="lucide:menu" class="h-5 w-5" />
+            </UiButton>
+            <UiSheetContent class="w-[90%] p-0">
+              <template #content>
+                <UiSheetTitle class="sr-only" title="Mobile menu" />
+                <UiSheetDescription class="sr-only" description="Mobile menu" />
+                <UiSheetX class="z-20" />
+
+                <UiScrollArea class="h-full p-5">
+                  <div class="flex flex-col gap-2">
+                    <UiButton variant="ghost" class="justify-start text-base" to="/">
+                      Home
+                    </UiButton>
+                    <UiButton variant="ghost" class="justify-start text-base" to="/public">
+                      Public
+                    </UiButton>
+                    <UiButton variant="ghost" class="justify-start text-base" to="/private">
+                      Private
+                    </UiButton>
+                    <UiGradientDivider class="my-5" />
+                    <UiButton to="#">
+                      Sign up
+                    </UiButton>
+                    <UiButton variant="outline" to="#">
+                      Log in
+                    </UiButton>
+                  </div>
+                </UiScrollArea>
+              </template>
+            </UiSheetContent>
+          </UiSheetTrigger>
+        </UiSheet>
+      </div>
+      <div class="hidden items-center gap-3 md:flex">
+        <UiButton to="#" variant="ghost" size="sm">
+          Log in
+        </UiButton>
+        <UiButton to="#" size="sm">
+          Sign up
+        </UiButton>
+      </div>
+    </UiContainer>
+  </header>
+</template>
+```
+- make `~/app/frontend/components/Footer.vue` look like this:
+```
+<template>
+  <footer>
+    <UiContainer as="footer" class="py-16 lg:py-24">
+      <section class="flex flex-col justify-between gap-5 pt-8 lg:flex-row">
+        <p class="text-muted-foreground">
+          &copy; {{ new Date().getFullYear() }}. Made with
+          <a class="hover:underline" href="https://nuxt.com">Nuxt</a>,
+          <a class="hover:underline" href="https://tailwindcss.com/">Tailwind</a>,
+          <a class="hover:underline" href="https://ui-thing.behonbaker.com">UI Thing</a>,
+          <a class="hover:underline" href="https://rubyonrails.org/">Rails</a>,
+          <a class="hover:underline" href="https://fly.io">Fly.io</a> and
+          <a class="hover:underline" href="https://aws.amazon.com/s3/">S3</a>.
+        </p>
+      </section>
+    </UiContainer>
+  </footer>
+</template>
+```
+- make `~/app/frontend/layouts/default.vue` look like this:
+```
+<template>
+  <Header />
+  <main>
+    <NuxtPage />
+  </main>
+  <Footer />
+</template>
+```
+- `npm run dev` -> Homepage should have header and footer
+- `^ + c`
+
+### Subpages
+- `cd ~/app/frontend/pages`
+- `touch public.vue private.vue`
+- make `~/app/frontend/pages/public.vue` look like this:
+```
+<template>
+  <UiContainer class="relative flex flex-col py-10 lg:py-20">
+    <div
+      class="absolute inset-0 z-[-2] h-full w-full bg-transparent bg-[linear-gradient(to_right,_theme(colors.border)_1px,_transparent_1px),linear-gradient(to_bottom,_theme(colors.border)_1px,_transparent_1px)] bg-[size:80px_80px] [mask-image:radial-gradient(#000,_transparent_80%)]"
+    />
+    <div class="flex h-full lg:w-[768px]">
+      <div>
+        <h1 class="mb-4 text-4xl font-bold md:text-5xl lg:mb-6 lg:mt-5 xl:text-6xl">
+          Public
+        </h1>
+        <p class="max-w-[768px] mb-8 text-lg text-muted-foreground lg:text-xl">
+          Looked at from one side, the wall enclosed a barren sixty-acre field called the Port of Anarres. On the field there were a couple of large gantry cranes, a rocket pad, three warehouses, a truck garage, and a dormitory. The dormitory looked durable, grimy, and mournful; it had no gardens, no children; plainly nobody lived there or was even meant to stay there long. It was in fact a quarantine. The wall shut in not only the landing field but also the ships that came down out of space, and the men that came on the ships, and the worlds they came from, and the rest of the universe. It enclosed the universe, leaving Anarres outside, free.
+        </p>
+        <p class="max-w-[768px] mb-8 text-lg text-muted-foreground lg:text-xl">
+          Looked at from the other side, the wall enclosed Anarres: the whole planet was inside it, a great prison camp, cut off from other worlds and other men, in quarantine.
+        </p>
+      </div>
+    </div>
+  </uicontainer>
+</template>
+```
+- make `~/app/frontend/pages/private.vue` look like this:
+```
+<template>
+  <UiContainer class="relative flex flex-col py-10 lg:py-20">
+    <div
+      class="absolute inset-0 z-[-2] h-full w-full bg-transparent bg-[linear-gradient(to_right,_theme(colors.border)_1px,_transparent_1px),linear-gradient(to_bottom,_theme(colors.border)_1px,_transparent_1px)] bg-[size:80px_80px] [mask-image:radial-gradient(#000,_transparent_80%)]"
+    />
+    <div class="flex h-full lg:w-[768px]">
+      <div>
+        <h1 class="mb-4 text-4xl font-bold md:text-5xl lg:mb-6 lg:mt-5 xl:text-6xl">
+          Private
+        </h1>
+        <p class="max-w-[768px] mb-8 text-lg text-muted-foreground lg:text-xl">
+          A number of people were coming along the road towards the landing field, or standing around where the road cut through the wall. People often came out from the nearby city of Abbenay in hopes of seeing a spaceship, or simply to see the wall. After all, it was the only boundary wall on their world. Nowhere else could they see a sign that said No Trespassing. Adolescents, particularly, were drawn to it. They came up to the wall; they sat on it. There might be a gang to watch, offloading crates from track trucks at the warehouses. There might even be a freighter on the pad. Freighters came down only eight times a year, unannounced except to syndics actually working at the Port, so when the spectators were lucky enough to see one they were excited, at first. But there they sat, and there it sat, a squat black tower in a mess of movable cranes, away off across the field. And then a woman came over from one of the warehouse crews and said, “We’re shutting down for today, brothers.” She was wearing the Defense armband, a sight almost as rare as a spaceship. That was a bit of a thrill. But though her tone was mild, it was final. She was the foreman of this gang, and if provoked would be backed up by her syndics. And anyhow there wasn’t anything to see. The aliens, the offworlders, stayed hiding in their ship. No show.
+        </p>
+      </div>
+    </div>
+  </uicontainer>
+</template>
+```
+- `cd ~/app/frontend`
+- `npm run dev` -> home, public & private links work (private page is not yet locked)
+- `^ + c`
+
+### Auth
+- `cd ~/app/frontend`
+- `npx nuxi@latest module add @sidebase/nuxt-auth`
+- `npm install`
+- to the top of `~/app/frontend/pages/public.vue` add:
+```
+<script>
+definePageMeta({ auth: false })
+</script>
+```
+- make `~/app/frontend/nuxt.config.js` look like this:
+```
+const development = process.env.NODE_ENV !== 'production'
+export default defineNuxtConfig({
+  devtools: { enabled: true },
+  runtimeConfig: { public: { apiBase: 'http://localhost:3000' } },
+  devServer: { port: 3001 },
+  modules: ['@nuxtjs/tailwindcss', '@nuxtjs/color-mode', '@vueuse/nuxt', 'nuxt-icon', '@sidebase/nuxt-auth'],
+  imports: {
+    imports: [
+      { from: 'tailwind-variants', name: 'tv' },
+      { from: 'tailwind-variants', name: 'VariantProps', type: true },
+    ],
+  },
+  auth: {
+    computed: { pathname: development ? 'http://localhost:3000/api/auth/' : 'https://interview-app-backend.fly.dev/api/auth/' },
+    isEnabled: true,
+    globalAppMiddleware: { isEnabled: true },
+    provider: {
+      type: 'local',
+      pages: { login: '/' },
+      token: { signInResponseTokenPointer: '/token' },
+      endpoints: {
+        signIn: { path: '/login', method: 'post' },
+        signOut: { path: '/logout', method: 'delete' },
+        signUp: { path: '/signup', method: 'post' },
+        getSession: { path: '/session', method: 'get' },
+      },
+    },
+  },
+})
+```
+- `npm run dev` -> private page redirects to homepage (login still goes to a 404)
+- `^ + c`
+
+### Header With Auth
+- `cd ~/app/frontend`
+- `npx ui-thing@latest add avatar dropdown-menu`
+- make `~/app/frontend/components/Header.vue` look like this:
+```
+<script setup>
+const { data, signOut, status } = useAuth()
+
+const uuid = computed(() => {
+  if (data && data.value) {
+    return data.value.uuid
+  }
+  return ''
+})
+
+async function logout() {
+  await signOut({ callbackUrl: '/' })
+  useSonner('Logged out successfully!', { description: 'You have successfully logged out.' })
+}
+</script>
+
+<template>
+  <header class="z-20 border-b bg-background/90 backdrop-blur">
+    <UiContainer class="flex h-16 items-center justify-between md:h-20">
+      <div class="flex items-center gap-10">
+        <Logo />
+        <UiNavigationMenu as="nav" class="hidden items-center justify-start gap-8 md:flex">
+          <UiNavigationMenuList class="gap-2">
+            <UiNavigationMenuItem>
+              <UiNavigationMenuLink as-child>
+                <UiButton to="/" variant="ghost" size="sm">
+                  Home
+                </UiButton>
+              </UiNavigationMenuLink>
+            </UiNavigationMenuItem>
+            <UiNavigationMenuItem>
+              <UiNavigationMenuLink as-child>
+                <UiButton v-if="status === 'authenticated'" to="/users" variant="ghost" size="sm">
+                  Users
+                </UiButton>
+              </UiNavigationMenuLink>
+            </UiNavigationMenuItem>
+            <UiNavigationMenuItem>
+              <UiNavigationMenuLink as-child>
+                <UiButton to="/public" variant="ghost" size="sm">
+                  Public
+                </UiButton>
+              </UiNavigationMenuLink>
+            </UiNavigationMenuItem>
+            <UiNavigationMenuItem v-if="status === 'authenticated'">
+              <UiNavigationMenuLink as-child>
+                <UiButton to="/private" variant="ghost" size="sm">
+                  Private
+                </UiButton>
+              </UiNavigationMenuLink>
+            </UiNavigationMenuItem>
+          </UiNavigationMenuList>
+        </UiNavigationMenu>
+      </div>
+      <div class="md:hidden">
+        <UiSheet>
+          <UiSheetTrigger as-child>
+            <UiButton variant="ghost" size="icon-sm">
+              <Icon name="lucide:menu" class="h-5 w-5" />
+            </UiButton>
+            <UiSheetContent class="w-[90%] p-0">
+              <template #content>
+                <UiSheetTitle class="sr-only" title="Mobile menu" />
+                <UiSheetDescription class="sr-only" description="Mobile menu" />
+                <UiSheetX class="z-20" />
+
+                <UiScrollArea class="h-full p-5">
+                  <div class="flex flex-col gap-2">
+                    <UiButton variant="ghost" class="justify-start text-base" to="/">
+                      Home
+                    </UiButton>
+                    <UiButton v-if="status === 'authenticated'" variant="ghost" class="justify-start text-base" to="/users">
+                      Users
+                    </UiButton>
+                    <UiButton variant="ghost" class="justify-start text-base" to="/public">
+                      Public
+                    </UiButton>
+                    <UiButton v-if="status === 'authenticated'" variant="ghost" class="justify-start text-base" to="/private">
+                      Private
+                    </UiButton>
+                    <UiGradientDivider class="my-5" />
+                    <UiButton to="/signup">
+                      Sign up
+                    </UiButton>
+                    <UiButton variant="outline" to="/login">
+                      Log in
+                    </UiButton>
+                  </div>
+                </UiScrollArea>
+              </template>
+            </UiSheetContent>
+          </UiSheetTrigger>
+        </UiSheet>
+      </div>
+      <div class="hidden items-center gap-3 md:flex">
+        <UiButton v-if="status === 'unauthenticated'" to="/login" variant="ghost" size="sm">
+          Log in
+        </UiButton>
+        <UiButton v-if="status === 'unauthenticated'" to="/signup" size="sm">
+          Sign up
+        </UiButton>
+
+        <div v-if="status === 'authenticated'" class="flex items-center justify-center">
+          <UiDropdownMenu>
+            <UiDropdownMenuTrigger as-child>
+              <UiButton id="dropdown-menu-trigger" class="focus:ring-0 focus:outline-none hover:bg-transparent" variant="ghost">
+                <UiAvatar
+                  src="https://images.unsplash.com/photo-1492633423870-43d1cd2775eb?&w=128&h=128&dpr=2&q=80"
+                  alt="Colm Tuite"
+                  fallback="CT"
+                  :delay-ms="600"
+                />
+              </UiButton>
+            </UiDropdownMenuTrigger>
+            <UiDropdownMenuContent class="w-56">
+              <NuxtLink :to="`/users/${uuid}`">
+                <UiDropdownMenuItem title="Profile" icon="ph:user" />
+              </NuxtLink>
+              <UiDropdownMenuSeparator />
+              <UiDropdownMenuItem title="Log out" icon="ph:user" @click.prevent="logout" />
+            </UiDropdownMenuContent>
+          </UiDropdownMenu>
+        </div>
+
+        <UiButton v-if="status === 'authenticated'" variant="ghost" size="sm" @click.prevent="logout">
+          Log out
+        </UiButton>
+      </div>
+    </UiContainer>
+  </header>
+</template>
+```
+- `cd ~/app/frontend`
+- `npm run dev`
+- `^ + c` -> Private link should now be hidden
+
+### Login Form
+- `cd ~/app/frontend`
+- `npx ui-thing@latest add vee-input form vue-sonner` -> hit `y` when asked about installing dependencies
+- `touch pages/login.vue`
+- make `~/app/frontend/pages/login.vue` look like this:
+```
+<script setup>
+const { signIn, status } = useAuth()
+definePageMeta({ auth: false })
+const email = ref('test@mail.com')
+const password = ref('password')
+
+async function login() {
+  await signIn({ user: { email: email.value, password: password.value } }, { redirect: false })
+  useSonner('Logged in successfully!', { description: 'You have successfully logged in.' })
+  navigateTo('/')
+}
+</script>
+
+<template>
+  <UiContainer class="relative flex flex-col py-10 lg:py-20">
+    <div class="flex h-screen items-center justify-center">
+      <div class="w-full max-w-[350px] px-5">
+        <h1 class="text-2xl font-bold tracking-tight lg:text-3xl">
+          Log in
+        </h1>
+        <p class="mt-1 text-muted-foreground">
+          Enter your email & password to log in.
+        </p>
+
+        <form class="mt-10">
+          <fieldset class="grid gap-5">
+            <div>
+              <UiVeeInput v-model="email" label="Email" type="email" name="email" placeholder="test@mail.com" />
+            </div>
+            <div>
+              <UiVeeInput v-model="password" label="Password" type="password" name="password" placeholder="password" />
+            </div>
+            <div>
+              <UiButton class="w-full" type="submit" text="Log in" @click.prevent="login" />
+            </div>
+          </fieldset>
+        </form>
+        <p class="mt-4 text-sm text-muted-foreground">
+          Don't have an account?
+          <NuxtLink class="font-semibold text-primary underline-offset-2 hover:underline" to="/signup">
+            Create account
+          </NuxtLink>
+        </p>
+      </div>
+    </div>
+  </UiContainer>
+</template>
+```
+- make `~/app/layouts/default.vue` look like this:
+```
+<template>
+  <Header />
+  <main>
+    <NuxtPage />
+    <UiVueSonner />
+  </main>
+  <Footer />
+</template>
+```
+
+### Signup Form
+- `cd ~/app/frontend`
+- `touch pages/signup.vue`
+- make `~/app/frontend/pages/signup.vue` look like this:
+```
+<script setup>
+const { signUp } = useAuth()
+
+definePageMeta({ auth: false })
+
+const email = ref('')
+const password = ref('')
+
+async function register() {
+  await signUp({ user: { email: email.value, password: password.value } }, { redirect: false })
+  useSonner('Signed up successfully!', { description: 'You have successfully signed in.' })
+  navigateTo('/')
+}
+</script>
+
+<template>
+  <UiContainer class="relative flex flex-col py-10 lg:py-20">
+    <div class="flex h-screen items-center justify-center">
+      <div class="w-full max-w-[350px] px-5">
+        <h1 class="text-2xl font-bold tracking-tight lg:text-3xl">
+          Sign up
+        </h1>
+        <p class="mt-1 text-muted-foreground">
+          Enter your email & password to sign up.
+        </p>
+
+        <form class="mt-10">
+          <fieldset class="grid gap-5">
+            <div>
+              <UiVeeInput v-model="email" label="Email" type="email" name="email" placeholder="test@mail.com" />
+            </div>
+            <div>
+              <UiVeeInput v-model="password" label="Password" type="password" name="password" placeholder="password" />
+            </div>
+            <div>
+              <UiButton class="w-full" type="submit" text="Sign up" @click.prevent="register" />
+            </div>
+          </fieldset>
+        </form>
+      </div>
+    </div>
+  </UiContainer>
+</template>
+```
+
+### Nuxt User Views
+- `cd ~/app/frontend`
+- `npx ui-thing@latest add card table`
+- `mkdir pages/users`
+- `cd pages/users`
+- `touch index.vue new.vue \[id\].vue`
+- make `~/app/frontend/pages/users/index.vue` look like this:
+```
+<script setup lang="ts">
+import { ref } from 'vue'
+
+const config = useRuntimeConfig()
+const { data: users, refresh } = await useAsyncData('users', () =>
+  $fetch(`${config.public.apiBase}/users`))
+
+const sortedUsers = computed(() => {
+  if (users.value) {
+    return [...users.value].sort((a, b) => a.id - b.id)
+  }
+  return []
+})
+
+async function navigateToUser(uuid) {
+  navigateTo(`/users/${uuid}`)
+}
+
+async function deleteUser(uuid) {
+  await fetch(`${config.public.apiBase}/users/${uuid}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
+  refresh()
+}
+</script>
+
+<template>
+  <UiContainer class="relative flex flex-col py-10 lg:py-20">
+    <div
+      class="absolute inset-0 z-[-2] h-full w-full bg-transparent bg-[linear-gradient(to_right,_theme(colors.border)_1px,_transparent_1px),linear-gradient(to_bottom,_theme(colors.border)_1px,_transparent_1px)] bg-[size:80px_80px] [mask-image:radial-gradient(#000,_transparent_80%)]"
+    />
+    <div class="flex h-full lg:w-[768px]">
+      <div>
+        <h1 class="mb-4 text-4xl font-bold md:text-5xl lg:mb-6 lg:mt-5 xl:text-6xl">
+          Users
+        </h1>
+        <div class="overflow-x-auto rounded-md border pb-4">
+          <UiTable>
+            <UiTableHeader>
+              <UiTableRow>
+                <UiTableHead class="w-[100px]">
+                  id
+                </UiTableHead>
+                <UiTableHead>email</UiTableHead>
+                <UiTableHead>uuid</UiTableHead>
+                <UiTableHead class="w-[50px]" />
+              </UiTableRow>
+            </UiTableHeader>
+            <UiTableBody class="last:border-b">
+              <template v-for="user in sortedUsers" :key="user.id">
+                <UiTableRow class="cursor-pointer hover:bg-gray-100">
+                  <UiTableCell class="font-medium" @click="navigateToUser(user.uuid)">
+                    {{ user.id }}
+                  </UiTableCell>
+                  <UiTableCell @click="navigateToUser(user.uuid)">
+                    {{ user.email }}
+                  </UiTableCell>
+                  <UiTableCell @click="navigateToUser(user.uuid)">
+                    {{ user.uuid }}
+                  </UiTableCell>
+                  <UiTableCell class="text-right">
+                    <button @click.stop="deleteUser(user.uuid)">
+                      <Icon name="lucide:trash" class="text-red-500 hover:text-red-700" />
+                    </button>
+                  </UiTableCell>
+                </UiTableRow>
+              </template>
+            </UiTableBody>
+          </UiTable>
+        </div>
+      </div>
+    </div>
+    <NuxtLink to="/users/new">
+      <UiButton class="w-[100px]">
+        New User
+      </UiButton>
+    </NuxtLink>
+  </UiContainer>
+</template>
+```
+- make `~/app/frontend/pages/users/[id].vue` look like this:
+```
+<script setup>
+definePageMeta({ auth: false })
+
+const route = useRoute()
+const user = ref({})
+
+async function fetchUser() {
+  const { apiBase } = useRuntimeConfig().public
+  const response = await fetch(`${apiBase}/users/${route.params.id}`)
+  user.value = await response.json()
+}
+
+async function saveUserChanges(updatedUser) {
+  const { apiBase } = useRuntimeConfig().public
+  await fetch(`${apiBase}/users/${route.params.id}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      user: {
+        email: updatedUser.email,
+        uuid: updatedUser.uuid,
+      },
+    }),
+  })
+}
+
+async function deleteUser() {
+  const { apiBase } = useRuntimeConfig().public
+  await fetch(`${apiBase}/users/${route.params.id}`, {
+    method: 'DELETE',
+  })
+  navigateTo('/users')
+}
+
+onMounted(fetchUser)
+
+// Watch for changes in the user object
+watch(user, (newUser) => {
+  if (newUser.id) { // Ensure user data is loaded before sending a request
+    saveUserChanges(newUser)
+  }
+}, { deep: true })
+</script>
+
+<template>
+  <UiContainer class="relative flex flex-col py-10 lg:py-20">
+    <div
+      class="absolute inset-0 z-[-2] h-full w-full bg-transparent bg-[linear-gradient(to_right,_theme(colors.border)_1px,_transparent_1px),linear-gradient(to_bottom,_theme(colors.border)_1px,_transparent_1px)] bg-[size:80px_80px] [mask-image:radial-gradient(#000,_transparent_80%)]"
+    />
+    <div class="flex h-full lg:w-[768px]">
+      <div>
+        <h1 class="mb-4 text-4xl font-bold md:text-5xl lg:mb-6 lg:mt-5 xl:text-6xl">
+          User
+        </h1>
+        <div class="flex items-center justify-center">
+          <form @submit.prevent>
+            <UiCard class="w-[360px] max-w-sm" :title="user.email">
+              <template #content>
+                <UiCardContent>
+                  <div class="grid w-full items-center gap-4">
+                    <div class="flex flex-col space-y-1.5">
+                      <UiLabel for="email">
+                        Email
+                      </UiLabel>
+                      <UiInput id="email" v-model="user.email" required />
+                    </div>
+                    <div class="flex flex-col space-y-1.5">
+                      <UiLabel for="uuid">
+                        UUID
+                      </UiLabel>
+                      <p class="text-sm">
+                        {{ user.uuid }}
+                      </p>
+                    </div>
+                  </div>
+                </UiCardContent>
+              </template>
+              <template #footer>
+                <UiCardFooter class="flex justify-between">
+                  <UiButton variant="destructive" @click.prevent="deleteUser">
+                    <Icon name="lucide:trash" />
+                    Delete User
+                  </UiButton>
+                </UiCardFooter>
+              </template>
+            </UiCard>
+          </form>
+        </div>
+      </div>
+    </div>
+  </UiContainer>
+</template>
+```
+- make `~/app/fronte nd/pages/users/new.vue` look like this:
+```
+<script setup>
+const user = ref({
+  email: '',
+  password: '',
+  password_confirmation: '',
+})
+
+async function createUser() {
+  const { apiBase } = useRuntimeConfig().public
+  const response = await fetch(`${apiBase}/users`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      user: {
+        email: user.value.email,
+        password: user.value.password,
+      },
+    }),
+  })
+
+  if (response.ok) {
+    const createdUser = await response.json()
+    navigateTo(`/users/${createdUser.uuid}`)
+  }
+}
+</script>
+
+<template>
+  <UiContainer class="relative flex flex-col py-10 lg:py-20">
+    <div
+      class="absolute inset-0 z-[-2] h-full w-full bg-transparent bg-[linear-gradient(to_right,_theme(colors.border)_1px,_transparent_1px),linear-gradient(to_bottom,_theme(colors.border)_1px,_transparent_1px)] bg-[size:80px_80px] [mask-image:radial-gradient(#000,_transparent_80%)]"
+    />
+    <div class="flex h-full lg:w-[768px]">
+      <div>
+        <h1 class="mb-4 text-4xl font-bold md:text-5xl lg:mb-6 lg:mt-5 xl:text-6xl">
+          Create User
+        </h1>
+        <div class="flex items-center justify-center">
+          <form @submit.prevent="createUser">
+            <UiCard class="w-[360px] max-w-sm" :title="user.email">
+              <template #content>
+                <UiCardContent>
+                  <div class="grid w-full items-center gap-4">
+                    <div class="flex flex-col space-y-1.5">
+                      <UiLabel for="email">
+                        Email
+                      </UiLabel>
+                      <UiInput id="email" v-model="user.email" required />
+                    </div>
+                    <div class="flex flex-col space-y-1.5">
+                      <UiLabel for="password">
+                        Password
+                      </UiLabel>
+                      <UiInput id="password" v-model="user.password" type="password" required />
+                    </div>
+                  </div>
+                </UiCardContent>
+              </template>
+              <template #footer>
+                <UiCardFooter class="flex justify-between">
+                  <UiButton type="submit">
+                    Create User
+                  </UiButton>
+                </UiCardFooter>
+              </template>
+            </UiCard>
+          </form>
+        </div>
+      </div>
+    </div>
+  </UiContainer>
+</template>
+```
+
+### Nuxt File Upload Page (Delete This???)
+- `cd ~/app/frontend`
+- make `~/app/frontend/pages/upload.vue` look like this:
+```
+<template>
+  <input type="file" @change="handleFileUpload" />
+</template>
+
+<script setup>
+import { ref, defineEmits } from 'vue';
+
+// Define the emitted events for this component
+const emit = defineEmits(['fileSelected']);
+
+// Reactive reference for the file
+const file = ref(null);
+
+// Handle the file upload
+const handleFileUpload = (event) => {
+  const target = event.target; // No TypeScript syntax here
+  if (target.files && target.files.length > 0) {
+    file.value = target.files[0];
+    emit('fileSelected', file.value); // Emit the selected file to parent component
+  }
+};
+</script>
+```
+
+## Backend
+
+### Rails Starter API
+- install VSCode extentions `Ruby LSP` and `Rubocop`
+- `cd ~/app/backend`
+- `bundle add rack-cors`
+- `bundle install`
+- check if there's a `~/app/backend/config/initializers/cors.rb` file and if not, run `touch config/initializers/cors.rb`
+- make `~/app/backend/config/initializers/cors.rb` look like this (you will probably have to change the `https://app-frontend.fly.dev` line later):
 ```
 Rails.application.config.middleware.insert_before 0, Rack::Cors do
   allow do
-    origins "*"
+    origins 'http://localhost:3001', 'https://app-frontend.fly.dev'
     resource "*",
-      headers: :any,
-      methods: [:get, :post, :put, :patch, :delete, :options, :head]
-  end
-end
-~
-```
-
-### Health Controller
-- `rails g controller health index`
-- `puravida app/controllers/health_controller.rb ~`
-```
-class HealthController < ApplicationController
-  def index
-    render json: { status: 'online' }
-  end
-end
-~
-```
-
-- `puravida spec/requests/health_spec.rb ~`
-```
-# frozen_string_literal: true
-
-require "rails_helper"
-
-RSpec.describe "API Testing" do
-  describe "GET /health" do
-    it "returns success" do
-      get("/health")
-
-      expect(response).to have_http_status(:ok)
-      expect(JSON.parse(response.body)['status']).to eq('online')
-    end
-
-  end
-
-end
-~
-```
-- `puravida config/routes.rb ~`
-```
-Rails.application.routes.draw do
-  get "health", to: "health#index"
-end
-~
-```
-- `rspec`
-
-### Users
-- `rails g scaffold user name email avatar:attachment admin:boolean password_digest`
-- change the migration file (`db/migrate/<timestamp>_create_users.rb`) to:
-```
-class CreateUsers < ActiveRecord::Migration[7.0]
-  def change
-    create_table :users do |t|
-      t.string :name, null: false
-      t.string :email, null: false, index: { unique: true }
-      t.boolean :admin, default: false
-      t.string :password_digest
-      t.timestamps
-    end
+    headers: :any,
+    expose: ['access-token', 'expiry', 'token-type', 'Authorization'],
+    methods: [:get, :patch, :put, :delete, :post, :options, :show]
   end
 end
 ```
-- `rails db:migrate`
-- `puravida app/models/user.rb ~`
+- `rails db:create` (or `rails db:drop db:create` if you already have a database called `backend`)
+
+### AWS S3 Setup
+Now we'll create our AWS S3 account so we can store our user avatar images there as well as any other file uploads we'll need. There are a few parts here. We want to create a S3 bucket to store the files. But a S3 bucket needs a IAM user. Both the S3 bucket and the IAM user need permissions policies. There's a little bit of a chicken and egg issue here - when we create the user permissions policy, we need the S3 bucket name. But when we create the S3 bucket permissions, we need the IAM user name. So we'll create everything and use placeholder strings in some of the policies. Then when we're all done, we'll go through the policies and update all the placeholder strings to what they really need to be.
+
+#### AWS General Setup
+- login to AWS (https://aws.amazon.com)
+  - If you don't have an AWS account, you'll need to sign up. It's been awhile since I did this part - I think you have to create a root user and add you credit card or something. Google it if you run into trouble with this part.
+- at top right, select a region if currently says `global` (I use the `us-east-1` region). If all the region options are grayed out, ignore this for now.
+- at top right click your name
+  - next to Account ID, click the copy icon (two overlapping squares)
+  - paste your Account ID in a new text file (It pastes without the dashes. Leave it that way - you need it without the dashes.)
+  - save this in a file called `aws-details.txt` or something in a folder on your Desktop called `app-secrets` or something. You'll need it shortly. Whatever you do, never commit the `app-secrets` folder or the `aws-details.txt` file to your github repo. These will have to be kept locally on your computer, or better yet, saved to a password manager.
+
+#### AWS User Policy
+- in searchbar at top, enter `iam` and select IAM
+- click `Policies` in the left sidebar under Access Managment
+  - click `Create policy` towards the top right
+  - click the `JSON` tab on Policy Editor
+  - under Policy Editor select all with `command + a` and then hit `delete` to clear out everything there
+  - enter this under Policy Editor (we'll update it shortly, once we have our user and bucket names):
 ```
-class User < ApplicationRecord
-  has_one_attached :avatar
-  has_secure_password
-  validates :email, format: { with: /\A(.+)@(.+)\z/, message: "Email invalid" }, uniqueness: { case_sensitive: false }, length: { minimum: 4, maximum: 254 }
-end
-~
+{
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Sid": "AllowGetObject",
+			"Effect": "Allow",
+			 "Action": [
+          "s3:PutObject",
+          "s3:GetObject",
+          "s3:DeleteObject"
+            ],
+			"Resource": "arn:aws:s3:::bucketname"
+		}
+	]
+}
 ```
-- `rm -rf test`
-- `puravida spec/rails_helper.rb ~`
+  - click Next towards bottom right
+  - for Policy Name, enter `app-s3-user-policy`
+  - save your policy name in your `aws-details.txt` file
+  - click Create Policy towards the bottom right
+
+#### AWS User
+- click `Users` under Access Management in the left sidebar
+  - click `Create User` towards the top right
+  - enter name, something like `app-s3-user` (add this to your `aws-details.txt` file on your desktop - you'll need it later)
+  - click Next
+  - under Permissions Options click `Attach policies directly`
+  - in the search bar under Permissions Policies, enter `app-s3-user-policy` -> this should then show the policy we just created above (`app-s3-user-policy`) under Policy Name
+  - under Policy Name, click the checkbox to the left of `app-s3-user-policy`
+  - click Next
+  - click Create User towards the bottom right
+- under Users, click the name of the user we just created (`app-user`)
+  - click Security Credentials tab
+  - click `Create Access key` towards the top right
+    - Use case: `Local code`
+    - check `I understand the above recommendation`
+    - Next
+    - Description tag value: enter tag name, like `app-user-access-key`
+    - click `Create access key` towards the bottom right
+    - click `Download .csv file` towards the bottom
+    - click Done
+    - move the `AccessKeys.csv` file into the `app-secrets` folder you made above
+
+#### AWS S3 Bucket
+- in searchbar at top, enter `s3` and select S3
+- Create Bucket
+  - for Bucket Name, enter something like `app-s3-bucket-development` (below when you click Create Bucket, it may tell you this bucket already exists and you will have to make it more unique. Regardless, add this to your `aws-details.txt` file on your desktop - you'll need it later)
+  - under Object Ownership, click ACLs Enabled
+  - under Block Public Access settings
+    - uncheck the first option, `Block All Public Access`
+    - check the last two options, `Block public access to buckets and objects granted through new public bucket or access point policies` and `Block public and cross-account access to buckets and objects through any public bucket or access point policies`
+  - check `I acknowledge that the current settings might result in this bucket and the objects within becoming public.`  
+  - scroll to bottom and click Create Bucket (if nothing happens, scroll up and look for red error messages)
+- under General Purpose Buckets, click the name of the bucket you just created -> then click the Permissions tab towards the top
+  - in the Bucket Policy section, click Edit (to the right of "Bucket Policy")
+  - copy/paste the boilerplate json bucket policy in the next line below this into the text editor area under Policy.
+  - here is the boilerplate json bucket policy:
+```
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": "arn:aws:iam::<aws acct id without dashes>:user/<iam username>"
+            },
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::<bucket name>"
+        },
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": "arn:aws:iam::<aws acct id without dashes>:user/<iam username>"
+            },
+            "Action": [
+                "s3:GetObject",
+                "s3:PutObject",
+                "s3:DeleteObject"
+            ],
+            "Resource": "arn:aws:s3:::<bucket name>/*"
+        }
+    ]
+}
+```
+  - Update all the `<aws acct id without dashes>`, `<iam username>` and `<bucket name>` parts in the policy now in the text editor area under Policy with the account number, user name and bucket name you jotted down above in your `aws-details.txt` file on your Desktop.
+  - click Save Changes towards the bottom right
+  - in the Cross-Origin Resource Sharing (CORS) section, click `Edit` (to the right of "Cross-origin resource sharing (CORS)")
+  - under Cross-origin Resource Sharing (CORS) add this:
+```
+[
+    {
+        "AllowedHeaders": [
+            "*"
+        ],
+        "AllowedMethods": [
+            "GET",
+            "POST",
+            "PUT",
+            "DELETE"
+        ],
+        "AllowedOrigins": [
+            "*"
+        ],
+        "ExposeHeaders": [],
+        "MaxAgeSeconds": 3000
+    }
+]
+```
+  - click Save Changes towards the bottom right
+- now that we know our bucket name, let's update the our user policy with the bucket name
+  - in the searchbar at the top of the page, type `iam` and select `IAM`
+  - click `Policies` in the left sidebar under Access Management
+  - in the searchbar under Policies, type `app-s3-user-policy` -> click `app-s3-user-policy` under Policy Name
+  - click Edit towards the top right
+  - in the Policy Editor text editor area, in the line `"Resource": "arn:aws:s3:::bucketname"` replace `bucketname` with your bucket name in your `aws-details.txt` file
+  - click Next towards the bottom right
+  - click Save Changes towards the bottom right
+- see what region you're logged into
+  - click the AWS logo in the top left
+  - in the top right there will be a region dropdown - click it
+  - look at the highlighted region in the dropdown and look for the region string to the right of it - something like `us-east-1`
+  - write down the region in your `~/Desktop/app-secrets/aws-details.txt`
+- we're now done with our S3 setup and our AWS dashboard, at least for now. So let's go back to our terminal where we're building out our rails backend
+
+### Rubocop
+- `cd ~/app/backend`
+- `bundle add rubocop-rails`
+- `bundle install`
+- `touch .rubocop.yml`
+- to `.rubocop.yml` add:
+```
+require: rubocop-rails
+Style/Documentation:
+  Enabled: false
+```
+- `rubocop -A`
+
+### RSpec
+- `bundle add rspec-rails --group "development, test"`
+- `bundle install`
+- `rails generate rspec:install`
+
+### Database Cleaner
+- `bundle add database_cleaner-active_record`
+- `bundle install`
+- make `~/app/backend/spec/rails_helper.rb` look like this:
 ```
 require 'spec_helper'
-require 'database_cleaner/active_record'
 ENV['RAILS_ENV'] ||= 'test'
 require_relative '../config/environment'
 abort("The Rails environment is running in production mode!") if Rails.env.production?
 require 'rspec/rails'
+require 'database_cleaner/active_record'
+
 begin
   ActiveRecord::Migration.maintain_test_schema!
 rescue ActiveRecord::PendingMigrationError => e
   abort e.to_s.strip
 end
+
 RSpec.configure do |config|
-  config.fixture_path = Rails.root.join('spec/fixtures')
-  config.use_transactional_fixtures = true
+  config.use_transactional_fixtures = false
+
+  config.before(:suite) do
+    DatabaseCleaner.clean_with(:truncation)
+  end
+
+  config.before(:each) do
+    DatabaseCleaner.strategy = :transaction
+    DatabaseCleaner.start
+  end
+
+  config.after(:each) do
+    DatabaseCleaner.clean
+  end
+
   config.infer_spec_type_from_file_location!
   config.filter_rails_from_backtrace!
 end
+```
 
-def token_from_email_password(email,password)
-  post "/login", params: { email: email, password: password }
-  JSON.parse(response.body)['data']
-end
-~
+### Factory Bot
+- `bundle add factory_bot_rails --group "development, test"`
+- `bundle install`
+- `mkdir spec/factories`
+- we will wait to create the user factory until Devise creates it for us automatically when we use Devise to generate the user model
+- in `~/app/backend/spec/rails_helper.rb`, in the line after `RSpec.configure do |config|` add a blank line and put this there: 
 ```
-- `rails g rspec:scaffold users`
-- `rails g rspec:model user`
-- `puravida spec/models/user_spec.rb ~`
+config.include FactoryBot::Syntax::Methods
 ```
-require 'rails_helper'
-require 'database_cleaner/active_record'
-RSpec.describe User, type: :model do
-  let(:mock_1_valid_create_params) {{ name: "First1 Last1", email: "one@mail.com", admin: "false", password: "password", avatar: fixture_file_upload("spec/fixtures/files/michael-scott.png", "image/png") }}
-  let(:mock_1_invalid_create_params_email_poorly_formed) {{ name: "", email: "not_an_email", admin: "false", password: "password", avatar: fixture_file_upload("spec/fixtures/files/michael-scott.png", "image/png") }}
-  it "is valid with valid attributes" do
-    expect(User.new(mock_1_valid_create_params)).to be_valid
-  end
-  it "is not valid width poorly formed email" do
-    expect(User.new(mock_1_invalid_create_params_email_poorly_formed)).to_not be_valid
-  end
-end
-~
-```
-- `rspec`
-- `puravida app/controllers/application_controller.rb ~`
-```
-class ApplicationController < ActionController::API
-  SECRET_KEY_BASE = Rails.application.credentials.secret_key_base
 
-  def encode_token(payload)
-    JWT.encode payload, SECRET_KEY_BASE, 'HS256'
-  end
+### Auth Spec
+- `cd ~/app/backend`
+- `mkdir spec/requests`
+- `touch spec/requests/auth_spec.rb`
+- make `spec/requests/auth_spec.rb` look like this:
+```
+require "rails_helper"
 
-  def decoded_token
-    if auth_header and auth_header.split(' ')[0] == "Bearer"
-      token = auth_header.split(' ')[1]
-      begin
-        JWT.decode token, SECRET_KEY_BASE, true, { algorithm: 'HS256' }
-      rescue JWT::DecodeError
-        []
-      end
+RSpec.describe "Auth requests" do
+
+  let(:user) { create(:user, email: "MyString", password: "MyString") }
+  let(:valid_creds) {{ :email => user.email, :password => user.password }}
+  let(:invalid_creds) {{ :email => user.email, :password => "wrong" }}
+  let!(:token) { create(:token, user: user, token_str: Digest::MD5.hexdigest(SecureRandom.hex), active: true) }
+
+  context "POST /api/auth/login with valid credentials" do
+    it "responds with 200 status" do
+      post "/api/auth/login", params: valid_creds
+      expect(response.status).to eq 200
+    end
+    it "responds with token " do
+      post "/api/auth/login", params: valid_creds
+      json_response = JSON.parse(response.body)
+      expect(json_response).to have_key("token")
+      user.reload
+      latest_token = user.token.token_str
+      expect(json_response["token"]).to eq latest_token
+    end
+  end
+  context "POST /api/auth/login invalid credentials" do
+    it "responds with 401 status" do
+      post "/api/auth/login", params: invalid_creds
+      expect(response.status).to eq 401
     end
   end
 
-  # We don't want to send the whole user record from the database to the frontend, so we only send what we need.
-  # The db user row has password_digest (unsafe) and created_at and updated_at (extraneous).
-  # We also change avatar from a weird active_storage object to just the avatar url before it gets to the frontend.
-  def prep_raw_user(user)
-    avatar = user.avatar.present? ? url_for(user.avatar) : nil
-    user = user.admin ? user.slice(:id,:email,:name,:admin) : user.slice(:id,:email,:name)
-    user['avatar'] = avatar
-    user
+  context "GET /api/auth/session without a token header" do
+    it "responds with error" do
+      get "/api/auth/session"
+      expect(response).to have_http_status(:not_found)
+      json_response = JSON.parse(response.body)
+      expect(json_response).to have_key("error")
+      expect(json_response["error"]).to eq "User token not found"
+    end
   end
 
-  private 
+  context "GET /api/auth/session with correct token header" do
+    it "responds with the user" do
+      get "/api/auth/session", headers: { 'Authorization' => "Bearer #{token.token_str}" }
+      expect(response).to have_http_status(:ok)
+      json_response = JSON.parse(response.body)
+      expect(json_response).to have_key("user")
+      expect(json_response["user"]["email"]).to eq user.email
+    end
+  end
 
-  def auth_header
-    request.headers['Authorization']
+end
+```
+
+### Devise
+- `bundle add devise devise-jwt jsonapi-serializer`
+- `bundle install`
+- `rails generate devise:install`
+- in `~/app/backend/config/environments/development.rb` add `config.action_mailer.default_url_options = { host: 'localhost', port: 3000 }` near the other `action_mailer` lines
+- in `~/app/backend/config/initializers/devise.rb` uncomment the `config.navigational_format` line and make it like this `config.navigational_formats = []`
+- to avoid a `Your application has sessions disabled. To write to the session you must first configure a session store` error, in `~/app/backend/config/application.rb` add this near the other `config.` lines:
+```
+    config.session_store :cookie_store, key: '_interslice_session'
+    config.middleware.use ActionDispatch::Cookies
+    config.middleware.use config.session_store, config.session_options
+```
+
+### User Model
+- `cd ~/app/backend`
+- `rails g migration EnableUuid`
+- add `enable_extension 'pgcrypto'` to `~/app/backend/db/migrate/<timestamp>_enable_uuuid.rb`
+- `rails db:migrate`
+- `rails generate devise User`
+- to `~/app/backend/db/<timestamp>_devise_create_users.rb`, add this near the other `t.` lines:
+```
+t.boolean :admin, default: false
+t.uuid :uuid, index: { unique: true }
+```
+- `rails db:migrate`
+- make ~/app/backend/spec/factories/user.rb (TODO: is it `user.rb` or `users.rb`???) look like this:
+```
+FactoryBot.define do
+  factory :user do
+    sequence(:email) { |n| "user#{n}@example.com" }
+    password { "password" }
   end
 end
-~
 ```
-- `puravida app/controllers/users_controller.rb ~`
+
+### User Registration
+- `rails g devise:controllers users -c sessions registrations`
+- add `respond_to :json` to `~/app/backend/app/controllers/users/registrations_controller.rb` and `~/app/backend/app/controllers/users/sessions_controller.rb` (in both files hit return at the start of line 4 right after the opening `class` line to create a blank line and add `respond_to :json` there)
+- make `~/app/backend/config/routes.rb` look like this:
+```
+# frozen_string_literal: true
+
+Rails.application.routes.draw do
+  resources :users, param: :uuid
+  devise_for :users, path: '', path_names: {
+    sign_in: 'api/auth/login',
+    sign_out: 'api/auth/logout',
+    registration: 'api/auth/signup'
+  },
+  controllers: {
+    sessions: 'users/sessions',
+    registrations: 'users/registrations'
+  }
+  get 'up' => 'rails/health#show', as: :rails_health_check
+end
+```
+
+### Users Controller
+- `cd ~/app/backend`
+- `touch app/controllers/users_controller.rb`
+- make `~/app/backend/app/controllers/users/users_controller.rb` look like this:
 ```
 class UsersController < ApplicationController
-  before_action :set_user, only: %i[ show update destroy ]
+  before_action :set_user, only: %i[ show edit update destroy ]
 
-  # GET /users
+  # GET /users or /users.json
   def index
-    @users = User.all.map { |user| prep_raw_user(user) }
+    @users = User.all
     render json: @users
   end
 
-  # GET /users/1
+  # GET /users/1 or /users/1.json
   def show
-    render json: prep_raw_user(@user)
+    render json: @user
   end
 
-  # POST /users
+  # GET /users/new
+  def new
+    @user = User.new
+  end
+
+  # GET /users/1/edit
+  def edit
+  end
+
+  # POST /users or /users.json
   def create
     @user = User.new(user_params)
+
     if @user.save
-      render json: prep_raw_user(@user), status: :created, location: @user
+      render json: @user, status: :created, location: @user
     else
       render json: @user.errors, status: :unprocessable_entity
     end
   end
 
-  # PATCH/PUT /users/1
+  # PATCH/PUT /users/1 or /users/1.json
   def update
     if @user.update(user_params)
-      render json: prep_raw_user(@user)
+      render json: @user, status: :ok, location: @user
     else
       render json: @user.errors, status: :unprocessable_entity
     end
   end
 
-  # DELETE /users/1
+  # DELETE /users/1 or /users/1.json
   def destroy
-    @user.destroy
+    @user.destroy!
+    head :no_content
   end
 
   private
     # Use callbacks to share common setup or constraints between actions.
     def set_user
-      @user = User.find(params[:id])
+      @user = User.find_by!(uuid: params[:uuid])
     end
 
     # Only allow a list of trusted parameters through.
     def user_params
-      params['avatar'] = params['avatar'].blank? ? nil : params['avatar'] # if no avatar is chosen on signup page, params['avatar'] comes in as a blank string, which throws a 500 error at User.new(user_params). This changes any params['avatar'] blank string to nil, which is fine in User.new(user_params).
-      params.permit(:name, :email, :avatar, :admin, :password)
+      params.require(:user).permit(:uuid, :email, :password)
     end
-    
 end
-~
-```
-- `puravida spec/fixtures/users.yml ~`
-```
-michael:
-  name: Michael Scott
-  email: michaelscott@dundermifflin.com
-  password_digest: <%= BCrypt::Password.create('password') %>
-  admin: true
-
-jim:
-  name: Jim Halpert
-  email: jimhalpert@dundermifflin.com
-  password_digest: <%= BCrypt::Password.create('password') %>
-  admin: false
-
-pam:
-  name: Pam Beesly
-  email: pambeesly@dundermifflin.com
-  password_digest: <%= BCrypt::Password.create('password') %>
-  admin: false
-
-ryan:
-  name: Ryan Howard
-  email: ryanhoward@dundermifflin.com
-  password_digest: <%= BCrypt::Password.create('password') %>
-  admin: true
-~
-```
-- `puravida config/storage.yml ~`
-```
-test:
-  service: Disk
-  root: <%= Rails.root.join("tmp/storage_fixtures") %>
-
-test_fixtures:
-  service: Disk
-  root: <%= Rails.root.join("tmp/storage_fixtures") %>
-
-local:
-  service: Disk
-  root: <%= Rails.root.join("storage") %>
-~
 ```
 
-`puravida spec/requests/users_spec.rb ~`
+### JWT
+- add this to `~/app/backend/config/initializers/devise.rb` right before the last `end`:
 ```
-# frozen_string_literal: true
-require 'rails_helper'
-
-RSpec.describe "/users", type: :request do
-  fixtures :users
-  let(:user_valid_create_params_mock_1) {{ name: "First1 Last1", email: "one@mail.com", admin: "false", password: "password", avatar: fixture_file_upload("spec/fixtures/files/michael-scott.png", "image/png") }}
-  let(:user_invalid_create_params_email_poorly_formed_mock_1) {{ name: "", email: "not_an_email", admin: "false", password: "password", avatar: fixture_file_upload("spec/fixtures/files/michael-scott.png", "image/png") }}
-  let(:valid_user_update_attributes) {{ name: "UpdatedName" }}
-  let(:invalid_user_update_attributes) {{ email: "not_an_email" }}
-  
-  before :each do
-    @user1 = users(:michael)
-    avatar1 = fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'michael-scott.png'),'image/png')
-    @user1.avatar.attach(avatar1)
-    @user2 = users(:jim)
-    avatar2 = fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'jim-halpert.png'),'image/png')
-    @user2.avatar.attach(avatar2)
-  end
-
-  describe "GET /index" do
-    it "renders a successful response" do
-      get users_url
-      expect(response).to be_successful
-    end
-
-    it "gets four users" do
-      get users_url
-      expect(JSON.parse(response.body).length).to eq 4
-    end
-
-    it "gets first users' correct details" do
-      get users_url
-      users = JSON.parse(response.body)
-      michael = users.find { |user| user['email'] == "michaelscott@dundermifflin.com" }
-      expect(michael['name']).to eq "Michael Scott"
-      expect(michael['email']).to eq "michaelscott@dundermifflin.com"
-      expect(michael['admin']).to eq true
-      expect(michael['avatar']).to be_kind_of(String)
-      expect(michael['avatar']).to match(/http.*\michael-scott\.png/)
-      expect(michael['password']).to be_nil
-      expect(michael['password_digest']).to be_nil
-    end
-
-    it "gets second users' correct details" do
-      get users_url
-      users = JSON.parse(response.body)
-      jim = users.find { |user| user['email'] == "jimhalpert@dundermifflin.com" }
-      expect(jim['name']).to eq "Jim Halpert"
-      expect(jim['email']).to eq "jimhalpert@dundermifflin.com"
-      expect(jim['admin']).to be_nil or eq false
-      expect(jim['avatar']).to be_kind_of(String)
-      expect(jim['avatar']).to match(/http.*\jim-halpert\.png/)
-      expect(jim['password']).to be_nil
-      expect(jim['password_digest']).to be_nil
-    end
-
-  end
-
-  describe "GET /show" do
-    it "renders a successful response" do
-      get user_url(@user1)
-      expect(response).to be_successful
-    end
-    it "gets users' correct details" do
-      get user_url(@user1)
-      michael = JSON.parse(response.body)
-      expect(michael['name']).to eq "Michael Scott"
-      expect(michael['email']).to eq "michaelscott@dundermifflin.com"
-      expect(michael['admin']).to eq true
-      expect(michael['avatar']).to be_kind_of(String)
-      expect(michael['avatar']).to match(/http.*\michael-scott\.png/)
-      expect(michael['password']).to be_nil
-      expect(michael['password_digest']).to be_nil
-    end
-  end
-
-  describe "POST /users" do
-    context "with valid parameters" do
-      it "creates a new User" do
-        expect {
-          post users_url, params: user_valid_create_params_mock_1
-        }.to change(User, :count).by(1)
-      end
-
-      it "renders a successful response" do
-        post users_url, params: user_valid_create_params_mock_1
-        expect(response).to be_successful
-      end
-
-      it "sets correct user details" do
-        post users_url, params: user_valid_create_params_mock_1
-        user = User.order(:created_at).last
-        expect(user['name']).to eq "First1 Last1"
-        expect(user['email']).to eq "one@mail.com"
-        expect(user['admin']).to eq(false).or(be_nil)
-        expect(user['avatar']).to be_nil
-        expect(user['password']).to be_nil
-        expect(user['password_digest']).to be_kind_of(String)
-      end
-
-      it "attaches user avatar" do
-        post users_url, params: user_valid_create_params_mock_1
-        user = User.order(:created_at).last
-        expect(user.avatar.attached?).to eq(true)
-      end
-    end
-
-    context "with invalid parameters (email poorly formed)" do
-      it "does not create a new User" do
-        expect {
-          post users_url, params: user_invalid_create_params_email_poorly_formed_mock_1
-        }.to change(User, :count).by(0)
-      end
-    
-      it "renders a 422 response" do
-        post users_url, params: user_invalid_create_params_email_poorly_formed_mock_1
-        expect(response).to have_http_status(:unprocessable_entity)
-      end  
-    end
-  end
-
-  describe "PATCH /update" do
-    context "with valid parameters" do
-
-      it "updates the requested user attribute" do
-        patch user_url(@user1), params: valid_user_update_attributes
-        @user1.reload
-        expect(@user1.name).to eq("UpdatedName")
-      end
-
-      it "doesn't change the other user attributes" do
-        patch user_url(@user1), params: valid_user_update_attributes
-        @user1.reload
-        expect(@user1['email']).to eq "michaelscott@dundermifflin.com"
-        expect(@user1['admin']).to eq true
-        expect(@user1['avatar']).to be_nil
-        expect(@user1['password']).to be_nil
-        expect(@user1['password_digest']).to be_kind_of(String)
-      end
-
-      it "is successful" do
-        patch user_url(@user1), params: valid_user_update_attributes
-        @user1.reload
-        expect(response).to be_successful
-      end
-    end
-
-    context "with invalid parameters" do
-    
-       it "renders a 422 response" do
-         patch user_url(@user1), params: invalid_user_update_attributes
-         expect(response).to have_http_status(:unprocessable_entity)
-       end
-    
-    end
-  end
-
-  describe "DELETE /destroy" do
-    it "destroys the requested user" do
-      expect {
-        delete user_url(@user1)
-      }.to change(User, :count).by(-1)
-    end
-
-    it "renders a successful response" do
-      delete user_url(@user1)
-      expect(response).to be_successful
-    end
-  end
-
+config.jwt do |jwt|
+  jwt.secret = Rails.application.credentials.fetch(:secret_key_base)
+  jwt.dispatch_requests = [
+    ['POST', %r{^/login$}]
+  ]
+  jwt.revocation_requests = [
+    ['DELETE', %r{^/logout$}]
+  ]
+  jwt.expiration_time = 30.minutes.to_i
 end
-~
 ```
-`rspec`
+- `rails g migration addJtiToUsers jti:string:index:unique`
+- change `~/app/backend/db/migrate/<timestamp>_add_jti_to_users.rb` to include this:
+```
+  add_column :users, :jti, :string, null: false
+  add_index :users, :jti, unique: true
+```
+- make `~/app/backend/app/models/user.rb` look like this:
+```
+class User < ApplicationRecord
+  include Devise::JWT::RevocationStrategies::JTIMatcher
+  devise :database_authenticatable, :registerable, :validatable,
+         :jwt_authenticatable, jwt_revocation_strategy: self
+  before_create :set_uuid
 
-#### /login Route (Authentications Controller)
-- `rails g controller Authentications`
-- `puravida app/controllers/authentications_controller.rb ~`
+  private
+
+  def set_uuid
+    self.uuid = SecureRandom.uuid if uuid.blank?
+  end
+end
 ```
-class AuthenticationsController < ApplicationController
-  skip_before_action :require_login
-  
-  def create
-    user = User.find_by(email: params[:email])
-    if user && user.authenticate(params[:password])
-      payload = { user_id: user.id, email: user.email }
-      token = encode_token(payload)
-      render json: { data: token, status: 200, message: 'You are logged in successfully' }
+- `rails db:migrate`
+- `rails generate serializer user id email uuid`
+
+### Auth Controllers
+- make `~/app/backend/app/controllers/registrations_controller.rb` look like this:
+```
+class Users::RegistrationsController < Devise::RegistrationsController
+  respond_to :json
+  private
+
+  def respond_with(resource, _opts = {})
+    if request.method == "POST" && resource.persisted?
+      render json: {
+        status: {code: 200, message: "Signed up sucessfully."},
+        data: UserSerializer.new(resource).serializable_hash[:data][:attributes]
+      }, status: :ok
+    elsif request.method == "DELETE"
+      render json: {
+        status: { code: 200, message: "Account deleted successfully."}
+      }, status: :ok
     else
-      response_unauthorized
+      render json: {
+        status: {code: 422, message: "User couldn't be created successfully. #{resource.errors.full_messages.to_sentence}"}
+      }, status: :unprocessable_entity
     end
   end
 end
-~
 ```
-- `puravida spec/requests/authentications_spec.rb ~`
+- make `~/app/backend/app/controllers/sessions_controller.rb` look like this:
 ```
-# frozen_string_literal: true
-require 'rails_helper'
+class Users::SessionsController < Devise::SessionsController
+  respond_to :json
+  private
 
-RSpec.describe "/login", type: :request do
-  fixtures :users
-  let(:valid_login_params) { { email: "michaelscott@dundermifflin.com",  password: "password" } }
-  let(:invalid_login_params) { { email: "michaelscott@dundermifflin.com",  password: "testing" } }
-  let(:create_user_params) { { name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password" }}
-  describe "POST /login" do
-    context "without params" do
-      it "returns unauthorized" do
-        post "/login"
-        expect(response).to have_http_status(:unauthorized)
-      end
-    end
+  def respond_with(resource, _opts = {})
+    render json: {
+      token: request.env['warden-jwt_auth.token'],
+      status: {code: 200, message: 'Logged in sucessfully.'},
+    }, status: :ok
   end
-  describe "POST /login" do
-    context "with invalid params" do
-      it "returns unauthorized" do
-        post "/login", params: invalid_login_params
-        expect(response).to have_http_status(:unauthorized)
-      end
-    end
-  end
-  describe "POST /login" do
-    context "with valid params" do
-      it "returns 200 success" do
-        user = User.create(create_user_params)
-        post "/login", params: valid_login_params
-        expect(response).to have_http_status(:success)
-      end
-      it "returns success message" do
-        user = User.create(create_user_params)
-        post "/login", params: valid_login_params
-        expect(JSON.parse(response.body)['message']).to eq "You are logged in successfully"
-      end
-      it "returns jwt token" do
-        user = User.create(create_user_params)
-        post "/login", params: valid_login_params
-        expect(JSON.parse(response.body)['data']).to match(/^(?:[\w-]*\.){2}[\w-]*$/)
-      end
+
+  def respond_to_on_destroy
+    if current_user
+      render json: {
+        status: 200,
+        message: "logged out successfully"
+      }, status: :ok
+    else
+      render json: {
+        status: 401,
+        message: "Couldn't find an active session."
+      }, status: :unauthorized
     end
   end
 end
-~
 ```
-- `puravida app/controllers/users_controller.rb ~`
+
+### Current User Endpoint
+- `rails g controller current_user index`
+- make `~/app/backend/app/controller/current_users_controller.rb` look like this:
+```
+class CurrentUserController < ApplicationController
+  before_action :authenticate_user!
+  def index
+    render json: UserSerializer.new(current_user).serializable_hash[:data][:attributes], status: :ok
+  end
+end
+```
+- in `~/app/backend/config/routes.rb` replace `get 'current_user/index'` with `get '/api/auth/session', to: 'current_user#index'`
+
+### User Seeds
+- make `~/app/backend/db/seeds.rb` look like this:
+```
+User.create!(email: 'test@mail.com', password: 'password', admin: true)
+User.create!(email: 'test2@mail.com', password: 'password')
+```
+
+### Test The API
+- `rails server`
+- split your terminal and in the second pane, run `curl -H 'Content-Type: application/json' -X POST -d '{"user": { "email": "test@mail.com", "password" : "password" }}' http://localhost:3000/api/auth/signup`
+- `curl -H 'Content-Type: application/json' -X POST -d '{"user": { "email": "test@mail.com", "password" : "password" }}' http://localhost:3000/api/auth/login`
+- kill the server with `^ + c`
+
+### S3 In Rails
+- `cd ~/app/backend`
+- `bundle add aws-sdk-s3`
+- `bundle install`
+- `touch app/controllers/uploads_controller.rb`
+- make `~/app/backend/app/controllers/uploads_controller.rb` look like this:
+```
+class UploadsController < ApplicationController
+  before_action :authenticate_user! # Ensure you have authentication in place
+
+  def presigned_url
+    filename = params[:filename]
+    content_type = params[:content_type]
+
+    s3_client = Aws::S3::Client.new(region: 'your-region')
+    presigned_url = s3_client.presigned_url(:put_object,
+      bucket: 'qa-applicant-portal',
+      key: filename,
+      content_type: content_type,
+      acl: 'public-read' # Adjust ACL as needed
+    )
+
+    render json: { url: presigned_url }
+  end
+end
+```
+- add `get 'upload', to: 'uploads#presigned_url'` to `~/app/backend/config/routes.rb`
+
+### Avatars In Rails
+- `cd ~/app/backend`
+- `rails active_storage:install`
+- `rails db:migrate`
+- open your `~/Desktop/app-secrets/User Access Keys.csv` and `~/Desktop/app-secrets/aws-details.txt`. You'll need the `access key ID`, `secret access key`, `region` and `bucket` in the next step.
+- `EDITOR="code --wait" rails credentials:edit`
+  - uncomment the first three lines (the AWS lines)
+  - add your `access key ID` and `secret access key` so the file will look something like this (with the x's replaced with your values):
+```
+aws:
+  access_key_id: XXXXXXXXXXXXXXXXXXXX
+  secret_access_key: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  region: <your aws region>
+  bucket: <your s3 bucket name>
+```
+  - save and close the credentials.yml file
+- in your `~/app/backend/config/storage.yml` file, uncomment the aws section like:
+```
+amazon:
+  service: S3
+  access_key_id: <%= Rails.application.credentials.dig(:aws, :access_key_id) %>
+  secret_access_key: <%= Rails.application.credentials.dig(:aws, :secret_access_key) %>
+  region: us-east-1
+  bucket: your_own_bucket-<%= Rails.env %>
+```
+- in `~/app/backend/app/models/user.rb`, add `has_one_attached :avatar` so it looks like this:
+```
+class User < ApplicationRecord
+  include Devise::JWT::RevocationStrategies::JTIMatcher
+  devise :database_authenticatable, :registerable, :validatable,
+         :jwt_authenticatable, jwt_revocation_strategy: self
+  has_one_attached :avatar
+
+  before_create :set_uuid
+
+  def avatar_url
+    Rails.application.routes.url_helpers.rails_blob_url(self.avatar, only_path: true) if avatar.attached?
+  end
+
+  private
+
+  def set_uuid
+    self.uuid = SecureRandom.uuid if uuid.blank?
+  end
+end
+```
+- in `~/app/backend/app/controllers/users_controller.rb`, add `:avatar` to the permitted parameters and change the `update` method so the whole file looks like this:
 ```
 class UsersController < ApplicationController
-  before_action :set_user, only: %i[ show update destroy ]
-  skip_before_action :require_login, only: :create
+  before_action :set_user, only: %i[ show edit update destroy ]
 
-  # GET /users
+  # GET /users or /users.json
   def index
-    @users = User.all.map { |user| prep_raw_user(user) }
+    @users = User.all
     render json: @users
   end
 
-  # GET /users/1
+  # GET /users/1 or /users/1.json
   def show
-    render json: prep_raw_user(@user)
+    render json: @user.as_json.merge(avatar_url: @user.avatar.attached? ? url_for(@user.avatar) : nil)
   end
 
-  # POST /users
+  # GET /users/new
+  def new
+    @user = User.new
+  end
+
+  # GET /users/1/edit
+  def edit
+  end
+
+  # POST /users or /users.json
   def create
     @user = User.new(user_params)
+
     if @user.save
-      render json: prep_raw_user(@user), status: :created, location: @user
+      render json: @user, status: :created, location: @user
     else
       render json: @user.errors, status: :unprocessable_entity
     end
   end
 
-  # PATCH/PUT /users/1
+  # PATCH/PUT /users/1 or /users/1.json
+
   def update
     if @user.update(user_params)
-      render json: prep_raw_user(@user)
+      render json: @user.as_json.merge(avatar_url: @user.avatar.attached? ? url_for(@user.avatar) : nil)
     else
-      render json: @user.errors, status: :unprocessable_entity
+      render json: { errors: @user.errors.full_messages }, status: :unprocessable_entity
     end
   end
 
-  # DELETE /users/1
+  # DELETE /users/1 or /users/1.json
   def destroy
-    @user.destroy
+    @user.destroy!
+    head :no_content
   end
 
   private
     # Use callbacks to share common setup or constraints between actions.
     def set_user
-      @user = User.find(params[:id])
+      @user = User.find_by!(uuid: params[:uuid])
     end
 
     # Only allow a list of trusted parameters through.
     def user_params
-      params['avatar'] = params['avatar'].blank? ? nil : params['avatar'] # if no avatar is chosen on signup page, params['avatar'] comes in as a blank string, which throws a 500 error at User.new(user_params). This changes any params['avatar'] blank string to nil, which is fine in User.new(user_params).
-      params.permit(:name, :email, :avatar, :admin, :password)
+      params.require(:user).permit(:uuid, :email, :avatar, :password)
     end
-    
 end
-~
 ```
-- `puravida config/routes.rb ~`
+- change `~/app/backend/app/serializers/user_serializer.rb` to look like this:
 ```
+class UserSerializer
+  include JSONAPI::Serializer
+  attributes :id, :email, :uuid, :avatar_url
+end
+```
+- change `~/app/backend/config/routes.rb` to look like this:
+```
+# frozen_string_literal: true
+
 Rails.application.routes.draw do
-  resources :users
-  get "health", to: "health#index"
-  post "login", to: "authentications#create"
-  get "me", to: "application#user_from_token"
-end
-~
-```
-
-#### /me Route (Application Controller Auth Helpers)
-
-- `puravida app/controllers/application_controller.rb ~`
-```
-class ApplicationController < ActionController::API
-  SECRET_KEY_BASE = Rails.application.credentials.secret_key_base
-  before_action :require_login
-  rescue_from Exception, with: :response_internal_server_error
-
-  def require_login
-    response_unauthorized if current_user_raw.blank?
-  end
-
-  # this is safe to send to the frontend, excludes password_digest, created_at, updated_at
-  def user_from_token
-    user = prep_raw_user(current_user_raw)
-    render json: { data: user, status: 200 }
-  end
-
-  # unsafe/internal: includes password_digest, created_at, updated_at - we don't want those going to the frontend
-  def current_user_raw
-    if decoded_token.present?
-      user_id = decoded_token[0]['user_id']
-      @user = User.find_by(id: user_id)
-    else
-      nil
-    end
-  end
-
-  def encode_token(payload)
-    JWT.encode payload, SECRET_KEY_BASE, 'HS256'
-  end
-
-  def decoded_token
-    if auth_header and auth_header.split(' ')[0] == "Bearer"
-      token = auth_header.split(' ')[1]
-      begin
-        JWT.decode token, SECRET_KEY_BASE, true, { algorithm: 'HS256' }
-      rescue JWT::DecodeError
-        []
-      end
-    end
-  end
-
-  def response_unauthorized
-    render status: 401, json: { status: 401, message: 'Unauthorized' }
-  end
-  
-  def response_internal_server_error
-    render status: 500, json: { status: 500, message: 'Internal Server Error' }
-  end
-
-  # We don't want to send the whole user record from the database to the frontend, so we only send what we need.
-  # The db user row has password_digest (unsafe) and created_at and updated_at (extraneous).
-  # We also change avatar from a weird active_storage object to just the avatar url before it gets to the frontend.
-  def prep_raw_user(user)
-    avatar = user.avatar.present? ? url_for(user.avatar) : nil
-    # widgets = Widget.where(user_id: user.id).map { |widget| widget.id }
-    # subwidgets = Subwidget.where(widget_id: widgets).map { |subwidget| subwidget.id }
-    user = user.admin ? user.slice(:id,:email,:name,:admin) : user.slice(:id,:email,:name)
-    user['avatar'] = avatar
-    # user['widget_ids'] = widgets
-    # user['subwidget_ids'] = subwidgets
-    user
-  end
-
-  def prep_raw_widget(widget)
-    user_id = widget.user_id
-    user_name = User.find(widget.user_id).name
-    # subwidgets = Subwidget.where(widget_id: widget.id)
-    # subwidgets = subwidgets.map { |subwidget| subwidget.slice(:id,:name,:description,:widget_id) }
-    image = widget.image.present? ? url_for(widget.image) : nil
-    widget = widget.slice(:id,:name,:description)
-    widget['userId'] = user_id
-    widget['userName'] = user_name
-    widget['image'] = image
-    # widget['subwidgets'] = subwidgets
-    widget
-  end
-
-  def prep_raw_subwidget(subwidget)
-    widget_id = subwidget.widget_id
-    widget = Widget.find(widget_id)
-    user = User.find(widget.user_id)
-    image = subwidget.image.present? ? url_for(subwidget.image) : nil
-    subwidget = subwidget.slice(:id,:name,:description)
-    subwidget['widgetId'] = widget_id
-    subwidget['widgetName'] = widget.name
-    subwidget['widgetDescription'] = widget.description
-    subwidget['userId'] = user.id
-    subwidget['userName'] = user.name
-    subwidget['image'] = image
-    subwidget
-  end
-  
-  private 
-  
-    def auth_header
-      request.headers['Authorization']
-    end
-
-end
-~
-```
-- `puravida spec/requests/application_spec.rb ~`
-```
-# frozen_string_literal: true
-require 'rails_helper'
-require 'spec_helper'
-
-RSpec.describe "/me", type: :request do
-  fixtures :users
-  let(:valid_headers) {{ Authorization: "Bearer " + @token }}
-  let(:invalid_token_header) {{ Authorization: "Bearer xyz" }}
-  let(:poorly_formed_header) {{ Authorization: "Bear " + @token }}
-  
-  before :all do
-    @token = token_from_email_password("michaelscott@dundermifflin.com", "password")
-  end
-  
-  describe "GET /me" do
-
-    context "without auth header" do
-      it "returns http success" do
-        get "/me"
-        expect(response).to have_http_status(:unauthorized)
-      end
-    end
-    
-    context "with invalid token header" do
-      it "returns http success" do
-        get "/me", headers: invalid_token_header
-        expect(response).to have_http_status(:unauthorized)
-      end
-    end
-
-    context "with valid token, but poorly formed auth header" do
-      it "returns http success" do
-        get "/me", headers: poorly_formed_header
-        expect(response).to have_http_status(:unauthorized)
-      end
-    end
-
-    context "with valid auth header" do
-      it "returns http success" do
-        get "/me", headers: valid_headers
-        expect(response).to have_http_status(:success)
-      end
-    end
-
-    context "with valid auth header" do
-      it "returns correct user" do
-        get "/me", headers: valid_headers
-        expect(response).to have_http_status(:success)
-      end
-    end
-
-  end
-end
-~
-```
-
-### Update users_spec.rb For Auth
-
-- `puravida spec/requests/users_spec.rb ~`
-```
-# frozen_string_literal: true
-require 'rails_helper'
-require 'spec_helper'
-
-RSpec.describe "/users", type: :request do
-  fixtures :users
-  let(:valid_headers) {{ Authorization: "Bearer " + @michael_token }}
-  let(:admin_2_headers) {{ Authorization: "Bearer " + @ryan_token }}
-  let(:invalid_token_header) {{ Authorization: "Bearer xyz" }}
-  let(:poorly_formed_header) {{ Authorization: "Bear " + @michael_token }}
-  let(:user_valid_create_params_mock_1) {{ name: "First1 Last1", email: "one@mail.com", admin: "false", password: "password", avatar: fixture_file_upload("spec/fixtures/files/michael-scott.png", "image/png") }}
-  let(:user_invalid_create_params_email_poorly_formed_mock_1) {{ name: "", email: "not_an_email", admin: "false", password: "password", avatar: fixture_file_upload("spec/fixtures/files/michael-scott.png", "image/png") }}
-  let(:valid_user_update_attributes) {{ name: "UpdatedName" }}
-  let(:invalid_user_update_attributes) {{ email: "not_an_email" }}
-  
-  before :all do
-    @michael_token = token_from_email_password("michaelscott@dundermifflin.com", "password")
-    @ryan_token = token_from_email_password("ryanhoward@dundermifflin.com", "password")
-  end
-
-  before :each do
-    @user1 = users(:michael)
-    avatar1 = fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'michael-scott.png'),'image/png')
-    @user1.avatar.attach(avatar1)
-    @user2 = users(:jim)
-    avatar2 = fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'jim-halpert.png'),'image/png')
-    @user2.avatar.attach(avatar2)
-  end
-
-  describe "GET /index" do
-    context "with valid headers" do
-      it "renders a successful response" do
-        get users_url, headers: valid_headers
-        expect(response).to be_successful
-      end
-
-      it "gets four users" do
-        get users_url, headers: valid_headers
-        expect(JSON.parse(response.body).length).to eq 4
-      end
-
-      it "gets first users' correct details" do
-        get users_url, headers: valid_headers
-        users = JSON.parse(response.body)
-        michael = users.find { |user| user['email'] == "michaelscott@dundermifflin.com" }
-        expect(michael['name']).to eq "Michael Scott"
-        expect(michael['email']).to eq "michaelscott@dundermifflin.com"
-        expect(michael['admin']).to eq true
-        expect(michael['avatar']).to be_kind_of(String)
-        expect(michael['avatar']).to match(/http.*\michael-scott\.png/)
-        expect(michael['password']).to be_nil
-        expect(michael['password_digest']).to be_nil
-      end
-
-      it "gets second users' correct details" do
-        get users_url, headers: valid_headers
-        users = JSON.parse(response.body)
-        jim = users.find { |user| user['email'] == "jimhalpert@dundermifflin.com" }
-        expect(jim['name']).to eq "Jim Halpert"
-        expect(jim['email']).to eq "jimhalpert@dundermifflin.com"
-        expect(jim['admin']).to be_nil or eq false
-        expect(jim['avatar']).to be_kind_of(String)
-        expect(jim['avatar']).to match(/http.*\jim-halpert\.png/)
-        expect(jim['password']).to be_nil
-        expect(jim['password_digest']).to be_nil
-      end
-    end
-
-    context "with invalid headers" do
-      it "renders an unsuccessful response" do
-        get users_url, headers: invalid_token_header
-        expect(response).to_not be_successful
-      end
-    end
-
-  end
-
-  describe "GET /show" do
-    context "with valid headers" do
-      it "renders a successful response" do
-        get user_url(@user1), headers: valid_headers
-        expect(response).to be_successful
-      end
-      it "gets users' correct details" do
-        get user_url(@user1), headers: valid_headers
-        michael = JSON.parse(response.body)
-        expect(michael['name']).to eq "Michael Scott"
-        expect(michael['email']).to eq "michaelscott@dundermifflin.com"
-        expect(michael['admin']).to eq true
-        expect(michael['avatar']).to be_kind_of(String)
-        expect(michael['avatar']).to match(/http.*\michael-scott\.png/)
-        expect(michael['password']).to be_nil
-        expect(michael['password_digest']).to be_nil
-      end
-    end
-    context "with invalid headers" do
-      it "renders an unsuccessful response" do
-        get user_url(@user1), headers: invalid_token_header
-        expect(response).to_not be_successful
-      end
-    end
-  end
-
-  describe "POST /users" do
-    context "with valid parameters" do
-      it "creates a new User" do
-        expect {
-          post users_url, params: user_valid_create_params_mock_1
-        }.to change(User, :count).by(1)
-      end
-
-      it "renders a successful response" do
-        post users_url, params: user_valid_create_params_mock_1
-        expect(response).to be_successful
-      end
-
-      it "sets correct user details" do
-        post users_url, params: user_valid_create_params_mock_1
-        user = User.order(:created_at).last
-        expect(user['name']).to eq "First1 Last1"
-        expect(user['email']).to eq "one@mail.com"
-        expect(user['admin']).to eq(false).or(be_nil)
-        expect(user['avatar']).to be_nil
-        expect(user['password']).to be_nil
-        expect(user['password_digest']).to be_kind_of(String)
-      end
-
-      it "attaches user avatar" do
-        post users_url, params: user_valid_create_params_mock_1
-        user = User.order(:created_at).last
-        expect(user.avatar.attached?).to eq(true)
-      end
-    end
-
-    context "with invalid parameters (email poorly formed)" do
-      it "does not create a new User" do
-        expect {
-          post users_url, params: user_invalid_create_params_email_poorly_formed_mock_1
-        }.to change(User, :count).by(0)
-      end
-    
-      it "renders a 422 response" do
-        post users_url, params: user_invalid_create_params_email_poorly_formed_mock_1
-        expect(response).to have_http_status(:unprocessable_entity)
-      end  
-    end
-  end
-
-  describe "PATCH /update" do
-    context "with valid parameters and headers" do
-
-      it "updates the requested user attribute" do
-        patch user_url(@user1), params: valid_user_update_attributes, headers: valid_headers
-        @user1.reload
-        expect(@user1.name).to eq("UpdatedName")
-      end
-
-      it "doesn't change the other user attributes" do
-        patch user_url(@user1), params: valid_user_update_attributes, headers: valid_headers
-        @user1.reload
-        expect(@user1['email']).to eq "michaelscott@dundermifflin.com"
-        expect(@user1['admin']).to eq true
-        expect(@user1['avatar']).to be_nil
-        expect(@user1['password']).to be_nil
-        expect(@user1['password_digest']).to be_kind_of(String)
-      end
-
-      it "is successful" do
-        patch user_url(@user1), params: valid_user_update_attributes, headers: valid_headers
-        @user1.reload
-        expect(response).to be_successful
-      end
-    end
-
-    context "with invalid parameters but valid headers" do
-       it "renders a 422 response" do
-         patch user_url(@user1), params: invalid_user_update_attributes, headers: valid_headers
-         expect(response).to have_http_status(:unprocessable_entity)
-       end
-    end
-
-    context "with valid parameters but invalid headers" do
-       it "renders a 401 response" do
-         patch user_url(@user1), params: valid_user_update_attributes, headers: invalid_token_header
-         expect(response).to have_http_status(:unauthorized)
-       end
-    end
-
-  end
-
-  describe "DELETE /destroy" do
-    context "with valid headers" do
-      it "destroys the requested user" do
-        expect {
-          delete user_url(@user1), headers: valid_headers
-        }.to change(User, :count).by(-1)
-      end
-
-      it "renders a successful response" do
-        delete user_url(@user1), headers: valid_headers
-        expect(response).to be_successful
-      end
-    end
-
-    context "with invalid headers" do
-      it "doesn't destroy user" do
-        expect {
-          delete user_url(@user1), headers: invalid_token_header
-        }.to change(User, :count).by(0)
-      end
-
-      it "renders a unsuccessful response" do
-        delete user_url(@user1), headers: invalid_token_header
-        expect(response).to_not be_successful
-      end
-    end
-  end
-
-end
-~
-```
-- `puravida spec/requests/users_spec_bak.rb ~`
-```
-# frozen_string_literal: true
-require 'open-uri'
-require 'rails_helper'
-RSpec.describe "/users", type: :request do
-  let(:valid_create_user_1_params) { { name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password" } }
-  let(:user_1_attachment) { "/spec/fixtures/files/images/office-avatars/michael-scott.png" }
-  let(:user_1_image) { "michael-scott.png" }
-  let(:valid_create_user_2_params) { { name: "Jim Halpert", email: "jimhalpert@dundermifflin.com", admin: "false", password: "password" } }
-  let(:user_2_attachment) { "/spec/fixtures/files/images/office-avatars//jim-halpert.png" }
-  let(:user_2_image) { "jim-halpert.png" }
-  let(:invalid_create_user_1_params) { { name: "Michael Scott", email: "test", admin: "true", password: "password" } }
-  let(:invalid_create_user_2_params) { { name: "Jim Halpert", email: "test2", admin: "false", password: "password" } }
-  let(:valid_user_1_login_params) { { email: "michaelscott@dundermifflin.com",  password: "password" } }
-  let(:valid_user_2_login_params) { { email: "jimhalpert@dundermifflin.com",  password: "password" } }
-  let(:invalid_patch_params) { { email: "test" } }
-  let(:uploaded_image_path) { Rails.root.join '/spec/fixtures/files/images/office-avatars/michael-scott.png' }
-  let(:uploaded_image) { Rack::Test::UploadedFile.new uploaded_image_path, 'image/png' }
-
-  describe "GET /index" do
-    context "with valid auth header" do
-      it "renders a successful response" do
-        user1 = User.create! valid_create_user_1_params
-        user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
-        user1.save!
-        user2 = User.create! valid_create_user_2_params
-        header = header_from_user(user2,valid_user_2_login_params)
-        get users_url, headers: header, as: :json
-        expect(response).to be_successful
-      end
-      it "gets two users (one with avatar, one without)" do
-        user1 = User.create! valid_create_user_1_params
-        user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
-        user1.save!
-        user2 = User.create! valid_create_user_2_params
-        header = header_from_user(user2,valid_user_2_login_params)
-        get users_url, headers: header, as: :json
-        expect(JSON.parse(response.body).length).to eq 2
-        expect(JSON.parse(response.body)[0]).to include("id","name","email","admin","avatar")
-        expect(JSON.parse(response.body)[0]).not_to include("password_digest","password")
-        expect(JSON.parse(response.body)[0]['name']).to eq("Michael Scott")
-        expect(JSON.parse(response.body)[0]['email']).to eq("michaelscott@dundermifflin.com")
-        expect(JSON.parse(response.body)[0]['admin']).to eq(true)
-        expect(JSON.parse(response.body)[0]['avatar']).to be_kind_of(String)
-        expect(JSON.parse(response.body)[0]['avatar']).to match(/http.*\michael-scott\.png/)
-        expect(JSON.parse(response.body)[0]['password']).to be_nil
-        expect(JSON.parse(response.body)[0]['password_digest']).to be_nil
-        expect(JSON.parse(response.body)[1]).to include("id","name","email","avatar")
-        expect(JSON.parse(response.body)[1]).not_to include("admin","password_digest","password")
-        expect(JSON.parse(response.body)[1]['name']).to eq("Jim Halpert")
-        expect(JSON.parse(response.body)[1]['email']).to eq("jimhalpert@dundermifflin.com")
-        expect(JSON.parse(response.body)[1]['admin']).to be_nil
-        expect(JSON.parse(response.body)[1]['avatar']).to be_nil
-        expect(JSON.parse(response.body)[1]['password']).to be_nil
-        expect(JSON.parse(response.body)[1]['password_digest']).to be_nil
-      end
-    end
-
-    context "with invalid auth header" do
-      it "renders a 401 response" do
-        User.create! valid_create_user_1_params
-        get users_url, headers: invalid_auth_header, as: :json
-        expect(response).to have_http_status(401)
-      end
-      it "renders a 401 response" do
-        User.create! valid_create_user_1_params
-        get users_url, headers: poorly_formed_header(valid_create_user_2_params), as: :json
-        expect(response).to have_http_status(401)
-      end
-    end
-  end
-
-  describe "GET /show" do
-    context "with valid auth header" do
-      it "renders a successful response" do
-        user1 = User.create! valid_create_user_1_params
-        user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
-        user1.save!
-        user2 = User.create! valid_create_user_2_params
-        header = header_from_user(user2,valid_user_2_login_params)
-        get user_url(user1), headers: header, as: :json
-        expect(response).to be_successful
-      end
-      it "gets one user (with avatar)" do
-        user1 = User.create! valid_create_user_1_params
-        user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
-        user1.save!
-        user2 = User.create! valid_create_user_2_params
-        header = header_from_user(user2,valid_user_2_login_params)
-        get user_url(user1), headers: header, as: :json
-        expect(JSON.parse(response.body)).to include("id","name","email","admin","avatar")
-        expect(JSON.parse(response.body)).not_to include("password_digest","password")
-        expect(JSON.parse(response.body)['name']).to eq("Michael Scott")
-        expect(JSON.parse(response.body)['email']).to eq("michaelscott@dundermifflin.com")
-        expect(JSON.parse(response.body)['admin']).to eq(true)
-        expect(JSON.parse(response.body)['avatar']).to be_kind_of(String)
-        expect(JSON.parse(response.body)['avatar']).to match(/http.*\michael-scott\.png/)
-        expect(JSON.parse(response.body)['password']).to be_nil
-        expect(JSON.parse(response.body)['password_digest']).to be_nil
-      end
-      it "gets one user (without avatar)" do
-        user1 = User.create! valid_create_user_1_params
-        user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
-        user1.save!
-        user2 = User.create! valid_create_user_2_params
-        header = header_from_user(user2,valid_user_2_login_params)
-        get user_url(user2), headers: header, as: :json
-        expect(JSON.parse(response.body)).to include("id","name","email","avatar")
-        expect(JSON.parse(response.body)).not_to include("admin","password_digest","password")
-        expect(JSON.parse(response.body)['name']).to eq("Jim Halpert")
-        expect(JSON.parse(response.body)['email']).to eq("jimhalpert@dundermifflin.com")
-        expect(JSON.parse(response.body)['admin']).to be_nil
-        expect(JSON.parse(response.body)['avatar']).to be_nil
-        expect(JSON.parse(response.body)['password']).to be_nil
-        expect(JSON.parse(response.body)['password_digest']).to be_nil
-      end
-    end
-    context "with invalid auth header" do
-      it "renders a 401 response" do
-        user = User.create! valid_create_user_1_params
-        get user_url(user), headers: invalid_auth_header, as: :json
-        expect(response).to have_http_status(401)
-      end
-      it "renders a 401 response" do
-        user = User.create! valid_create_user_1_params
-        get user_url(user), headers: poorly_formed_header(valid_create_user_2_params), as: :json
-        expect(response).to have_http_status(401)
-      end
-    end
-  end
-
-  describe "POST /create" do
-    context "with valid parameters" do
-      it "creates a new User (without avatar)" do
-        expect { post users_url, params: valid_create_user_1_params }
-          .to change(User, :count).by(1)
-      end
-      it "renders a JSON response with new user (with avatar)" do  
-        file = Rack::Test::UploadedFile.new(Rails.root.join("spec/fixtures/files/images/office-avatars/michael-scott.png"))
-        valid_create_user_1_params['avatar'] = file
-        post users_url, params: valid_create_user_1_params        
-        expect(response).to have_http_status(:created)
-        expect(response.content_type).to match(a_string_including("application/json"))
-        expect(JSON.parse(response.body)).to include("id","name","email","admin","avatar")
-        expect(JSON.parse(response.body)).not_to include("password_digest","password")
-        expect(JSON.parse(response.body)['name']).to eq("Michael Scott")
-        expect(JSON.parse(response.body)['email']).to eq("michaelscott@dundermifflin.com")
-        expect(JSON.parse(response.body)['admin']).to eq(true)
-        expect(JSON.parse(response.body)['avatar']).to be_kind_of(String)
-        expect(JSON.parse(response.body)['avatar']).to match(/http.*\michael-scott\.png/)
-        expect(JSON.parse(response.body)['password']).to be_nil
-        expect(JSON.parse(response.body)['password_digest']).to be_nil
-      end
-    end
-    context "with invalid parameters" do
-      it "does not create a new User" do
-        expect { post users_url, params: invalid_create_user_2_params, as: :json}
-          .to change(User, :count).by(0)
-      end
-      it "renders a JSON error response" do
-        post users_url, params: invalid_create_user_2_params, as: :json
-        expect(response).to have_http_status(:unprocessable_entity)
-        expect(response.content_type).to match(a_string_including("application/json"))
-      end
-    end
-    context "with valid auth header" do
-      it "creates a new User" do
-        user1 = User.create! valid_create_user_1_params
-        header = header_from_user(user1,valid_user_1_login_params)
-        expect { post users_url, headers: header, params: valid_create_user_2_params, as: :json }
-          .to change(User, :count).by(1)
-      end
-      it "renders a JSON response with the new user" do
-        user1 = User.create! valid_create_user_1_params
-        header = header_from_user(user1,valid_user_1_login_params)
-        post users_url, params: valid_create_user_2_params, as: :json
-        expect(response).to have_http_status(:created)
-        expect(response.content_type).to match(a_string_including("application/json"))
-      end
-    end
-  end
-
-  describe "PATCH /update" do
-    context "with valid parameters" do
-
-      it "updates the requested user's name" do
-        user1 = User.create! valid_create_user_1_params
-        user2 = User.create! valid_create_user_2_params
-        header = header_from_user(user2,valid_user_2_login_params)
-        patch user_url(user1), params: { name: "Updated Name!!"}, headers: header, as: :json
-        user1.reload
-        expect(JSON.parse(response.body)['name']).to eq "Updated Name!!"
-        expect(response).to have_http_status(:ok)
-        expect(response.content_type).to match(a_string_including("application/json"))
-      end
-
-      it "updates the requested user's avatar" do
-        avatar = Rack::Test::UploadedFile.new(Rails.root.join("spec/fixtures/files/images/office-avatars/michael-scott.png"))
-        valid_create_user_1_params['avatar'] = avatar
-        user1 = User.create! valid_create_user_1_params   
-        user2 = User.create! valid_create_user_2_params
-        header = header_from_user(user2,valid_user_2_login_params)
-        updated_avatar = Rack::Test::UploadedFile.new(Rails.root.join('spec/fixtures/files/images/office-avatars/jim-halpert.png'))
-        valid_create_user_1_params['avatar'] = updated_avatar
-        patch user_url(user1), params: valid_create_user_1_params, headers: header
-        expect(response).to have_http_status(:ok)
-        expect(response.content_type).to match(a_string_including("application/json"))
-        expect(JSON.parse(response.body)['name']).to eq("Michael Scott")
-        expect(JSON.parse(response.body)['avatar']).to be_kind_of(String)
-        expect(JSON.parse(response.body)['avatar']).to match(/http.*\jim-halpert\.png/)
-      end
-    end
-
-    context "with invalid parameters" do
-      it "renders a JSON response with errors for the user" do
-        user1 = User.create! valid_create_user_1_params
-        user2 = User.create! valid_create_user_2_params
-        header = header_from_user(user2,valid_user_2_login_params)
-        patch user_url(user1), params: invalid_patch_params, headers: header, as: :json
-        expect(response).to have_http_status(:unprocessable_entity)
-        expect(response.content_type).to match(a_string_including("application/json"))
-      end
-    end
-  end
-
-  describe "DELETE /destroy" do
-    it "destroys the requested user (without avatar)" do
-      user1 = User.create! valid_create_user_1_params
-      user2 = User.create! valid_create_user_2_params
-      header = header_from_user(user2,valid_user_2_login_params)
-      expect {
-        delete user_url(user1), headers: header, as: :json
-      }.to change(User, :count).by(-1)
-    end
-    it "destroys the requested user (with avatar)" do
-      file = Rack::Test::UploadedFile.new(Rails.root.join("spec/fixtures/files/images/office-avatars/michael-scott.png"))
-      valid_create_user_1_params['avatar'] = file
-      user1 = User.create! valid_create_user_1_params
-      user2 = User.create! valid_create_user_2_params
-      header = header_from_user(user2,valid_user_2_login_params)
-      expect {
-        delete user_url(user1), headers: header, as: :json
-      }.to change(User, :count).by(-1)
-    end
-  end
-end
-
-private 
-
-def token_from_user(user,login_params)
-  post "/login", params: login_params
-  token = JSON.parse(response.body)['data']
-end
-
-def valid_token(create_user_params)
-  user = User.create(create_user_params)
-  post "/login", params: valid_user_1_login_params
-  token = JSON.parse(response.body)['data']
-end
-
-def valid_auth_header_from_token(token)
-  auth_value = "Bearer " + token
-  { Authorization: auth_value }
-end
-
-def valid_auth_header_from_user_params(create_user_params)
-  token = valid_token(create_user_params)
-  auth_value = "Bearer " + token
-  { Authorization: auth_value }
-end
-
-def header_from_user(user,login_params)
-  token = token_from_user(user,login_params)
-  auth_value = "Bearer " + token
-  { Authorization: auth_value }
-end
-
-def invalid_auth_header
-  auth_value = "Bearer " + "xyz"
-  { Authorization: auth_value }
-end
-
-def poorly_formed_header(create_user_params)
-  token = valid_token(create_user_params)
-  auth_value = "Bears " + token
-  { Authorization: auth_value }
-end
-
-def blob_for(name)
-  ActiveStorage::Blob.create_and_upload!(
-    io: File.open(Rails.root.join(file_fixture(name)), 'rb'),
-    filename: name,
-    content_type: 'image/png' # Or figure it out from `name` if you have non-JPEGs
-  )
-end
-~
-```
-
-### Update Health Controller For Auth
-- `puravida app/controllers/health_controller.rb ~`
-```
-class HealthController < ApplicationController
-  skip_before_action :require_login
-  def index
-    render json: { status: 'online' }
-  end
-end
-~
-```
-- `rspec`
-
-
-### Widgets (Backend)
-- `rails g scaffold widget name description image:attachment user:references`
-- change the migration file (`db/migrate/<timestamp>_create_widgets.rb`) to:
-```
-class CreateWidgets < ActiveRecord::Migration[7.0]
-  def change
-    create_table :widgets do |t|
-      t.string :name
-      t.string :description
-      t.references :user, null: false, foreign_key: {on_delete: :cascade}
-      t.timestamps
-    end
-  end
-end
-~
-```
-- `rails db:migrate`
-- `puravida app/models/widget.rb ~`
-```
-class Widget < ApplicationRecord
-  belongs_to :user
-  has_one_attached :image
-  validates :name, presence: true, allow_blank: false, length: { minimum: 4, maximum: 254 }
-end
-~
-```
-- `puravida app/controllers/application_controller.rb ~`
-```
-class ApplicationController < ActionController::API
-  SECRET_KEY_BASE = Rails.application.credentials.secret_key_base
-  before_action :require_login
-  rescue_from Exception, with: :response_internal_server_error
-
-  def require_login
-    response_unauthorized if current_user_raw.blank?
-  end
-
-  # this is safe to send to the frontend, excludes password_digest, created_at, updated_at
-  def user_from_token
-    user = prep_raw_user(current_user_raw)
-    render json: { data: user, status: 200 }
-  end
-
-  # unsafe/internal: includes password_digest, created_at, updated_at - we don't want those going to the frontend
-  def current_user_raw
-    if decoded_token.present?
-      user_id = decoded_token[0]['user_id']
-      @user = User.find_by(id: user_id)
-    else
-      nil
-    end
-  end
-
-  def encode_token(payload)
-    JWT.encode payload, SECRET_KEY_BASE, 'HS256'
-  end
-
-  def decoded_token
-    if auth_header and auth_header.split(' ')[0] == "Bearer"
-      token = auth_header.split(' ')[1]
-      begin
-        JWT.decode token, SECRET_KEY_BASE, true, { algorithm: 'HS256' }
-      rescue JWT::DecodeError
-        []
-      end
-    end
-  end
-
-  def response_unauthorized
-    render status: 401, json: { status: 401, message: 'Unauthorized' }
-  end
-  
-  def response_internal_server_error
-    render status: 500, json: { status: 500, message: 'Internal Server Error' }
-  end
-
-  # We don't want to send the whole user record from the database to the frontend, so we only send what we need.
-  # The db user row has password_digest (unsafe) and created_at and updated_at (extraneous).
-  # We also change avatar from a weird active_storage object to just the avatar url before it gets to the frontend.
-  def prep_raw_user(user)
-    avatar = user.avatar.present? ? url_for(user.avatar) : nil
-    widget_ids = Widget.where(user_id: user.id).map { |widget| widget.id }
-    widgets = Widget.where(user_id: user.id).map { |widget| prep_raw_widget(widget) }
-    # subwidgets = Subwidget.where(widget_id: widgets).map { |subwidget| subwidget.id }
-    user = user.admin ? user.slice(:id,:email,:name,:admin) : user.slice(:id,:email,:name)
-    user['avatar'] = avatar
-    user['widget_ids'] = widget_ids
-    user['widgets'] = widgets
-    # user['subwidget_ids'] = subwidgets
-    user
-  end
-
-  def prep_raw_widget(widget)
-    user_id = widget.user_id
-    user_name = User.find(widget.user_id).name
-    # subwidgets = Subwidget.where(widget_id: widget.id)
-    # subwidgets = subwidgets.map { |subwidget| subwidget.slice(:id,:name,:description,:widget_id) }
-    image = widget.image.present? ? url_for(widget.image) : nil
-    widget = widget.slice(:id,:name,:description)
-    widget['userId'] = user_id
-    widget['userName'] = user_name
-    widget['image'] = image
-    # widget['subwidgets'] = subwidgets
-    widget
-  end
-
-  def prep_raw_subwidget(subwidget)
-    widget_id = subwidget.widget_id
-    widget = Widget.find(widget_id)
-    user = User.find(widget.user_id)
-    image = subwidget.image.present? ? url_for(subwidget.image) : nil
-    subwidget = subwidget.slice(:id,:name,:description)
-    subwidget['widgetId'] = widget_id
-    subwidget['widgetName'] = widget.name
-    subwidget['widgetDescription'] = widget.description
-    subwidget['userId'] = user.id
-    subwidget['userName'] = user.name
-    subwidget['image'] = image
-    subwidget
-  end
-  
-  private 
-  
-    def auth_header
-      request.headers['Authorization']
-    end
-
-end
-~
-```
-- `puravida app/controllers/widgets_controller.rb ~`
-```
-class WidgetsController < ApplicationController
-  before_action :set_widget, only: %i[ show update destroy ]
-
-  # GET /widgets
-  def index
-    if params['user_id'].present?
-      @widgets = Widget.where(user_id: params['user_id']).map { |widget| prep_raw_widget(widget) }
-    else
-      @widgets = Widget.all.map { |widget| prep_raw_widget(widget) }
-    end
-    render json: @widgets
-  end
-
-  # GET /widgets/1
-  def show
-    render json: prep_raw_widget(@widget)
-  end
-
-  # POST /widgets
-  def create
-    create_params = widget_params
-    create_params['image'] = params['image'].blank? ? nil : params['image'] # if no image is chosen on new widget page, params['image'] comes in as a blank string, which throws a 500 error at User.new(user_params). This changes any params['avatar'] blank string to nil, which is fine in User.new(user_params).
-    @widget = Widget.new(create_params)
-    if @widget.save
-      render json: prep_raw_widget(@widget), status: :created, location: @widget
-    else
-      render json: @widget.errors, status: :unprocessable_entity
-    end
-  end
-
-  # PATCH/PUT /widgets/1
-  def update
-    if @widget.update(widget_params)
-      render json: prep_raw_widget(@widget)
-    else
-      render json: @widget.errors, status: :unprocessable_entity
-    end
-  end
-
-  # DELETE /widgets/1
-  def destroy
-    @widget.destroy
-  end
-
-  private
-    # Use callbacks to share common setup or constraints between actions.
-    def set_widget
-      @widget = Widget.find(params[:id])
-    end
-
-    # Only allow a list of trusted parameters through.
-    def widget_params
-      params.permit(:id, :name, :description, :image, :user_id)
-    end
-end
-~
-```
-- `puravida spec/fixtures/widgets.yml ~`
-```
-wrenches:
-  name: Wrenches
-  description: Michael's wrench
-  user: michael
-
-bolts:
-  name: Bolts
-  description: Michael's bolt
-  user: michael
-
-brackets:
-  name: Brackets
-  description: Jim's bracket
-  user: jim
-
-nuts:
-  name: Nuts
-  description: Jim's nut
-  user: jim
-
-pipes:
-  name: Pipes
-  description: Jim's pipe
-  user: jim
-
-screws:
-  name: Screws
-  description: Pam's screw
-  user: pam
-
-washers:
-  name: Washers
-  description: Pam's washer
-  user: pam
-~
-```
-- `puravida spec/models/widget_spec.rb ~`
-```
-require 'rails_helper'
-
-RSpec.describe "/widgets", type: :request do
-  fixtures :users
-  fixtures :widgets
-  let(:valid_attributes) {{ name: "test1", description: "test1", user_id: User.find_by(email: "michaelscott@dundermifflin.com").id }}
-  let(:invalid_attributes) {{ name: "", description: "invalid_attributes" }}
-  let(:valid_headers) {{ Authorization: "Bearer " + @michael_token }}
-
-  before :all do
-    @michael_token = token_from_email_password("michaelscott@dundermifflin.com", "password")
-  end
-
-  it "is valid with valid attributes" do
-    expect(Widget.new(valid_attributes)).to be_valid
-  end
-  it "is not valid width poorly formed email" do
-    expect(Widget.new(invalid_attributes)).to_not be_valid
-  end
-
-end
-~
-```
-- `puravida spec/requests/widgets_spec.rb ~`
-```
-require 'rails_helper'
-
-RSpec.describe "/widgets", type: :request do
-  fixtures :users
-  fixtures :widgets
-  let(:valid_attributes) {{ name: "test1", description: "test1", user_id: User.find_by(email: "michaelscott@dundermifflin.com").id }}
-  let(:invalid_attributes) {{ name: "", description: "invalid_attributes" }}
-  let(:valid_headers) {{ Authorization: "Bearer " + @michael_token }}
-
-  before :all do
-    @michael_token = token_from_email_password("michaelscott@dundermifflin.com", "password")
-    @ryan_token = token_from_email_password("ryanhoward@dundermifflin.com", "password")
-  end
-
-  before :each do
-    @wrenches = widgets(:wrenches)
-    @wrenches.image.attach(fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'allen-wrenches.jpg'),'image/png'))
-    @bolts = widgets(:bolts)
-    @bolts.image.attach(fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'bolts.jpg'),'image/png'))
-    @brackets = widgets(:brackets)
-    @brackets.image.attach(fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'brackets.png'),'image/png'))
-    @nuts = widgets(:nuts)
-    @nuts.image.attach(fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'nuts.jpg'),'image/png'))
-    @pipes = widgets(:pipes)
-    @pipes.image.attach(fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'pipes.jpg'),'image/png'))
-    @screws = widgets(:screws)
-    @screws.image.attach(fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'screws.jpg'),'image/png'))
-    @washers = widgets(:washers)
-    @washers.image.attach(fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'washers.jpg'),'image/png'))
-  end
-
-  describe "GET /index" do
-    it "renders a successful response" do
-      get widgets_url, headers: valid_headers
-      expect(response).to be_successful
-    end
-    it "gets two widgets a successful response" do
-      get widgets_url, headers: valid_headers
-      expect(JSON.parse(response.body).length).to eq 7
-    end
-    it "first widget has correct properties" do
-      get widgets_url, headers: valid_headers
-      widgets = JSON.parse(response.body)
-      wrenches = widgets.find { |widget| widget['name'] == "Wrenches" }
-      expect(wrenches['name']).to eq "Wrenches"
-      expect(wrenches['description']).to eq "Michael's wrench"
-      expect(wrenches['userName']).to eq "Michael Scott"
-      expect(wrenches['image']).to be_kind_of(String)
-      expect(wrenches['image']).to match(/http.*allen-wrenches\.jpg/)
-    end
-    it "second widget has correct properties" do
-      get widgets_url, headers: valid_headers
-      widgets = JSON.parse(response.body)
-      brackets = widgets.find { |widget| widget['name'] == "Brackets" }
-      expect(brackets['name']).to eq "Brackets"
-      expect(brackets['description']).to eq "Jim's bracket"
-      expect(brackets['userName']).to eq "Jim Halpert"
-      expect(brackets['image']).to be_kind_of(String)
-      expect(brackets['image']).to match(/http.*brackets\.png/)
-    end
-
-  end
-
-  describe "GET /show" do
-    it "renders a successful response" do
-      widget = widgets(:wrenches)
-      get widget_url(widget), headers: valid_headers
-      expect(response).to be_successful
-    end
-    it "gets correct widget properties" do
-      widget = widgets(:wrenches)
-      get widget_url(widget), headers: valid_headers
-      wrenches = JSON.parse(response.body)
-      expect(wrenches['name']).to eq "Wrenches"
-      expect(wrenches['description']).to eq "Michael's wrench"
-      expect(wrenches['userName']).to eq "Michael Scott"
-    end
-  end
-
-  describe "POST /create" do
-    context "with valid parameters" do
-      it "creates a new Widget" do
-        expect { post widgets_url, params: valid_attributes, headers: valid_headers, as: :json
-        }.to change(Widget, :count).by(1)
-      end
-
-      it "renders a JSON response with the new widget" do
-        post widgets_url, params: valid_attributes, headers: valid_headers, as: :json
-        expect(response).to have_http_status(:created)
-        expect(response.content_type).to match(a_string_including("application/json"))
-      end
-    end
-
-    context "with invalid parameters" do
-      it "does not create a new Widget" do
-        expect {
-          post widgets_url, params: invalid_attributes, headers: valid_headers, as: :json
-        }.to change(Widget, :count).by(0)
-      end
-
-      it "renders a JSON response with errors for the new widget" do
-        post widgets_url, params: invalid_attributes, headers: valid_headers, as: :json
-        expect(response).to have_http_status(:unprocessable_entity)
-        expect(response.content_type).to match(a_string_including("application/json"))
-      end
-    end
-  end
-
-  describe "PATCH /update" do
-    context "with valid parameters" do
-      let(:new_attributes) {{ name: "UpdatedName"}}
-
-      it "updates the requested widget" do
-        widget = widgets(:wrenches)
-        patch widget_url(widget), params: new_attributes, headers: valid_headers, as: :json
-        widget.reload
-        expect(widget.name).to eq("UpdatedName")
-      end
-
-      it "renders a JSON response with the widget" do
-        widget = widgets(:wrenches)
-        patch widget_url(widget), params: new_attributes, headers: valid_headers, as: :json
-        expect(response).to have_http_status(:ok)
-        expect(response.content_type).to match(a_string_including("application/json"))
-      end
-
-      it "widget's other properties are still correct" do
-        widget = widgets(:wrenches)
-        patch widget_url(widget), params: new_attributes, headers: valid_headers, as: :json
-        wrench = JSON.parse(response.body)
-        expect(wrench['description']).to eq "Michael's wrench"
-        expect(wrench['userName']).to eq "Michael Scott"
-        expect(wrench['image']).to be_kind_of(String)
-        expect(wrench['image']).to match(/http.*allen-wrenches\.jpg/)
-      end
-
-    end
-
-    context "with invalid parameters" do
-      it "renders a JSON response with errors for the widget" do
-        widget = widgets(:wrenches)
-        patch widget_url(widget), params: invalid_attributes, headers: valid_headers, as: :json
-        expect(response).to have_http_status(:unprocessable_entity)
-        expect(response.content_type).to match(a_string_including("application/json"))
-      end
-    end
-  end
-
-  describe "DELETE /destroy" do
-    it "destroys the requested widget" do
-      widget = Widget.create! valid_attributes
-      expect { delete widget_url(widget), headers: valid_headers, as: :json
-      }.to change(Widget, :count).by(-1)
-    end
-  end
-end
-~
-```
-- `puravida spec/requests/widgets_spec_bak.rb ~`
-```
-# frozen_string_literal: true
-require 'open-uri'
-require 'rails_helper'
-RSpec.describe "/widgets", type: :request do
-  let(:valid_create_user_1_params) { { name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password" } }
-  let(:user_1_attachment) { "/spec/fixtures/files/images/office-avatars/michael-scott.png" }
-  let(:user_1_image) { "michael-scott.png" }
-  let(:valid_create_user_2_params) { { name: "Jim Halpert", email: "jimhalpert@dundermifflin.com", admin: "false", password: "password" } }
-  let(:user_2_attachment) { "/spec/fixtures/files/images/office-avatars/jim-halpert.png" }
-  let(:user_2_image) { "jim-halpert.png" }
-  let(:invalid_create_user_1_params) { { name: "Michael Scott", email: "test", admin: "true", password: "password" } }
-  let(:invalid_create_user_2_params) { { name: "Jim Halpert", email: "test2", admin: "false", password: "password" } }
-  let(:valid_user_1_login_params) { { email: "michaelscott@dundermifflin.com",  password: "password" } }
-  let(:valid_user_2_login_params) { { email: "jimhalpert@dundermifflin.com",  password: "password" } }
-  let(:invalid_patch_params) { { email: "test" } }
-  let(:uploaded_image_path) { Rails.root.join '/spec/fixtures/files/images/office-avatars/michael-scott.png' }
-  let(:uploaded_image) { Rack::Test::UploadedFile.new uploaded_image_path, 'image/png' }
-
-  describe "GET /index" do
-    context "with valid auth header (non-admin user)" do
-      it "renders a successful response" do
-        user1 = User.create! valid_create_user_1_params
-        user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
-        user1.save!
-        user2 = User.create! valid_create_user_2_params
-        header = header_from_user(user2,valid_user_2_login_params)
-        widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
-        image_filename = "allen-wrenches.jpg"
-        image_path = "#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"
-        open_image = URI.open(image_path)
-        widget1.image.attach(io: open_image, filename: image_filename)
-        widget1.save!
-        widget2 = Widget.create(name: "Bolts", description: "Michael's bolts", user_id: user1.id)
-        widget2.save!
-        get widgets_url, headers: header, as: :json
-        expect(response).to be_successful
-      end
-      
-      it "gets two widgets (one with image, one without)" do
-        user1 = User.create! valid_create_user_1_params
-        user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
-        user1.save!
-        user2 = User.create! valid_create_user_2_params
-        widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
-        widget1.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
-        widget1.save!
-        widget2 = Widget.create(name: "Bolts", description: "Michael's bolts", user_id: user1.id)
-        widget2.save!
-        header = header_from_user(user2,valid_user_2_login_params)
-        get widgets_url, headers: header, as: :json
-        expect(response).to be_successful
-        expect(JSON.parse(response.body).length).to eq 2
-        expect(JSON.parse(response.body)[0]).to include("id","name","description","image","userId")
-        expect(JSON.parse(response.body)[0]['name']).to eq("Wrenches")
-        expect(JSON.parse(response.body)[0]['description']).to eq("Michael's wrenches")
-        expect(JSON.parse(response.body)[0]['image']).to match(/http.*\/allen-wrenches\.jpg/)
-        expect(JSON.parse(response.body)[0]['userId']).to eq(user1.id)
-        expect(JSON.parse(response.body)[1]).to include("id","name","description","image","userId")
-        expect(JSON.parse(response.body)[1]['name']).to eq("Bolts")
-        expect(JSON.parse(response.body)[1]['description']).to eq("Michael's bolts")
-        expect(JSON.parse(response.body)[1]['image']).to eq(nil)
-        expect(JSON.parse(response.body)[1]['userId']).to eq(user1.id)
-      end
-
-      it "gets user one's widgets" do
-        user1 = User.create! valid_create_user_1_params
-        user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
-        user1.save!
-        user2 = User.create! valid_create_user_2_params
-        widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
-        widget1.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
-        widget1.save!
-        widget2 = Widget.create(name: "Bolts", description: "Michael's bolts", user_id: user1.id)
-        widget3 = Widget.create(name: "test3", description: "test3", user_id: user2.id)
-        widget3 = Widget.create(name: "test4", description: "test4", user_id: user2.id)
-        header = header_from_user(user2,valid_user_2_login_params)
-        get widgets_url, params: { user_id: user1.id }, headers: header
-        expect(response).to be_successful
-        expect(JSON.parse(response.body).length).to eq 2
-        expect(JSON.parse(response.body)[0]).to include("id","name","description","image","userId")
-        expect(JSON.parse(response.body)[0]['name']).to eq("Wrenches")
-        expect(JSON.parse(response.body)[0]['description']).to eq("Michael's wrenches")
-        expect(JSON.parse(response.body)[0]['image']).to match(/http.*\/allen-wrenches\.jpg/)
-        expect(JSON.parse(response.body)[0]['userId']).to eq(user1.id)
-        expect(JSON.parse(response.body)[1]).to include("id","name","description","image","userId")
-        expect(JSON.parse(response.body)[1]['name']).to eq("Bolts")
-        expect(JSON.parse(response.body)[1]['description']).to eq("Michael's bolts")
-        expect(JSON.parse(response.body)[1]['image']).to eq(nil)
-        expect(JSON.parse(response.body)[1]['userId']).to eq(user1.id)
-      end
-
-      it "gets user two's widgets" do
-        user1 = User.create! valid_create_user_1_params
-        user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
-        user1.save!
-        user2 = User.create! valid_create_user_2_params
-        widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
-        widget1.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
-        widget1.save!
-        widget2 = Widget.create(name: "Bolts", description: "Michael's bolts", user_id: user1.id)
-        widget3 = Widget.create(name: "test3", description: "test3", user_id: user2.id)
-        widget3 = Widget.create(name: "test4", description: "test4", user_id: user2.id)
-        header = header_from_user(user2,valid_user_2_login_params)
-        get widgets_url, params: { user_id: user2.id }, headers: header
-        expect(response).to be_successful
-        expect(JSON.parse(response.body).length).to eq 2
-        expect(JSON.parse(response.body)[0]).to include("id","name","description","image","userId")
-        expect(JSON.parse(response.body)[0]['name']).to eq("test3")
-        expect(JSON.parse(response.body)[0]['description']).to eq("test3")
-        expect(JSON.parse(response.body)[0]['userId']).to eq(user2.id)
-        expect(JSON.parse(response.body)[0]['image']).to eq(nil)
-        expect(JSON.parse(response.body)[1]).to include("id","name","description","image","userId")
-        expect(JSON.parse(response.body)[1]['name']).to eq("test4")
-        expect(JSON.parse(response.body)[1]['description']).to eq("test4")
-        expect(JSON.parse(response.body)[1]['image']).to eq(nil)
-        expect(JSON.parse(response.body)[1]['userId']).to eq(user2.id)
-      end
-
-    end
-
-    context "with invalid auth header" do
-      it "renders a 401 response" do
-        User.create! valid_create_user_1_params
-        get widgets_url, headers: invalid_auth_header, as: :json
-        expect(response).to have_http_status(401)
-      end
-      it "renders a 401 response" do
-        User.create! valid_create_user_1_params
-        get widgets_url, headers: poorly_formed_header(valid_create_user_2_params), as: :json
-        expect(response).to have_http_status(401)
-      end
-    end
-  end
-
-  describe "GET /show" do
-    context "with valid auth header" do
-      it "renders a successful response" do
-        user1 = User.create! valid_create_user_1_params
-        user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
-        user1.save!
-        user2 = User.create! valid_create_user_2_params
-        header = header_from_user(user2,valid_user_2_login_params)
-        widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
-        widget1.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
-        widget1.save!
-        get widget_url(widget1), headers: header, as: :json
-        expect(response).to be_successful
-      end
-      it "gets one widget (with image)" do
-        user1 = User.create! valid_create_user_1_params
-        user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
-        user1.save!
-        user2 = User.create! valid_create_user_2_params
-        header = header_from_user(user2,valid_user_2_login_params)
-        widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
-        widget1.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
-        widget1.save!
-        get widget_url(widget1), headers: header, as: :json
-        expect(JSON.parse(response.body)).to include("id","name","description","image","userId")
-        expect(JSON.parse(response.body)['name']).to eq("Wrenches")
-        expect(JSON.parse(response.body)['description']).to eq("Michael's wrenches")
-        expect(JSON.parse(response.body)['image']).to match(/http.*\/allen-wrenches\.jpg/)
-        expect(JSON.parse(response.body)['userId']).to eq(user1.id)
-      end
-      it "gets one widget (without avatar)" do
-        user1 = User.create! valid_create_user_1_params
-        user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
-        user1.save!
-        user2 = User.create! valid_create_user_2_params
-        header = header_from_user(user2,valid_user_2_login_params)
-        widget2 = Widget.create(name: "Bolts", description: "Michael's bolts", user_id: user1.id)
-        widget2.save!
-        get widget_url(widget2), headers: header, as: :json
-        expect(JSON.parse(response.body)).to include("id","name","description","image","userId")
-        expect(JSON.parse(response.body)['name']).to eq("Bolts")
-        expect(JSON.parse(response.body)['description']).to eq("Michael's bolts")
-        expect(JSON.parse(response.body)['image']).to eq(nil)
-        expect(JSON.parse(response.body)['userId']).to eq(user1.id)
-      end
-    end
-    context "with invalid auth header" do
-      it "renders a 401 response" do
-        user1 = User.create! valid_create_user_1_params
-        widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
-        widget1.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
-        widget1.save!
-        get widget_url(widget1), headers: invalid_auth_header, as: :json
-        expect(response).to have_http_status(401)
-      end
-      it "renders a 401 response" do
-        user1 = User.create! valid_create_user_1_params
-        user2 = User.create! valid_create_user_2_params
-        widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
-        widget1.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
-        widget1.save!
-        get widget_url(widget1), headers: poorly_formed_header(valid_create_user_2_params), as: :json
-        expect(response).to have_http_status(401)
-      end
-    end
-  end
-
-  describe "POST /create" do
-    context "without auth header" do
-      it "returns 401" do
-        user1 = User.create! valid_create_user_1_params
-        post widgets_url, params: { name: "Wrenches", description: "Michael's wrenches", user_id: user1.id }
-        expect(response).to have_http_status(401)
-      end
-    end
-    context "with valid params (without image)" do
-      it "creates widget" do
-        user1 = User.create! valid_create_user_1_params
-        user2 = User.create! valid_create_user_2_params
-        header = header_from_user(user2,valid_user_2_login_params)
-        post widgets_url, headers: header, params: { name: "Wrenches", description: "Michael's wrenches", user_id: user1.id }
-        expect(response).to have_http_status(201)
-        expect(JSON.parse(response.body)).to include("id","name","description","image","userId")
-        expect(JSON.parse(response.body)['name']).to eq("Wrenches")
-        expect(JSON.parse(response.body)['description']).to eq("Michael's wrenches")
-        expect(JSON.parse(response.body)['image']).to be_nil
-        expect(JSON.parse(response.body)['userId']).to eq(user1.id)
-      end
-    end
-    context "with valid params (with image)" do
-      it "creates widget" do
-        user1 = User.create! valid_create_user_1_params
-        user2 = User.create! valid_create_user_2_params
-        header = header_from_user(user2,valid_user_2_login_params)
-        image = Rack::Test::UploadedFile.new(Rails.root.join("app/assets/images/widgets/allen-wrenches.jpg"))
-        post widgets_url, headers: header, params: { name: "Wrenches", description: "Michael's wrenches", image: image, user_id: user1.id }
-        expect(response).to have_http_status(201)
-        expect(JSON.parse(response.body)).to include("id","name","description","image","userId")
-        expect(JSON.parse(response.body)['name']).to eq("Wrenches")
-        expect(JSON.parse(response.body)['description']).to eq("Michael's wrenches")
-        expect(JSON.parse(response.body)['image']).to match(/http.*\/allen-wrenches\.jpg/)
-        expect(JSON.parse(response.body)['userId']).to eq(user1.id)
-      end
-      it "creates widget" do
-        user1 = User.create! valid_create_user_1_params
-        user2 = User.create! valid_create_user_2_params
-        header = header_from_user(user2,valid_user_2_login_params)
-        image = Rack::Test::UploadedFile.new(Rails.root.join("app/assets/images/widgets/allen-wrenches.jpg"))
-        expect { post widgets_url, headers: header, params: { name: "Wrenches", description: "Michael's wrenches", image: image, user_id: user1.id } }
-          .to change(Widget, :count).by(1)
-      end
-    end
-    context "with invalid parameters (missing user id)" do
-      it "does not create a new User" do
-        user2 = User.create! valid_create_user_2_params
-        header = header_from_user(user2,valid_user_2_login_params)
-        expect { post widgets_url, headers: header, params: { name: "Wrenches", description: "Michael's wrenches" }, as: :json}
-          .to change(User, :count).by(0)
-      end
-      it "renders a JSON error response" do
-        user2 = User.create! valid_create_user_2_params
-        header = header_from_user(user2,valid_user_2_login_params)
-        post widgets_url, headers: header, params: { name: "Wrenches", description: "Michael's wrenches" }, as: :json
-        expect(response).to have_http_status(:unprocessable_entity)
-        expect(response.content_type).to match(a_string_including("application/json"))
-      end
-    end
-  end
-
-  describe "PATCH /update" do
-    context "with valid parameters" do
-      it "updates the requested widget's name" do
-        user1 = User.create! valid_create_user_1_params
-        user2 = User.create! valid_create_user_2_params
-        header = header_from_user(user2,valid_user_2_login_params)
-        widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
-        widget1.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
-        widget1.save!        
-        patch widget_url(widget1), params: { name: "Updated Name!!"}, headers: header, as: :json
-        widget1.reload
-        expect(JSON.parse(response.body)['name']).to eq "Updated Name!!"
-        expect(response).to have_http_status(:ok)
-        expect(response.content_type).to match(a_string_including("application/json"))
-      end
-      it "updates the requested widgets's image" do
-        user1 = User.create! valid_create_user_1_params   
-        user2 = User.create! valid_create_user_2_params
-        header = header_from_user(user2,valid_user_2_login_params)
-        widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
-        widget1.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
-        widget1.save!
-        updated_image = Rack::Test::UploadedFile.new(Rails.root.join('spec/fixtures/files/images/office-avatars/erin-hannon.png'))
-        patch widget_url(widget1), params: { name: "test", image: updated_image }, headers: header
-        expect(response).to have_http_status(:ok)
-        expect(response.content_type).to match(a_string_including("application/json"))
-        expect(JSON.parse(response.body)['name']).to eq("test")
-        expect(JSON.parse(response.body)['image']).to be_kind_of(String)
-        expect(JSON.parse(response.body)['image']).to match(/http.*\/erin-hannon\.png/)
-      end
-    end
-  end
-
-  describe "DELETE /destroy" do
-    it "destroys the requested widget (without avatar)" do
-      user1 = User.create! valid_create_user_1_params
-      user2 = User.create! valid_create_user_2_params      
-      header = header_from_user(user2,valid_user_2_login_params)
-      widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
-      expect {
-        delete widget_url(widget1), headers: header, as: :json
-      }.to change(Widget, :count).by(-1)
-    end
-    it "destroys the requested widget (with avatar)" do
-      file = Rack::Test::UploadedFile.new(Rails.root.join("spec/fixtures/files/images/office-avatars/michael-scott.png"))
-      valid_create_user_1_params['avatar'] = file
-      user1 = User.create! valid_create_user_1_params
-      user2 = User.create! valid_create_user_2_params
-      header = header_from_user(user2,valid_user_2_login_params)
-      widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
-      widget1.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
-      widget1.save!
-      expect {
-        delete widget_url(widget1), headers: header, as: :json
-      }.to change(Widget, :count).by(-1)
-    end
-  end
-end
-
-private 
-
-def token_from_user(user,login_params)
-  post "/login", params: login_params
-  token = JSON.parse(response.body)['data']
-end
-
-def valid_token(create_user_params)
-  user = User.create(create_user_params)
-  post "/login", params: valid_user_1_login_params
-  token = JSON.parse(response.body)['data']
-end
-
-def valid_auth_header_from_token(token)
-  auth_value = "Bearer " + token
-  { Authorization: auth_value }
-end
-
-def valid_auth_header_from_user_params(create_user_params)
-  token = valid_token(create_user_params)
-  auth_value = "Bearer " + token
-  { Authorization: auth_value }
-end
-
-def header_from_user(user,login_params)
-  token = token_from_user(user,login_params)
-  auth_value = "Bearer " + token
-  { Authorization: auth_value }
-end
-
-def invalid_auth_header
-  auth_value = "Bearer " + "xyz"
-  { Authorization: auth_value }
-end
-
-def poorly_formed_header(create_user_params)
-  token = valid_token(create_user_params)
-  auth_value = "Bears " + token
-  { Authorization: auth_value }
-end
-
-def blob_for(name)
-  ActiveStorage::Blob.create_and_upload!(
-    io: File.open(Rails.root.join(file_fixture(name)), 'rb'),
-    filename: name,
-    content_type: 'image/png' # Or figure it out from `name` if you have non-JPEGs
-  )
-end
-~
-```
-- `puravida spec/requests/users_spec.rb ~`
-```
-# frozen_string_literal: true
-require 'rails_helper'
-require 'spec_helper'
-
-RSpec.describe "/users", type: :request do
-  fixtures :users
-  fixtures :widgets
-  let(:valid_headers) {{ Authorization: "Bearer " + @michael_token }}
-  let(:admin_2_headers) {{ Authorization: "Bearer " + @ryan_token }}
-  let(:invalid_token_header) {{ Authorization: "Bearer xyz" }}
-  let(:poorly_formed_header) {{ Authorization: "Bear " + @michael_token }}
-  let(:user_valid_create_params_mock_1) {{ name: "First1 Last1", email: "one@mail.com", admin: "false", password: "password", avatar: fixture_file_upload("spec/fixtures/files/michael-scott.png", "image/png") }}
-  let(:user_invalid_create_params_email_poorly_formed_mock_1) {{ name: "", email: "not_an_email", admin: "false", password: "password", avatar: fixture_file_upload("spec/fixtures/files/michael-scott.png", "image/png") }}
-  let(:valid_user_update_attributes) {{ name: "UpdatedName" }}
-  let(:invalid_user_update_attributes) {{ email: "not_an_email" }}
-  
-  before :all do
-    @michael_token = token_from_email_password("michaelscott@dundermifflin.com", "password")
-    @ryan_token = token_from_email_password("ryanhoward@dundermifflin.com", "password")
-  end
-
-  before :each do
-    @user1 = users(:michael)
-    avatar1 = fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'michael-scott.png'),'image/png')
-    @user1.avatar.attach(avatar1)
-    @user2 = users(:jim)
-    avatar2 = fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'jim-halpert.png'),'image/png')
-    @user2.avatar.attach(avatar2)
-    widgets(:wrenches).image.attach(fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'allen-wrenches.jpg'),'image/jpeg'))
-    widgets(:bolts).image.attach(fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'bolts.jpg'),'image/jpeg'))
-    widgets(:brackets).image.attach(fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'brackets.png'),'image/png'))
-    widgets(:nuts).image.attach(fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'nuts.jpg'),'image/jpeg'))
-    widgets(:pipes).image.attach(fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'pipes.jpg'),'image/jpeg'))
-    widgets(:screws).image.attach(fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'screws.jpg'),'image/jpeg'))
-    widgets(:washers).image.attach(fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'washers.jpg'),'image/jpeg'))
-  end
-
-  describe "GET /index" do
-    context "with valid headers" do
-      it "renders a successful response" do
-        get users_url, headers: valid_headers
-        expect(response).to be_successful
-      end
-
-      it "gets four users" do
-        get users_url, headers: valid_headers
-        expect(JSON.parse(response.body).length).to eq 4
-      end
-
-      it "gets first users' correct details" do
-        get users_url, headers: valid_headers
-        users = JSON.parse(response.body)
-        michael = users.find { |user| user['email'] == "michaelscott@dundermifflin.com" }
-        widget_ids = michael['widget_ids']
-        widgets = michael['widgets']
-        wrenches = widgets.find { |widget| widget['name'] == "Wrenches" }
-        bolts = widgets.find { |widget| widget['name'] == "Bolts" }
-        expect(michael['name']).to eq "Michael Scott"
-        expect(michael['email']).to eq "michaelscott@dundermifflin.com"
-        expect(michael['admin']).to eq true
-        expect(michael['avatar']).to be_kind_of(String)
-        expect(michael['avatar']).to match(/http.*\michael-scott\.png/)
-        expect(michael['password']).to be_nil
-        expect(michael['password_digest']).to be_nil
-        expect(wrenches['name']).to eq "Wrenches"
-        expect(wrenches['description']).to eq "Michael's wrench"
-        expect(url_for(wrenches['image'])).to be_kind_of(String)
-        expect(url_for(wrenches['image'])).to match(/http.*allen-wrenches\.jpg/)
-        expect(bolts['name']).to eq "Bolts"
-        expect(bolts['description']).to eq "Michael's bolt"
-        expect(url_for(bolts['image'])).to be_kind_of(String)
-        expect(url_for(bolts['image'])).to match(/http.*bolts\.jpg/)
-      end
-
-      it "gets second users' correct details" do
-        get users_url, headers: valid_headers
-        users = JSON.parse(response.body)
-        jim = users.find { |user| user['email'] == "jimhalpert@dundermifflin.com" }
-        widget_ids = jim['widget_ids']
-        widgets = jim['widgets']
-        brackets = widgets.find { |widget| widget['name'] == "Brackets" }
-        nuts  = widgets.find { |widget| widget['name'] == "Nuts" }
-        pipes  = widgets.find { |widget| widget['name'] == "Pipes" }
-        expect(jim['name']).to eq "Jim Halpert"
-        expect(jim['email']).to eq "jimhalpert@dundermifflin.com"
-        expect(jim['admin']).to be_nil or eq false
-        expect(jim['avatar']).to be_kind_of(String)
-        expect(jim['avatar']).to match(/http.*\jim-halpert\.png/)
-        expect(jim['password']).to be_nil
-        expect(jim['password_digest']).to be_nil
-        expect(brackets['name']).to eq "Brackets"
-        expect(brackets['description']).to eq "Jim's bracket"
-        expect(url_for(brackets['image'])).to be_kind_of(String)
-        expect(url_for(brackets['image'])).to match(/http.*brackets\.png/)
-        expect(nuts['name']).to eq "Nuts"
-        expect(nuts['description']).to eq "Jim's nut"
-        expect(url_for(nuts['image'])).to be_kind_of(String)
-        expect(url_for(nuts['image'])).to match(/http.*nuts\.jpg/)
-        expect(pipes['name']).to eq "Pipes"
-        expect(pipes['description']).to eq "Jim's pipe"
-        expect(url_for(pipes['image'])).to be_kind_of(String)
-        expect(url_for(pipes['image'])).to match(/http.*pipes\.jpg/)
-      end
-    end
-
-    context "with invalid headers" do
-      it "renders an unsuccessful response" do
-        get users_url, headers: invalid_token_header
-        expect(response).to_not be_successful
-      end
-    end
-
-  end
-
-  describe "GET /show" do
-    context "with valid headers" do
-      it "renders a successful response" do
-        get user_url(@user1), headers: valid_headers
-        expect(response).to be_successful
-      end
-      it "gets users' correct details" do
-        get user_url(@user1), headers: valid_headers
-        michael = JSON.parse(response.body)
-        widget_ids = michael['widget_ids']
-        widgets = michael['widgets']
-        wrenches = widgets.find { |widget| widget['name'] == "Wrenches" }
-        bolts = widgets.find { |widget| widget['name'] == "Bolts" }
-        expect(michael['name']).to eq "Michael Scott"
-        expect(michael['email']).to eq "michaelscott@dundermifflin.com"
-        expect(michael['admin']).to eq true
-        expect(michael['avatar']).to be_kind_of(String)
-        expect(michael['avatar']).to match(/http.*\michael-scott\.png/)
-        expect(michael['password']).to be_nil
-        expect(michael['password_digest']).to be_nil
-        expect(wrenches['name']).to eq "Wrenches"
-        expect(wrenches['description']).to eq "Michael's wrench"
-        expect(url_for(wrenches['image'])).to be_kind_of(String)
-        expect(url_for(wrenches['image'])).to match(/http.*allen-wrenches\.jpg/)
-        expect(bolts['name']).to eq "Bolts"
-        expect(bolts['description']).to eq "Michael's bolt"
-        expect(url_for(bolts['image'])).to be_kind_of(String)
-        expect(url_for(bolts['image'])).to match(/http.*bolts\.jpg/)
-      end
-    end
-    context "with invalid headers" do
-      it "renders an unsuccessful response" do
-        get user_url(@user1), headers: invalid_token_header
-        expect(response).to_not be_successful
-      end
-    end
-  end
-
-  describe "POST /users" do
-    context "with valid parameters" do
-      it "creates a new User" do
-        expect {
-          post users_url, params: user_valid_create_params_mock_1
-        }.to change(User, :count).by(1)
-      end
-
-      it "renders a successful response" do
-        post users_url, params: user_valid_create_params_mock_1
-        expect(response).to be_successful
-      end
-
-      it "sets correct user details" do
-        post users_url, params: user_valid_create_params_mock_1
-        user = User.order(:created_at).last
-        expect(user['name']).to eq "First1 Last1"
-        expect(user['email']).to eq "one@mail.com"
-        expect(user['admin']).to eq(false).or(be_nil)
-        expect(user['avatar']).to be_nil
-        expect(user['password']).to be_nil
-        expect(user['password_digest']).to be_kind_of(String)
-      end
-
-      it "attaches user avatar" do
-        post users_url, params: user_valid_create_params_mock_1
-        user = User.order(:created_at).last
-        expect(user.avatar.attached?).to eq(true)
-        expect(url_for(user.avatar)).to be_kind_of(String)
-        expect(url_for(user.avatar)).to match(/http.*michael-scott\.png/)
-      end
-    end
-
-    context "with invalid parameters (email poorly formed)" do
-      it "does not create a new User" do
-        expect {
-          post users_url, params: user_invalid_create_params_email_poorly_formed_mock_1
-        }.to change(User, :count).by(0)
-      end
-    
-      it "renders a 422 response" do
-        post users_url, params: user_invalid_create_params_email_poorly_formed_mock_1
-        expect(response).to have_http_status(:unprocessable_entity)
-      end  
-    end
-  end
-
-  describe "PATCH /update" do
-    context "with valid parameters and headers" do
-
-      it "updates the requested user attribute" do
-        patch user_url(@user1), params: valid_user_update_attributes, headers: valid_headers
-        @user1.reload
-        expect(@user1.name).to eq("UpdatedName")
-      end
-
-      it "doesn't change the other user attributes" do
-        patch user_url(@user1), params: valid_user_update_attributes, headers: valid_headers
-        @user1.reload
-        get user_url(@user1), headers: valid_headers
-        user = JSON.parse(response.body)
-        widget_ids = user['widget_ids']
-        widgets = user['widgets']
-        wrenches = widgets.find { |widget| widget['name'] == "Wrenches" }
-        bolts = widgets.find { |widget| widget['name'] == "Bolts" }
-        expect(@user1['email']).to eq "michaelscott@dundermifflin.com"
-        expect(@user1['admin']).to eq true
-        expect(@user1['avatar']).to be_nil
-        expect(@user1['password']).to be_nil
-        expect(@user1['password_digest']).to be_kind_of(String)
-        expect(wrenches['name']).to eq "Wrenches"
-        expect(wrenches['description']).to eq "Michael's wrench"
-        expect(url_for(wrenches['image'])).to be_kind_of(String)
-        expect(url_for(wrenches['image'])).to match(/http.*allen-wrenches\.jpg/)
-        expect(bolts['name']).to eq "Bolts"
-        expect(bolts['description']).to eq "Michael's bolt"
-        expect(url_for(bolts['image'])).to be_kind_of(String)
-        expect(url_for(bolts['image'])).to match(/http.*bolts\.jpg/)
-      end
-
-      it "is successful" do
-        patch user_url(@user1), params: valid_user_update_attributes, headers: valid_headers
-        @user1.reload
-        expect(response).to be_successful
-      end
-    end
-
-    context "with invalid parameters but valid headers" do
-       it "renders a 422 response" do
-         patch user_url(@user1), params: invalid_user_update_attributes, headers: valid_headers
-         expect(response).to have_http_status(:unprocessable_entity)
-       end
-    end
-
-    context "with valid parameters but invalid headers" do
-       it "renders a 401 response" do
-         patch user_url(@user1), params: valid_user_update_attributes, headers: invalid_token_header
-         expect(response).to have_http_status(:unauthorized)
-       end
-    end
-
-  end
-
-  describe "DELETE /destroy" do
-    context "with valid headers" do
-      it "destroys the requested user" do
-        expect {
-          delete user_url(@user1), headers: valid_headers
-        }.to change(User, :count).by(-1)
-      end
-
-      it "renders a successful response" do
-        delete user_url(@user1), headers: valid_headers
-        expect(response).to be_successful
-      end
-    end
-
-    context "with invalid headers" do
-      it "doesn't destroy user" do
-        expect {
-          delete user_url(@user1), headers: invalid_token_header
-        }.to change(User, :count).by(0)
-      end
-
-      it "renders a unsuccessful response" do
-        delete user_url(@user1), headers: invalid_token_header
-        expect(response).to_not be_successful
-      end
-    end
-  end
-
-end
-~
-```
-- `rspec`
-
-### Subwidgets (Backend)
-- `# rails g scaffold subwidget name description image:attachment widget:references`
-- `rails g scaffold subwidget name description image:attachment ref_id:integer ref_type`
-- `rails db:migrate`
-- `puravida app/controllers/subwidgets_controller.rb ~`
-```
-class SubwidgetsController < ApplicationController
-  before_action :set_subwidget, only: %i[ show update destroy ]
-
-  # GET /subwidgets
-  def index
-    if params['user_id'].present?
-      @subwidgets = Subwidget.joins(widget: [:user]).where(users: {id: params['user_id']}).map { |subwidget| prep_raw_subwidget(subwidget) }
-    else
-      @subwidgets = Subwidget.all.map { |subwidget| prep_raw_subwidget(subwidget) }
-    end
-    render json: @subwidgets
-  end
-
-  # GET /subwidgets/1
-  def show
-    render json: prep_raw_subwidget(@subwidget)
-  end
-
-  # POST /subwidgets
-  def create
-    create_params = subwidget_params
-    create_params['image'] = params['image'].blank? ? nil : params['image'] # if no image is chosen on new subwidget page, params['image'] comes in as a blank string, which throws a 500 error at Subwidget.new(create_params). This changes any params['avatar'] blank string to nil, which is fine in Subwidget.new(create_params).
-    create_params['widget_id'] = create_params['widget_id'].to_i
-    @subwidget = Subwidget.new(create_params)
-    if @subwidget.save
-      render json: prep_raw_subwidget(@subwidget), status: :created, location: @subwidget
-    else
-      render json: @subwidget.errors, status: :unprocessable_entity
-    end
-  end
-
-  # PATCH/PUT /subwidgets/1
-  def update
-    if @subwidget.update(subwidget_params)
-      render json: prep_raw_subwidget(@subwidget)
-    else
-      render json: @subwidget.errors, status: :unprocessable_entity
-    end
-  end
-
-  # DELETE /subwidgets/1
-  def destroy
-    @subwidget.destroy
-  end
-
-  private
-    # Use callbacks to share common setup or constraints between actions.
-    def set_subwidget
-      @subwidget = Subwidget.find(params[:id])
-    end
-
-    # Only allow a list of trusted parameters through.
-    def subwidget_params
-      params.permit(:id, :name, :description, :image, :widget_id)
-    end
-end
-~
-```
-- `puravida spec/requests/subwidgets_spec.rb ~`
-```
-# frozen_string_literal: true
-require 'open-uri'
-require 'rails_helper'
-RSpec.describe "/widgets", type: :request do
-  let(:valid_create_user_1_params) { { name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password" } }
-  let(:user_1_attachment) { "/spec/fixtures/files/images/office-avatars/michael-scott.png" }
-  let(:user_1_image) { "michael-scott.png" }
-  let(:valid_create_user_2_params) { { name: "Jim Halpert", email: "jimhalpert@dundermifflin.com", admin: "false", password: "password" } }
-  let(:user_2_attachment) { "/spec/fixtures/files/images/office-avatars/jim-halpert.png" }
-  let(:user_2_image) { "jim-halpert.png" }
-  let(:invalid_create_user_1_params) { { name: "Michael Scott", email: "test", admin: "true", password: "password" } }
-  let(:invalid_create_user_2_params) { { name: "Jim Halpert", email: "test2", admin: "false", password: "password" } }
-  let(:valid_user_1_login_params) { { email: "michaelscott@dundermifflin.com",  password: "password" } }
-  let(:valid_user_2_login_params) { { email: "jimhalpert@dundermifflin.com",  password: "password" } }
-  let(:invalid_patch_params) { { email: "test" } }
-  let(:uploaded_image_path) { Rails.root.join '/spec/fixtures/files/images/office-avatars/michael-scott.png' }
-  let(:uploaded_image) { Rack::Test::UploadedFile.new uploaded_image_path, 'image/png' }
-
-  describe "GET /index" do
-    context "with valid auth header (non-admin user)" do
-      it "renders a successful response" do
-        user1 = User.create! valid_create_user_1_params
-        user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
-        user1.save!
-        user2 = User.create! valid_create_user_2_params
-        header = header_from_user(user2,valid_user_2_login_params)
-        widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
-        image_filename = "allen-wrenches.jpg"
-        image_path = "#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"
-        open_image = URI.open(image_path)
-        widget1.image.attach(io: open_image, filename: image_filename)
-        widget1.save!
-        widget2 = Widget.create(name: "Bolts", description: "Michael's bolts", user_id: user1.id)
-        widget2.save!
-        get widgets_url, headers: header, as: :json
-        expect(response).to be_successful
-      end
-      
-      it "gets two widgets (one with image, one without)" do
-        user1 = User.create! valid_create_user_1_params
-        user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
-        user1.save!
-        user2 = User.create! valid_create_user_2_params
-        widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
-        widget1.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
-        widget1.save!
-        widget2 = Widget.create(name: "Bolts", description: "Michael's bolts", user_id: user1.id)
-        widget2.save!
-        header = header_from_user(user2,valid_user_2_login_params)
-        get widgets_url, headers: header, as: :json
-        expect(response).to be_successful
-        expect(JSON.parse(response.body).length).to eq 2
-        expect(JSON.parse(response.body)[0]).to include("id","name","description","image","userId")
-        expect(JSON.parse(response.body)[0]['name']).to eq("Wrenches")
-        expect(JSON.parse(response.body)[0]['description']).to eq("Michael's wrenches")
-        expect(JSON.parse(response.body)[0]['image']).to match(/http.*\/allen-wrenches\.jpg/)
-        expect(JSON.parse(response.body)[0]['userId']).to eq(user1.id)
-        expect(JSON.parse(response.body)[1]).to include("id","name","description","image","userId")
-        expect(JSON.parse(response.body)[1]['name']).to eq("Bolts")
-        expect(JSON.parse(response.body)[1]['description']).to eq("Michael's bolts")
-        expect(JSON.parse(response.body)[1]['image']).to eq(nil)
-        expect(JSON.parse(response.body)[1]['userId']).to eq(user1.id)
-      end
-
-      it "gets user one's widgets" do
-        user1 = User.create! valid_create_user_1_params
-        user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
-        user1.save!
-        user2 = User.create! valid_create_user_2_params
-        widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
-        widget1.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
-        widget1.save!
-        widget2 = Widget.create(name: "Bolts", description: "Michael's bolts", user_id: user1.id)
-        widget3 = Widget.create(name: "test3", description: "test3", user_id: user2.id)
-        widget3 = Widget.create(name: "test4", description: "test4", user_id: user2.id)
-        header = header_from_user(user2,valid_user_2_login_params)
-        get widgets_url, params: { user_id: user1.id }, headers: header
-        expect(response).to be_successful
-        expect(JSON.parse(response.body).length).to eq 2
-        expect(JSON.parse(response.body)[0]).to include("id","name","description","image","userId")
-        expect(JSON.parse(response.body)[0]['name']).to eq("Wrenches")
-        expect(JSON.parse(response.body)[0]['description']).to eq("Michael's wrenches")
-        expect(JSON.parse(response.body)[0]['image']).to match(/http.*\/allen-wrenches\.jpg/)
-        expect(JSON.parse(response.body)[0]['userId']).to eq(user1.id)
-        expect(JSON.parse(response.body)[1]).to include("id","name","description","image","userId")
-        expect(JSON.parse(response.body)[1]['name']).to eq("Bolts")
-        expect(JSON.parse(response.body)[1]['description']).to eq("Michael's bolts")
-        expect(JSON.parse(response.body)[1]['image']).to eq(nil)
-        expect(JSON.parse(response.body)[1]['userId']).to eq(user1.id)
-      end
-
-      it "gets user two's widgets" do
-        user1 = User.create! valid_create_user_1_params
-        user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
-        user1.save!
-        user2 = User.create! valid_create_user_2_params
-        widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
-        widget1.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
-        widget1.save!
-        widget2 = Widget.create(name: "Bolts", description: "Michael's bolts", user_id: user1.id)
-        widget3 = Widget.create(name: "test3", description: "test3", user_id: user2.id)
-        widget3 = Widget.create(name: "test4", description: "test4", user_id: user2.id)
-        header = header_from_user(user2,valid_user_2_login_params)
-        get widgets_url, params: { user_id: user2.id }, headers: header
-        expect(response).to be_successful
-        expect(JSON.parse(response.body).length).to eq 2
-        expect(JSON.parse(response.body)[0]).to include("id","name","description","image","userId")
-        expect(JSON.parse(response.body)[0]['name']).to eq("test3")
-        expect(JSON.parse(response.body)[0]['description']).to eq("test3")
-        expect(JSON.parse(response.body)[0]['userId']).to eq(user2.id)
-        expect(JSON.parse(response.body)[0]['image']).to eq(nil)
-        expect(JSON.parse(response.body)[1]).to include("id","name","description","image","userId")
-        expect(JSON.parse(response.body)[1]['name']).to eq("test4")
-        expect(JSON.parse(response.body)[1]['description']).to eq("test4")
-        expect(JSON.parse(response.body)[1]['image']).to eq(nil)
-        expect(JSON.parse(response.body)[1]['userId']).to eq(user2.id)
-      end
-
-    end
-
-    context "with invalid auth header" do
-      it "renders a 401 response" do
-        User.create! valid_create_user_1_params
-        get widgets_url, headers: invalid_auth_header, as: :json
-        expect(response).to have_http_status(401)
-      end
-      it "renders a 401 response" do
-        User.create! valid_create_user_1_params
-        get widgets_url, headers: poorly_formed_header(valid_create_user_2_params), as: :json
-        expect(response).to have_http_status(401)
-      end
-    end
-  end
-
-  describe "GET /show" do
-    context "with valid auth header" do
-      it "renders a successful response" do
-        user1 = User.create! valid_create_user_1_params
-        user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
-        user1.save!
-        user2 = User.create! valid_create_user_2_params
-        header = header_from_user(user2,valid_user_2_login_params)
-        widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
-        widget1.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
-        widget1.save!
-        get widget_url(widget1), headers: header, as: :json
-        expect(response).to be_successful
-      end
-      it "gets one widget (with image)" do
-        user1 = User.create! valid_create_user_1_params
-        user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
-        user1.save!
-        user2 = User.create! valid_create_user_2_params
-        header = header_from_user(user2,valid_user_2_login_params)
-        widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
-        widget1.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
-        widget1.save!
-        get widget_url(widget1), headers: header, as: :json
-        expect(JSON.parse(response.body)).to include("id","name","description","image","userId")
-        expect(JSON.parse(response.body)['name']).to eq("Wrenches")
-        expect(JSON.parse(response.body)['description']).to eq("Michael's wrenches")
-        expect(JSON.parse(response.body)['image']).to match(/http.*\/allen-wrenches\.jpg/)
-        expect(JSON.parse(response.body)['userId']).to eq(user1.id)
-      end
-      it "gets one widget (without avatar)" do
-        user1 = User.create! valid_create_user_1_params
-        user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
-        user1.save!
-        user2 = User.create! valid_create_user_2_params
-        header = header_from_user(user2,valid_user_2_login_params)
-        widget2 = Widget.create(name: "Bolts", description: "Michael's bolts", user_id: user1.id)
-        widget2.save!
-        get widget_url(widget2), headers: header, as: :json
-        expect(JSON.parse(response.body)).to include("id","name","description","image","userId")
-        expect(JSON.parse(response.body)['name']).to eq("Bolts")
-        expect(JSON.parse(response.body)['description']).to eq("Michael's bolts")
-        expect(JSON.parse(response.body)['image']).to eq(nil)
-        expect(JSON.parse(response.body)['userId']).to eq(user1.id)
-      end
-    end
-    context "with invalid auth header" do
-      it "renders a 401 response" do
-        user1 = User.create! valid_create_user_1_params
-        widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
-        widget1.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
-        widget1.save!
-        get widget_url(widget1), headers: invalid_auth_header, as: :json
-        expect(response).to have_http_status(401)
-      end
-      it "renders a 401 response" do
-        user1 = User.create! valid_create_user_1_params
-        user2 = User.create! valid_create_user_2_params
-        widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
-        widget1.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
-        widget1.save!
-        get widget_url(widget1), headers: poorly_formed_header(valid_create_user_2_params), as: :json
-        expect(response).to have_http_status(401)
-      end
-    end
-  end
-
-  describe "POST /create" do
-    context "without auth header" do
-      it "returns 401" do
-        user1 = User.create! valid_create_user_1_params
-        post widgets_url, params: { name: "Wrenches", description: "Michael's wrenches", user_id: user1.id }
-        expect(response).to have_http_status(401)
-      end
-    end
-    context "with valid params (without image)" do
-      it "creates widget" do
-        user1 = User.create! valid_create_user_1_params
-        user2 = User.create! valid_create_user_2_params
-        header = header_from_user(user2,valid_user_2_login_params)
-        post widgets_url, headers: header, params: { name: "Wrenches", description: "Michael's wrenches", user_id: user1.id }
-        expect(response).to have_http_status(201)
-        expect(JSON.parse(response.body)).to include("id","name","description","image","userId")
-        expect(JSON.parse(response.body)['name']).to eq("Wrenches")
-        expect(JSON.parse(response.body)['description']).to eq("Michael's wrenches")
-        expect(JSON.parse(response.body)['image']).to be_nil
-        expect(JSON.parse(response.body)['userId']).to eq(user1.id)
-      end
-    end
-    context "with valid params (with image)" do
-      it "creates widget" do
-        user1 = User.create! valid_create_user_1_params
-        user2 = User.create! valid_create_user_2_params
-        header = header_from_user(user2,valid_user_2_login_params)
-        image = Rack::Test::UploadedFile.new(Rails.root.join("app/assets/images/widgets/allen-wrenches.jpg"))
-        post widgets_url, headers: header, params: { name: "Wrenches", description: "Michael's wrenches", image: image, user_id: user1.id }
-        expect(response).to have_http_status(201)
-        expect(JSON.parse(response.body)).to include("id","name","description","image","userId")
-        expect(JSON.parse(response.body)['name']).to eq("Wrenches")
-        expect(JSON.parse(response.body)['description']).to eq("Michael's wrenches")
-        expect(JSON.parse(response.body)['image']).to match(/http.*\/allen-wrenches\.jpg/)
-        expect(JSON.parse(response.body)['userId']).to eq(user1.id)
-      end
-      it "creates widget" do
-        user1 = User.create! valid_create_user_1_params
-        user2 = User.create! valid_create_user_2_params
-        header = header_from_user(user2,valid_user_2_login_params)
-        image = Rack::Test::UploadedFile.new(Rails.root.join("app/assets/images/widgets/allen-wrenches.jpg"))
-        expect { post widgets_url, headers: header, params: { name: "Wrenches", description: "Michael's wrenches", image: image, user_id: user1.id } }
-          .to change(Widget, :count).by(1)
-      end
-    end
-    context "with invalid parameters (missing user id)" do
-      it "does not create a new User" do
-        user2 = User.create! valid_create_user_2_params
-        header = header_from_user(user2,valid_user_2_login_params)
-        expect { post widgets_url, headers: header, params: { name: "Wrenches", description: "Michael's wrenches" }, as: :json}
-          .to change(User, :count).by(0)
-      end
-      it "renders a JSON error response" do
-        user2 = User.create! valid_create_user_2_params
-        header = header_from_user(user2,valid_user_2_login_params)
-        post widgets_url, headers: header, params: { name: "Wrenches", description: "Michael's wrenches" }, as: :json
-        expect(response).to have_http_status(:unprocessable_entity)
-        expect(response.content_type).to match(a_string_including("application/json"))
-      end
-    end
-  end
-
-  describe "PATCH /update" do
-    context "with valid parameters" do
-      it "updates the requested widget's name" do
-        user1 = User.create! valid_create_user_1_params
-        user2 = User.create! valid_create_user_2_params
-        header = header_from_user(user2,valid_user_2_login_params)
-        widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
-        widget1.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
-        widget1.save!        
-        patch widget_url(widget1), params: { name: "Updated Name!!"}, headers: header, as: :json
-        widget1.reload
-        expect(JSON.parse(response.body)['name']).to eq "Updated Name!!"
-        expect(response).to have_http_status(:ok)
-        expect(response.content_type).to match(a_string_including("application/json"))
-      end
-      it "updates the requested widgets's image" do
-        user1 = User.create! valid_create_user_1_params   
-        user2 = User.create! valid_create_user_2_params
-        header = header_from_user(user2,valid_user_2_login_params)
-        widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
-        widget1.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
-        widget1.save!
-        updated_image = Rack::Test::UploadedFile.new(Rails.root.join('spec/fixtures/files/images/office-avatars/erin-hannon.png'))
-        patch widget_url(widget1), params: { name: "test", image: updated_image }, headers: header
-        expect(response).to have_http_status(:ok)
-        expect(response.content_type).to match(a_string_including("application/json"))
-        expect(JSON.parse(response.body)['name']).to eq("test")
-        expect(JSON.parse(response.body)['image']).to be_kind_of(String)
-        expect(JSON.parse(response.body)['image']).to match(/http.*\/erin-hannon\.png/)
-      end
-    end
-  end
-
-  describe "DELETE /destroy" do
-    it "destroys the requested widget (without avatar)" do
-      user1 = User.create! valid_create_user_1_params
-      user2 = User.create! valid_create_user_2_params      
-      header = header_from_user(user2,valid_user_2_login_params)
-      widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
-      expect {
-        delete widget_url(widget1), headers: header, as: :json
-      }.to change(Widget, :count).by(-1)
-    end
-    it "destroys the requested widget (with avatar)" do
-      file = Rack::Test::UploadedFile.new(Rails.root.join("spec/fixtures/files/images/office-avatars/michael-scott.png"))
-      valid_create_user_1_params['avatar'] = file
-      user1 = User.create! valid_create_user_1_params
-      user2 = User.create! valid_create_user_2_params
-      header = header_from_user(user2,valid_user_2_login_params)
-      widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
-      widget1.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
-      widget1.save!
-      expect {
-        delete widget_url(widget1), headers: header, as: :json
-      }.to change(Widget, :count).by(-1)
-    end
-  end
-end
-
-private 
-
-def token_from_user(user,login_params)
-  post "/login", params: login_params
-  token = JSON.parse(response.body)['data']
-end
-
-def valid_token(create_user_params)
-  user = User.create(create_user_params)
-  post "/login", params: valid_user_1_login_params
-  token = JSON.parse(response.body)['data']
-end
-
-def valid_auth_header_from_token(token)
-  auth_value = "Bearer " + token
-  { Authorization: auth_value }
-end
-
-def valid_auth_header_from_user_params(create_user_params)
-  token = valid_token(create_user_params)
-  auth_value = "Bearer " + token
-  { Authorization: auth_value }
-end
-
-def header_from_user(user,login_params)
-  token = token_from_user(user,login_params)
-  auth_value = "Bearer " + token
-  { Authorization: auth_value }
-end
-
-def invalid_auth_header
-  auth_value = "Bearer " + "xyz"
-  { Authorization: auth_value }
-end
-
-def poorly_formed_header(create_user_params)
-  token = valid_token(create_user_params)
-  auth_value = "Bears " + token
-  { Authorization: auth_value }
-end
-
-def blob_for(name)
-  ActiveStorage::Blob.create_and_upload!(
-    io: File.open(Rails.root.join(file_fixture(name)), 'rb'),
-    filename: name,
-    content_type: 'image/png' # Or figure it out from `name` if you have non-JPEGs
-  )
-end
-~
-```
-
-### Documents (Backend)
-- `rails g scaffold document name description image:attachment user:references widget:references`
-- `rails db:migrate`
-- `puravida app/controllers/documents_controller.rb ~`
-```
-class DocumentsController < ApplicationController
-  before_action :set_document, only: %i[ show update destroy ]
-
-  # GET /documents
-  def index
-    if params['user_id'].present?
-      @documents = Document.joins(widget: [:user]).where(users: {id: params['user_id']}).map { |subwidget| prep_raw_document(document) }
-    else
-      @documents = Document.all.map { |document| prep_raw_document(document) }
-    end
-    render json: @documents
-  end
-
-  # GET /documents/1
-  def show
-    render json: prep_raw_document(@document)
-  end
-
-  # POST /documents
-  def create
-    create_params = document_params
-    create_params['image'] = params['image'].blank? ? nil : params['image'] # if no image is chosen on new document page, params['image'] comes in as a blank string, which throws a 500 error at Document.new(create_params). This changes any params['image'] blank string to nil, which is fine in Document.new(create_params).
-    create_params['widget_id'] = create_params['widget_id'].to_i
-    @document = Document.new(create_params)
-    if @document.save
-      render json: prep_raw_document(@document), status: :created, location: @document
-    else
-      render json: @document.errors, status: :unprocessable_entity
-    end
-  end
-
-  # PATCH/PUT /documents/1
-  def update
-    if @document.update(document_params)
-      render json: prep_raw_document(@document)
-    else
-      render json: @document.errors, status: :unprocessable_entity
-    end
-  end
-
-  # DELETE /documents/1
-  def destroy
-    @document.destroy
-  end
-
-  private
-    # Use callbacks to share common setup or constraints between actions.
-    def set_document
-      @document = Document.find(params[:id])
-    end
-
-    # Only allow a list of trusted parameters through.
-    def document_params
-      params.permit(:id, :name, :description, :image, :widget_id)
-    end
-end
-~
-```
-- `puravida spec/requests/documents_spec.rb ~`
-```
-# frozen_string_literal: true
-require 'open-uri'
-require 'rails_helper'
-RSpec.describe "/documents", type: :request do
-  let(:valid_create_user_1_params) { { name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password" } }
-  let(:user_1_attachment) { "/spec/fixtures/files/images/office-avatars/michael-scott.png" }
-  let(:user_1_image) { "michael-scott.png" }
-  let(:valid_create_user_2_params) { { name: "Jim Halpert", email: "jimhalpert@dundermifflin.com", admin: "false", password: "password" } }
-  let(:user_2_attachment) { "/spec/fixtures/files/images/office-avatars/jim-halpert.png" }
-  let(:user_2_image) { "jim-halpert.png" }
-  let(:invalid_create_user_1_params) { { name: "Michael Scott", email: "test", admin: "true", password: "password" } }
-  let(:invalid_create_user_2_params) { { name: "Jim Halpert", email: "test2", admin: "false", password: "password" } }
-  let(:valid_user_1_login_params) { { email: "michaelscott@dundermifflin.com",  password: "password" } }
-  let(:valid_user_2_login_params) { { email: "jimhalpert@dundermifflin.com",  password: "password" } }
-  let(:invalid_patch_params) { { email: "test" } }
-  let(:uploaded_image_path) { Rails.root.join '/spec/fixtures/files/images/office-avatars/michael-scott.png' }
-  let(:uploaded_image) { Rack::Test::UploadedFile.new uploaded_image_path, 'image/png' }
-
-  describe "GET /index" do
-    context "with valid auth header (non-admin user)" do
-      it "renders a successful response" do
-        user1 = User.create! valid_create_user_1_params
-        user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
-        user1.save!
-        user2 = User.create! valid_create_user_2_params
-        header = header_from_user(user2,valid_user_2_login_params)
-        widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
-        image_filename = "allen-wrenches.jpg"
-        image_path = "#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"
-        open_image = URI.open(image_path)
-        widget1.image.attach(io: open_image, filename: image_filename)
-        widget1.save!
-        widget2 = Widget.create(name: "Bolts", description: "Michael's bolts", user_id: user1.id)
-        widget2.save!
-        document1 = Document.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)document.create
-        get documents_url, headers: header, as: :json
-        expect(response).to be_successful
-      end
-      
-      it "gets two widgets (one with image, one without)" do
-        user1 = User.create! valid_create_user_1_params
-        user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
-        user1.save!
-        user2 = User.create! valid_create_user_2_params
-        widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
-        widget1.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
-        widget1.save!
-        widget2 = Widget.create(name: "Bolts", description: "Michael's bolts", user_id: user1.id)
-        widget2.save!
-        header = header_from_user(user2,valid_user_2_login_params)
-        get widgets_url, headers: header, as: :json
-        expect(response).to be_successful
-        expect(JSON.parse(response.body).length).to eq 2
-        expect(JSON.parse(response.body)[0]).to include("id","name","description","image","userId")
-        expect(JSON.parse(response.body)[0]['name']).to eq("Wrenches")
-        expect(JSON.parse(response.body)[0]['description']).to eq("Michael's wrenches")
-        expect(JSON.parse(response.body)[0]['image']).to match(/http.*\/allen-wrenches\.jpg/)
-        expect(JSON.parse(response.body)[0]['userId']).to eq(user1.id)
-        expect(JSON.parse(response.body)[1]).to include("id","name","description","image","userId")
-        expect(JSON.parse(response.body)[1]['name']).to eq("Bolts")
-        expect(JSON.parse(response.body)[1]['description']).to eq("Michael's bolts")
-        expect(JSON.parse(response.body)[1]['image']).to eq(nil)
-        expect(JSON.parse(response.body)[1]['userId']).to eq(user1.id)
-      end
-
-      it "gets user one's widgets" do
-        user1 = User.create! valid_create_user_1_params
-        user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
-        user1.save!
-        user2 = User.create! valid_create_user_2_params
-        widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
-        widget1.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
-        widget1.save!
-        widget2 = Widget.create(name: "Bolts", description: "Michael's bolts", user_id: user1.id)
-        widget3 = Widget.create(name: "test3", description: "test3", user_id: user2.id)
-        widget3 = Widget.create(name: "test4", description: "test4", user_id: user2.id)
-        header = header_from_user(user2,valid_user_2_login_params)
-        get widgets_url, params: { user_id: user1.id }, headers: header
-        expect(response).to be_successful
-        expect(JSON.parse(response.body).length).to eq 2
-        expect(JSON.parse(response.body)[0]).to include("id","name","description","image","userId")
-        expect(JSON.parse(response.body)[0]['name']).to eq("Wrenches")
-        expect(JSON.parse(response.body)[0]['description']).to eq("Michael's wrenches")
-        expect(JSON.parse(response.body)[0]['image']).to match(/http.*\/allen-wrenches\.jpg/)
-        expect(JSON.parse(response.body)[0]['userId']).to eq(user1.id)
-        expect(JSON.parse(response.body)[1]).to include("id","name","description","image","userId")
-        expect(JSON.parse(response.body)[1]['name']).to eq("Bolts")
-        expect(JSON.parse(response.body)[1]['description']).to eq("Michael's bolts")
-        expect(JSON.parse(response.body)[1]['image']).to eq(nil)
-        expect(JSON.parse(response.body)[1]['userId']).to eq(user1.id)
-      end
-
-      it "gets user two's widgets" do
-        user1 = User.create! valid_create_user_1_params
-        user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
-        user1.save!
-        user2 = User.create! valid_create_user_2_params
-        widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
-        widget1.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
-        widget1.save!
-        widget2 = Widget.create(name: "Bolts", description: "Michael's bolts", user_id: user1.id)
-        widget3 = Widget.create(name: "test3", description: "test3", user_id: user2.id)
-        widget3 = Widget.create(name: "test4", description: "test4", user_id: user2.id)
-        header = header_from_user(user2,valid_user_2_login_params)
-        get widgets_url, params: { user_id: user2.id }, headers: header
-        expect(response).to be_successful
-        expect(JSON.parse(response.body).length).to eq 2
-        expect(JSON.parse(response.body)[0]).to include("id","name","description","image","userId")
-        expect(JSON.parse(response.body)[0]['name']).to eq("test3")
-        expect(JSON.parse(response.body)[0]['description']).to eq("test3")
-        expect(JSON.parse(response.body)[0]['userId']).to eq(user2.id)
-        expect(JSON.parse(response.body)[0]['image']).to eq(nil)
-        expect(JSON.parse(response.body)[1]).to include("id","name","description","image","userId")
-        expect(JSON.parse(response.body)[1]['name']).to eq("test4")
-        expect(JSON.parse(response.body)[1]['description']).to eq("test4")
-        expect(JSON.parse(response.body)[1]['image']).to eq(nil)
-        expect(JSON.parse(response.body)[1]['userId']).to eq(user2.id)
-      end
-
-    end
-
-    context "with invalid auth header" do
-      it "renders a 401 response" do
-        User.create! valid_create_user_1_params
-        get widgets_url, headers: invalid_auth_header, as: :json
-        expect(response).to have_http_status(401)
-      end
-      it "renders a 401 response" do
-        User.create! valid_create_user_1_params
-        get widgets_url, headers: poorly_formed_header(valid_create_user_2_params), as: :json
-        expect(response).to have_http_status(401)
-      end
-    end
-  end
-
-  describe "GET /show" do
-    context "with valid auth header" do
-      it "renders a successful response" do
-        user1 = User.create! valid_create_user_1_params
-        user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
-        user1.save!
-        user2 = User.create! valid_create_user_2_params
-        header = header_from_user(user2,valid_user_2_login_params)
-        widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
-        widget1.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
-        widget1.save!
-        get widget_url(widget1), headers: header, as: :json
-        expect(response).to be_successful
-      end
-      it "gets one widget (with image)" do
-        user1 = User.create! valid_create_user_1_params
-        user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
-        user1.save!
-        user2 = User.create! valid_create_user_2_params
-        header = header_from_user(user2,valid_user_2_login_params)
-        widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
-        widget1.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
-        widget1.save!
-        get widget_url(widget1), headers: header, as: :json
-        expect(JSON.parse(response.body)).to include("id","name","description","image","userId")
-        expect(JSON.parse(response.body)['name']).to eq("Wrenches")
-        expect(JSON.parse(response.body)['description']).to eq("Michael's wrenches")
-        expect(JSON.parse(response.body)['image']).to match(/http.*\/allen-wrenches\.jpg/)
-        expect(JSON.parse(response.body)['userId']).to eq(user1.id)
-      end
-      it "gets one widget (without avatar)" do
-        user1 = User.create! valid_create_user_1_params
-        user1.avatar.attach(io: URI.open("#{Rails.root}" + user_1_attachment), filename: user_1_image)
-        user1.save!
-        user2 = User.create! valid_create_user_2_params
-        header = header_from_user(user2,valid_user_2_login_params)
-        widget2 = Widget.create(name: "Bolts", description: "Michael's bolts", user_id: user1.id)
-        widget2.save!
-        get widget_url(widget2), headers: header, as: :json
-        expect(JSON.parse(response.body)).to include("id","name","description","image","userId")
-        expect(JSON.parse(response.body)['name']).to eq("Bolts")
-        expect(JSON.parse(response.body)['description']).to eq("Michael's bolts")
-        expect(JSON.parse(response.body)['image']).to eq(nil)
-        expect(JSON.parse(response.body)['userId']).to eq(user1.id)
-      end
-    end
-    context "with invalid auth header" do
-      it "renders a 401 response" do
-        user1 = User.create! valid_create_user_1_params
-        widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
-        widget1.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
-        widget1.save!
-        get widget_url(widget1), headers: invalid_auth_header, as: :json
-        expect(response).to have_http_status(401)
-      end
-      it "renders a 401 response" do
-        user1 = User.create! valid_create_user_1_params
-        user2 = User.create! valid_create_user_2_params
-        widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
-        widget1.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
-        widget1.save!
-        get widget_url(widget1), headers: poorly_formed_header(valid_create_user_2_params), as: :json
-        expect(response).to have_http_status(401)
-      end
-    end
-  end
-
-  describe "POST /create" do
-    context "without auth header" do
-      it "returns 401" do
-        user1 = User.create! valid_create_user_1_params
-        post widgets_url, params: { name: "Wrenches", description: "Michael's wrenches", user_id: user1.id }
-        expect(response).to have_http_status(401)
-      end
-    end
-    context "with valid params (without image)" do
-      it "creates widget" do
-        user1 = User.create! valid_create_user_1_params
-        user2 = User.create! valid_create_user_2_params
-        header = header_from_user(user2,valid_user_2_login_params)
-        post widgets_url, headers: header, params: { name: "Wrenches", description: "Michael's wrenches", user_id: user1.id }
-        expect(response).to have_http_status(201)
-        expect(JSON.parse(response.body)).to include("id","name","description","image","userId")
-        expect(JSON.parse(response.body)['name']).to eq("Wrenches")
-        expect(JSON.parse(response.body)['description']).to eq("Michael's wrenches")
-        expect(JSON.parse(response.body)['image']).to be_nil
-        expect(JSON.parse(response.body)['userId']).to eq(user1.id)
-      end
-    end
-    context "with valid params (with image)" do
-      it "creates widget" do
-        user1 = User.create! valid_create_user_1_params
-        user2 = User.create! valid_create_user_2_params
-        header = header_from_user(user2,valid_user_2_login_params)
-        image = Rack::Test::UploadedFile.new(Rails.root.join("app/assets/images/widgets/allen-wrenches.jpg"))
-        post widgets_url, headers: header, params: { name: "Wrenches", description: "Michael's wrenches", image: image, user_id: user1.id }
-        expect(response).to have_http_status(201)
-        expect(JSON.parse(response.body)).to include("id","name","description","image","userId")
-        expect(JSON.parse(response.body)['name']).to eq("Wrenches")
-        expect(JSON.parse(response.body)['description']).to eq("Michael's wrenches")
-        expect(JSON.parse(response.body)['image']).to match(/http.*\/allen-wrenches\.jpg/)
-        expect(JSON.parse(response.body)['userId']).to eq(user1.id)
-      end
-      it "creates widget" do
-        user1 = User.create! valid_create_user_1_params
-        user2 = User.create! valid_create_user_2_params
-        header = header_from_user(user2,valid_user_2_login_params)
-        image = Rack::Test::UploadedFile.new(Rails.root.join("app/assets/images/widgets/allen-wrenches.jpg"))
-        expect { post widgets_url, headers: header, params: { name: "Wrenches", description: "Michael's wrenches", image: image, user_id: user1.id } }
-          .to change(Widget, :count).by(1)
-      end
-    end
-    context "with invalid parameters (missing user id)" do
-      it "does not create a new User" do
-        user2 = User.create! valid_create_user_2_params
-        header = header_from_user(user2,valid_user_2_login_params)
-        expect { post widgets_url, headers: header, params: { name: "Wrenches", description: "Michael's wrenches" }, as: :json}
-          .to change(User, :count).by(0)
-      end
-      it "renders a JSON error response" do
-        user2 = User.create! valid_create_user_2_params
-        header = header_from_user(user2,valid_user_2_login_params)
-        post widgets_url, headers: header, params: { name: "Wrenches", description: "Michael's wrenches" }, as: :json
-        expect(response).to have_http_status(:unprocessable_entity)
-        expect(response.content_type).to match(a_string_including("application/json"))
-      end
-    end
-  end
-
-  describe "PATCH /update" do
-    context "with valid parameters" do
-      it "updates the requested widget's name" do
-        user1 = User.create! valid_create_user_1_params
-        user2 = User.create! valid_create_user_2_params
-        header = header_from_user(user2,valid_user_2_login_params)
-        widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
-        widget1.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
-        widget1.save!        
-        patch widget_url(widget1), params: { name: "Updated Name!!"}, headers: header, as: :json
-        widget1.reload
-        expect(JSON.parse(response.body)['name']).to eq "Updated Name!!"
-        expect(response).to have_http_status(:ok)
-        expect(response.content_type).to match(a_string_including("application/json"))
-      end
-      it "updates the requested widgets's image" do
-        user1 = User.create! valid_create_user_1_params   
-        user2 = User.create! valid_create_user_2_params
-        header = header_from_user(user2,valid_user_2_login_params)
-        widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
-        widget1.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
-        widget1.save!
-        updated_image = Rack::Test::UploadedFile.new(Rails.root.join('spec/fixtures/files/images/office-avatars/erin-hannon.png'))
-        patch widget_url(widget1), params: { name: "test", image: updated_image }, headers: header
-        expect(response).to have_http_status(:ok)
-        expect(response.content_type).to match(a_string_including("application/json"))
-        expect(JSON.parse(response.body)['name']).to eq("test")
-        expect(JSON.parse(response.body)['image']).to be_kind_of(String)
-        expect(JSON.parse(response.body)['image']).to match(/http.*\/erin-hannon\.png/)
-      end
-    end
-  end
-
-  describe "DELETE /destroy" do
-    it "destroys the requested widget (without avatar)" do
-      user1 = User.create! valid_create_user_1_params
-      user2 = User.create! valid_create_user_2_params      
-      header = header_from_user(user2,valid_user_2_login_params)
-      widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
-      expect {
-        delete widget_url(widget1), headers: header, as: :json
-      }.to change(Widget, :count).by(-1)
-    end
-    it "destroys the requested widget (with avatar)" do
-      file = Rack::Test::UploadedFile.new(Rails.root.join("spec/fixtures/files/images/office-avatars/michael-scott.png"))
-      valid_create_user_1_params['avatar'] = file
-      user1 = User.create! valid_create_user_1_params
-      user2 = User.create! valid_create_user_2_params
-      header = header_from_user(user2,valid_user_2_login_params)
-      widget1 = Widget.create(name: "Wrenches", description: "Michael's wrenches", user_id: user1.id)
-      widget1.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
-      widget1.save!
-      expect {
-        delete widget_url(widget1), headers: header, as: :json
-      }.to change(Widget, :count).by(-1)
-    end
-  end
-end
-
-private 
-
-def token_from_user(user,login_params)
-  post "/login", params: login_params
-  token = JSON.parse(response.body)['data']
-end
-
-def valid_token(create_user_params)
-  user = User.create(create_user_params)
-  post "/login", params: valid_user_1_login_params
-  token = JSON.parse(response.body)['data']
-end
-
-def valid_auth_header_from_token(token)
-  auth_value = "Bearer " + token
-  { Authorization: auth_value }
-end
-
-def valid_auth_header_from_user_params(create_user_params)
-  token = valid_token(create_user_params)
-  auth_value = "Bearer " + token
-  { Authorization: auth_value }
-end
-
-def header_from_user(user,login_params)
-  token = token_from_user(user,login_params)
-  auth_value = "Bearer " + token
-  { Authorization: auth_value }
-end
-
-def invalid_auth_header
-  auth_value = "Bearer " + "xyz"
-  { Authorization: auth_value }
-end
-
-def poorly_formed_header(create_user_params)
-  token = valid_token(create_user_params)
-  auth_value = "Bears " + token
-  { Authorization: auth_value }
-end
-
-def blob_for(name)
-  ActiveStorage::Blob.create_and_upload!(
-    io: File.open(Rails.root.join(file_fixture(name)), 'rb'),
-    filename: name,
-    content_type: 'image/png' # Or figure it out from `name` if you have non-JPEGs
-  )
-end
-~
-```
-
-### Seeds
-- `puravida db/seeds.rb ~`
-```
-user = User.create(name: "Michael Scott", email: "michaelscott@dundermifflin.com", admin: "true", password: "password")
-user.avatar.attach(io: URI.open("#{Rails.root}/app/assets/images/office-avatars/michael-scott.png"), filename: "michael-scott.png")
-user.save!
-user = User.create(name: "Jim Halpert", email: "jimhalpert@dundermifflin.com", admin: "false", password: "password")
-user.avatar.attach(io: URI.open("#{Rails.root}/app/assets/images/office-avatars/jim-halpert.png"), filename: "jim-halpert.png")
-user.save!
-user = User.create(name: "Pam Beesly", email: "pambeesly@dundermifflin.com", admin: "false", password: "password")
-user.avatar.attach(io: URI.open("#{Rails.root}/app/assets/images/office-avatars/pam-beesly.png"), filename: "jim-halpert.png")
-user.save!
-widget = Widget.create(name: "Wrenches", description: "Michael's wrench", user_id: 1)
-widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/allen-wrenches.jpg"), filename: "allen-wrenches.jpg")
-widget.save!
-widget = Widget.create(name: "Bolts", description: "Michael's bolt", user_id: 1)
-widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/bolts.jpg"), filename: "bolts.jpg")
-widget.save!
-widget = Widget.create(name: "Brackets", description: "Jim's bracket", user_id: 2)
-widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/brackets.png"), filename: "brackets.png")
-widget.save!
-widget = Widget.create(name: "Nuts", description: "Jim's nut", user_id: 2)
-widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/nuts.jpg"), filename: "nuts.jpg")
-widget.save!
-widget = Widget.create(name: "Pipes", description: "Jim's pipe", user_id: 2)
-widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/pipes.jpg"), filename: "pipes.jpg")
-widget.save!
-widget = Widget.create(name: "Screws", description: "Pam's screw", user_id: 3)
-widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/screws.jpg"), filename: "screws.jpg")
-widget.save!
-widget = Widget.create(name: "Washers", description: "Pam's washer", user_id: 3)
-widget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/widgets/washers.jpg"), filename: "washers.jpg")
-widget.save!
-subwidget = Subwidget.create(name: "Sub-Button", description: "Michael's wrench's button", widget_id: 1)
-subwidget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/subwidgets/button.jpg"), filename: "button.jpg")
-subwidget.save!
-subwidget = Subwidget.create(name: "Sub-Buzzer", description: "Michael's bolt's buzzer", widget_id: 2)
-subwidget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/subwidgets/buzzer.jpg"), filename: "buzzer.jpg")
-subwidget.save!
-subwidget = Subwidget.create(name: "Sub-Capacitor", description: "Jim's bracket's capacitor", widget_id: 3)
-subwidget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/subwidgets/capacitor.jpg"), filename: "capacitor.jpg")
-subwidget.save!
-subwidget = Subwidget.create(name: "Sub-Dipswitch", description: "Jim's nut's dipswitch", widget_id: 4)
-subwidget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/subwidgets/dip.jpg"), filename: "dip.jpg")
-subwidget.save!
-subwidget = Subwidget.create(name: "Sub-Led", description: "Jim's pipe's led", widget_id: 5)
-subwidget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/subwidgets/led.jpg"), filename: "led.jpg")
-subwidget.save!
-subwidget = Subwidget.create(name: "Sub-Relay", description: "Pam's screw's relay", widget_id: 6)
-subwidget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/subwidgets/relay.png"), filename: "relay.png")
-subwidget.save!
-subwidget = Subwidget.create(name: "Sub-Resistor", description: "Pam's washer's resistor", widget_id: 7)
-subwidget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/subwidgets/resistor.jpg"), filename: "resistor.jpg")
-subwidget.save!
-subwidget = Subwidget.create(name: "Sub-Semiconductor", description: "Pam's washer's semiconductor", widget_id: 7)
-subwidget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/subwidgets/semiconductor.jpg"), filename: "semiconductor.jpg")
-subwidget.save!
-subwidget = Subwidget.create(name: "Sub-Toggle", description: "Michel's wrench's toggle", widget_id: 1)
-subwidget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/subwidgets/toggle.jpg"), filename: "toggle.jpg")
-subwidget.save!
-subwidget = Subwidget.create(name: "Sub-Tube", description: "Jim's bracket's tube", widget_id: 3)
-subwidget.image.attach(io: URI.open("#{Rails.root}/app/assets/images/subwidgets/tube.jpg"), filename: "tube.jpg")
-subwidget.save!
-~
-```
-- `rails db:seed`
-- `rails db:drop db:create db:migrate db:seed RAILS_ENV=test`
-- `rm -rf spec/factories`
-- `rm -rf spec/models`
-- `rm -rf spec/routing`
-
-- `puravida config/routes.rb ~`
-```
-Rails.application.routes.draw do
-  resources :users
-  resources :widgets
-  resources :subwidgets
-  get "health", to: "health#index"
-  post "login", to: "authentications#create"
-  get "me", to: "application#user_from_token"
-end
-~
-```
-- `rspec`
-- `rails s`
-
-## FRONTEND
-
-### Setup
-- (in a separate terminal tab)
-- `cd ~/Desktop`
-- `npx create-nuxt-app front`
-  - Project name: `front`
-  - Programming language: JavaScript
-  - Package manager: Npm
-  - UI framework: None
-  - Template engine: HTML
-  - Nuxt.js modules: Axios
-  - Linting tools: none
-  - Testing framework: none
-  - Rendering mode: Single Page App
-  - Deployment target: Server
-  - Development tools: none
-  - What is your GitHub username: mark-mcdermott
-  - Version control system: None
-  - (takes 30 seconds to setup starter files)
-- `cd front`
-- `npm install @picocss/pico @nuxtjs/auth@4.5.1 @fortawesome/fontawesome-svg-core @fortawesome/free-solid-svg-icons @fortawesome/free-brands-svg-icons @fortawesome/vue-fontawesome@latest-2`
-- `npm install --save-dev sass sass-loader@10`
-- `puravida assets/scss/main.scss ~`
-```
-@import "node_modules/@picocss/pico/scss/pico.scss";
-
-// Pico overrides 
-// $primary-500: #e91e63;
-
-h1 {
-  margin: 4rem 0
-}
-
-.no-margin {
-  margin: 0
-}
-
-.small-bottom-margin {
-  margin: 0 0 0.5rem
-}
-
-.big-bottom-margin {
-  margin: 0 0 8rem
-}
-
-.half-width {
-  margin: 0 0 4rem;
-  width: 50%;
-}
-
-nav img {
-  width: 40px;
-  border-radius: 50%;
-  border: 3px solid var(--primary);
-}
-
-article img {
-  margin-bottom: var(--typography-spacing-vertical);
-  width: 250px;
-}
-
-ul.features { 
-  margin: 0 0 2.5rem 1rem;
-  li {
-    margin: 0;
-    padding: 0;
-  }
-}
-
-.aligned-columns {
-  margin: 0 0 2rem;
-  p {
-    margin: 0;
-    span {
-      margin: 0 0.5rem 0 0;
-      display: inline-block;
-      width: 8rem;
-      text-align: right;
-      font-weight: bold;
-    }
-  }
-}
-~
-```
-- `puravida nuxt.config.js ~`
-```
-let development = process.env.NODE_ENV !== 'production'
-export default {
-  ssr: false,
-  head: { title: 'front', htmlAttrs: { lang: 'en' },
-    meta: [ { charset: 'utf-8' },
-      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { hid: 'description', name: 'description', content: '' },
-      { name: 'format-detection', content: 'telephone=no' }
-    ], link: [{ rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }]
+  resources :users, param: :uuid
+  devise_for :users, path: '', path_names: {
+    sign_in: 'api/auth/login',
+    sign_out: 'api/auth/logout',
+    registration: 'api/auth/signup'
   },
-  css: ['@fortawesome/fontawesome-svg-core/styles.css','@/assets/scss/main.scss'],
-  plugins: [ '~/plugins/fontawesome.js' ],
-  components: true,
-  buildModules: [],
-  router: { middleware: ['auth'] },
-  modules: ['@nuxtjs/axios', '@nuxtjs/auth'],
-  axios: { baseURL: development ? 'http://localhost:3000' : 'https://ruxtmin-back.fly.dev/' },
-  server: { port: development ? 3001 : 3000 },
-  auth: {
-    redirect: { login: '/' },
-    strategies: {
-      local: {
-        endpoints: {
-          login: { url: 'login', method: 'post', propertyName: 'data' },
-          logout: false,
-          user: { url: 'me', method: 'get', propertyName: 'data' }
-        }
-      }
-    }
+  controllers: {
+    sessions: 'users/sessions',
+    registrations: 'users/registrations'
   }
-}
-~
+  get '/api/auth/session', to: 'current_user#index'
+  get 'up' => 'rails/health#show', as: :rails_health_check
+  get 'upload', to: 'uploads#presigned_url'
+end
 ```
-- `puravida middleware/adminOnly.js ~`
-```
-export default function ({ store, redirect }) {
-  if (!store.state.auth.user.admin) {
-    return redirect('/')
-  }
-}
-~
-```
-- `puravida middleware/currentOrAdmin-showEdit.js ~`
-```
-import { mapGetters } from 'vuex'
-export default function ({ route, store, redirect }) {
-  const { isAdmin, loggedInUser } = store.getters
-  const url = route.fullPath;
-  const splitPath = url.split('/')
-  let elemId = null
-  let isElemUsers = false
-  let isWidget = false;
-  let isSubwidget = false;
-  let isUser = false;
-  const userWidgets = loggedInUser.widget_ids
-  const userSubwidgets = loggedInUser.subwidget_ids
 
-  if (url.includes("subwidget")) {
-    isSubwidget = true
-  } else if (url.includes("widget")) {
-    isWidget = true
-  } else if (url.includes("users")) {
-    isUser = true
-  }
+### Avatars In Nuxt
+- change `~/app/frontend/pages/users/[id].vue` to look like this:
+```
+<script setup>
+definePageMeta({ auth: false })
 
-  if (isEditPage(url)) {
-    elemId = parseInt(splitPath[splitPath.length-2])
-  } else if (isShowPage(url)) {
-    elemId = parseInt(splitPath[splitPath.length-1])
-  }
-  
-  if (isWidget) {
-    isElemUsers = userWidgets.includes(elemId) ? true : false
-  } else if (isSubwidget) {
-    isElemUsers = userSubwidgets.includes(elemId) ? true : false
-  } else if (isUser) {
-    isElemUsers = loggedInUser.id === elemId ? true : false
-  }
+const route = useRoute()
+const user = ref({})
+const avatar = ref(null)
 
-  if (!isAdmin && !isElemUsers) {
-    return redirect('/')
-  }
+async function fetchUser() {
+  const { apiBase } = useRuntimeConfig().public
+  const response = await fetch(`${apiBase}/users/${route.params.id}`)
+  user.value = await response.json()
+
+  console.log('Fetched user avatar URL:', user.value.avatar_url)
 }
 
-function isEditPage(url) {
-  return url.includes("edit") ? true : false
-}
-
-function isShowPage(url) {
-  const splitUrl = url.split('/')
-  return (!isNaN(splitUrl[splitUrl.length-1]) && !isEditPage(url)) ? true : false
-}
-~
-```
-- `puravida middleware/currentOrAdmin-index.js ~`
-```
-export default function ({ route, store, redirect }) {
-  const { isAdmin, loggedInUser } = store.getters
-  const query = route.query
-  const isAdminRequest = query['admin'] ? true : false
-  const isUserIdRequest = query['user_id'] ? true : false
-  const isQueryEmpty = Object.keys(query).length === 0 ? true : false
-  const userIdRequestButNotAdmin = isUserIdRequest && !isAdmin
-  const requested_user_id = parseInt(query['user_id'])
-  const actual_user_id = loggedInUser.id
-  const allowedAccess = requested_user_id === actual_user_id ? true : false
-
-  if ((isAdminRequest || isQueryEmpty) && !isAdmin) {
-    return redirect('/')
-  } else if (userIdRequestButNotAdmin && !allowedAccess) {
-    return redirect('/widgets?user_id=' + loggedInUser.id)
+async function saveUserChanges(updatedUser) {
+  const { apiBase } = useRuntimeConfig().public
+  const formData = new FormData()
+  formData.append('user[email]', updatedUser.email)
+  formData.append('user[uuid]', updatedUser.uuid)
+  if (avatar.value) {
+    formData.append('user[avatar]', avatar.value)
   }
+
+  await fetch(`${apiBase}/users/${route.params.id}`, {
+    method: 'PATCH',
+    body: formData,
+  })
+
+  // Wait a moment before fetching updated user data
+  setTimeout(fetchUser, 500)
 }
-~
-```
-- `puravida plugins/fontawesome.js ~`
-```
-import Vue from 'vue'
-import { library, config } from '@fortawesome/fontawesome-svg-core'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { fas } from '@fortawesome/free-solid-svg-icons'
 
-config.autoAddCss = false
-library.add(fas)
-Vue.component('font-awesome-icon', FontAwesomeIcon)
-~
-```
-- `rm -rf components/*`
-- `y`
+async function deleteUser() {
+  const { apiBase } = useRuntimeConfig().public
+  await fetch(`${apiBase}/users/${route.params.id}`, {
+    method: 'DELETE',
+  })
+  navigateTo('/users')
+}
 
+function onFileChange(e) {
+  avatar.value = e.target.files[0]
+  console.log('Selected file:', avatar.value)
+}
 
-## New User Page
-- `puravida components/user/Form.vue ~`
-```
-<template>
-  <section>
-    <h1 v-if="editNewOrSignup === 'edit'">Edit User</h1>
-    <h1 v-else-if="editNewOrSignup === 'new'">Add User</h1>
-    <h1 v-else-if="editNewOrSignup === 'sign-up'">Sign Up</h1>
-    <article>
-      <form enctype="multipart/form-data">
-        <p v-if="editNewOrSignup === 'edit'">id: {{ $route.params.id }}</p>
-        <p>Name: </p><input v-model="name">
-        <p>Email: </p><input v-model="email">
-        <p class="no-margin">Avatar: </p>
-        <img v-if="!hideAvatar && editNewOrSignup === 'edit'" :src="avatar" />    
-        <input type="file" ref="inputFile" @change=uploadAvatar()>
-        <p v-if="editNewOrSignup !== 'edit'">Password: </p>
-        <input v-if="editNewOrSignup !== 'edit'" type="password" v-model="password">
-        <button v-if="editNewOrSignup !== 'edit'" @click.prevent=createUser>Create User</button>
-        <button v-else-if="editNewOrSignup == 'edit'" @click.prevent=editUser>Edit User</button>
-      </form>
-    </article>
-  </section>
-</template>
-
-<script>
-import { mapGetters } from 'vuex'
-export default {
-  data () {
-    return {
-      name: "",
-      email: "",
-      avatar: "",
-      password: "",
-      editNewOrSignup: "",
-      hideAvatar: false
+// Watch for changes in the email field and avatar value
+watch(
+  () => user.value.email,
+  (newEmail, oldEmail) => {
+    if (newEmail !== oldEmail) {
+      saveUserChanges(user.value)
     }
   },
-  mounted() {
-    const splitPath = $nuxt.$route.path.split('/')
-    this.editNewOrSignup = splitPath[splitPath.length-1]
-  },
-  computed: {
-    ...mapGetters(['isAuthenticated', 'isAdmin', 'loggedInUser`']),
-  },
-  async fetch() {
-    const splitPath = $nuxt.$route.path.split('/')
-    this.editNewOrSignup = $nuxt.$route.path.split('/')[$nuxt.$route.path.split('/').length-1]
-    if ($nuxt.$route.path.split('/')[$nuxt.$route.path.split('/').length-1]=='edit') {
-      const user = await this.$axios.$get(`users/${this.$route.params.id}`)
-      this.name = user.name
-      this.email = user.email,
-      this.avatar = user.avatar  
+)
+
+watch(
+  avatar,
+  (newAvatar, oldAvatar) => {
+    if (newAvatar !== oldAvatar) {
+      saveUserChanges(user.value)
     }
   },
-  methods: {
-    uploadAvatar: function() {
-      this.avatar = this.$refs.inputFile.files[0]
-      this.hideAvatar = true
-    },
-    createUser: function() {
-      const params = {
-        'name': this.name,
-        'email': this.email,
-        'avatar': this.avatar,
-        'password': this.password,
-      }
-      let payload = new FormData()
-      Object.entries(params).forEach(
-        ([key, value]) => payload.append(key, value)
-      )
-      this.$axios.$post('users', payload)
-        .then(() => {
-          this.$auth.loginWith('local', {
-            data: {
-            email: this.email,
-            password: this.password
-            },
-          })
-          .then(() => {
-            const userId = this.$auth.$state.user.id
-            this.$router.push(`/users/${userId}`)
-          })
-        })
-    },
-    editUser: function() {
-      let params = {}
-      const filePickerFile = this.$refs.inputFile.files[0]
-      if (!filePickerFile) {
-        params = { 'name': this.name, 'email': this.email }
-      } else {
-        params = { 'name': this.name, 'email': this.email, 'avatar': this.avatar }
-      }
-    
-      let payload = new FormData()
-      Object.entries(params).forEach(
-        ([key, value]) => payload.append(key, value)
-      )
-      this.$axios.$patch(`/users/${this.$route.params.id}`, payload)
-        .then(() => {
-          this.$router.push(`/users/${this.$route.params.id}`)
-        })
-    },
-  }
-}
-</script>
-~
-```
-- `puravida pages/users/new.vue ~`
-```
-<template>
-  <main class="container">
-    <UserForm />
-  </main>
-</template>
-~
-```
-`rspec`
+)
 
-### Users Page
-- `puravida components/user/Card.vue ~`
-```
-<template>
-  <article>
-    <h2>
-      <NuxtLink :to="`/users/${user.id}`">{{ user.name }}</NuxtLink> 
-      <NuxtLink :to="`/users/${user.id}/edit`"><font-awesome-icon icon="pencil" /></NuxtLink>
-      <a @click.prevent=deleteUser(user.id) href="#"><font-awesome-icon icon="trash" /></a>
-    </h2>
-    <p>id: {{ user.id }}</p>
-    <p>email: {{ user.email }}</p>
-    <p v-if="user.avatar !== null" class="no-margin">avatar:</p>
-    <img v-if="user.avatar !== null" :src="user.avatar" />
-    <p v-if="isAdmin">admin: {{ user.admin }}</p>
-  </article>
-</template>
-
-<script>
-import { mapGetters } from 'vuex'
-export default {
-  name: 'UserCard',
-  computed: { ...mapGetters(['isAdmin']) },
-  props: {
-    user: {
-      type: Object,
-      default: () => ({}),
-    },
-    users: {
-      type: Array,
-      default: () => ([]),
-    },
-  },
-  methods: {
-    uploadAvatar: function() {
-      this.avatar = this.$refs.inputFile.files[0];
-    },
-    deleteUser: function(id) {
-      this.$axios.$delete(`users/${id}`)
-      const index = this.users.findIndex((i) => { return i.id === id })
-      this.users.splice(index, 1);
-    }
-  }
-}
-</script>
-~
-```
-- `puravida components/user/Set.vue ~`
-```
-<template>
-  <section>
-    <div v-for="user in users" :key="user.id">
-      <UserCard :user="user" :users="users" />
-    </div>
-  </section>
-</template>
-
-<script>
-export default {
-  data: () => ({
-    users: []
-  }),
-  async fetch() {
-    this.users = await this.$axios.$get('users')
-  }
-}
-</script>
-~
-```
-- `puravida pages/users/index.vue ~`
-```
-<template>
-  <main class="container">
-    <h1>Users</h1>
-    <NuxtLink to="/users/new" role="button">Add User</NuxtLink>
-    <UserSet />
-  </main>
-</template>
-
-<script>
-export default { middleware: 'adminOnly' }
-</script>
-~
-```
-
-### User Page
-- `puravida pages/users/_id/index.vue ~`
-```
-<template>
-  <main class="container">
-    <section>
-      <UserCard :user="user" />
-    </section>
-  </main>
-</template>
-
-<script>
-export default {
-  middleware: 'currentOrAdmin-showEdit',
-  data: () => ({ user: {} }),
-  async fetch() { this.user = await this.$axios.$get(`users/${this.$route.params.id}`) },
-  methods: {
-    uploadAvatar: function() { this.avatar = this.$refs.inputFile.files[0] },
-    deleteUser: function(id) {
-      this.$axios.$delete(`users/${this.$route.params.id}`)
-      this.$router.push('/users')
-    }
-  }
-}
-</script>
-~
-```
-
-### User Edit Page
-- `puravida pages/users/_id/edit.vue ~`
-```
-<template>
-  <main class="container">
-    <UserForm />
-  </main>
-</template>
-
-<script>
-export default { middleware: 'currentOrAdmin-showEdit' }
-</script>
-~
-```
-
-### Widgets (Frontend)
-- `puravida components/widget/Card.vue ~`
-```
-<template>
-  <article>
-    <h2>
-      <NuxtLink :to="`/widgets/${widget.id}`">{{ widget.name }}</NuxtLink> 
-      <NuxtLink :to="`/widgets/${widget.id}/edit`"><font-awesome-icon icon="pencil" /></NuxtLink>
-      <a @click.prevent=deleteWidget(widget.id) href="#"><font-awesome-icon icon="trash" /></a>
-    </h2>
-    <p>id: {{ widget.id }}</p>
-    <p>description: {{ widget.description }}</p>
-    <p v-if="widget.image !== null" class="no-margin">image:</p>
-    <img v-if="widget.image !== null" :src="widget.image" />
-    <h4 v-if="widget.subwidgets !== null">Subwidgets</h4>
-    <ul v-if="widget.subwidgets !== null">
-      <li v-for="subwidget in widget.subwidgets" :key="subwidget.id">
-        <NuxtLink :to="`/subwidgets/${subwidget.id}`">{{ subwidget.name }} - {{ subwidget.description }}</NuxtLink>
-      </li>
-    </ul>
-  </article>
-</template>
-
-<script>
-import { mapGetters } from 'vuex'
-export default {
-  name: 'WidgetCard',
-  computed: { ...mapGetters(['isAdmin']) },
-  props: {
-    widget: {
-      type: Object,
-      default: () => ({}),
-    },
-    widgets: {
-      type: Array,
-      default: () => ([]),
-    },
-  },
-  methods: {
-    uploadImage: function() {
-      this.image = this.$refs.inputFile.files[0];
-    },
-    deleteWidget: function(id) {
-      this.$axios.$delete(`widgets/${id}`)
-      const index = this.widgets.findIndex((i) => { return i.id === id })
-      this.widgets.splice(index, 1);
-    }
-  }
-}
-</script>
-~
-```
-
-- `puravida components/widget/Set.vue ~`
-```
-<template>
-  <section>
-    <div v-for="widget in widgets" :key="widget.id">
-      <WidgetCard :widget="widget" :widgets="widgets" />
-    </div>
-  </section>
-</template>
-
-<script>
-import { mapGetters } from 'vuex'
-export default {
-  computed: { ...mapGetters(['isAuthenticated', 'isAdmin', 'loggedInUser']) }, 
-  data: () => ({
-    widgets: []
-  }),
-  async fetch() {
-    const query = this.$store.$auth.ctx.query
-    const adminQuery = query.admin
-    const idQuery = query.user_id
-    
-    if (this.isAdmin && adminQuery) {
-      this.widgets = await this.$axios.$get('widgets')
-    } else if (idQuery) {
-      this.widgets = await this.$axios.$get('widgets', {
-        params: { user_id: idQuery }
-      })
-    } else {
-      this.widgets = await this.$axios.$get('widgets', {
-        params: { user_id: this.loggedInUser.id }
-      })
-    }
-  }
-}
-</script>
-~
-```
-- `puravida components/widget/Form.vue ~`
-```
-<template>
-  <section>
-    <h1 v-if="editOrNew === 'edit'">Edit Widget</h1>
-    <h1 v-else-if="editOrNew === 'new'">Add Widget</h1>
-    <article>
-      <form enctype="multipart/form-data">
-        <p v-if="editOrNew === 'edit'">id: {{ $route.params.id }}</p>
-        <p>Name: </p><input v-model="name">
-        <p>Description: </p><input v-model="description">
-        <p class="no-margin">Image: </p>
-        <img v-if="!hideImage && editOrNew === 'edit'" :src="image" />    
-        <input type="file" ref="inputFile" @change=uploadImage()>
-        <button v-if="editOrNew !== 'edit'" @click.prevent=createWidget>Create Widget</button>
-        <button v-else-if="editOrNew == 'edit'" @click.prevent=editWidget>Edit Widget</button>
-      </form>
-    </article>
-  </section>
-</template>
-
-<script>
-import { mapGetters } from 'vuex'
-export default {
-  data () {
-    return {
-      name: "",
-      description: "",
-      image: "",
-      editOrNew: "",
-      hideImage: false
-    }
-  },
-  mounted() {
-    const splitPath = $nuxt.$route.path.split('/')
-    this.editOrNew = splitPath[splitPath.length-1]
-  },
-  computed: {
-    ...mapGetters(['isAuthenticated', 'isAdmin', 'loggedInUser`']),
-  },
-  async fetch() {
-    const splitPath = $nuxt.$route.path.split('/')
-    this.editOrNew = $nuxt.$route.path.split('/')[$nuxt.$route.path.split('/').length-1]
-    if ($nuxt.$route.path.split('/')[$nuxt.$route.path.split('/').length-1]=='edit') {
-      const widget = await this.$axios.$get(`widgets/${this.$route.params.id}`)
-      this.name = widget.name
-      this.description = widget.description,
-      this.image = widget.image  
-    }
-  },
-  methods: {
-    uploadImage: function() {
-      this.image = this.$refs.inputFile.files[0]
-      this.hideImage = true
-    },
-    createWidget: function() {
-      const userId = this.$auth.$state.user.id
-      const params = {
-        'name': this.name,
-        'description': this.description,
-        'image': this.image,
-        'user_id': userId
-      }
-      let payload = new FormData()
-      Object.entries(params).forEach(
-        ([key, value]) => payload.append(key, value)
-      )
-      this.$axios.$post('widgets', payload)
-        .then((res) => {
-          const widgetId = res.id
-          this.$router.push(`/widgets/${widgetId}`)
-        })
-    },
-    editWidget: function() {
-      let params = {}
-      const filePickerFile = this.$refs.inputFile.files[0]
-      if (!filePickerFile) {
-        params = { 'name': this.name, 'description': this.description }
-      } else {
-        params = { 'name': this.name, 'description': this.description, 'image': this.image }
-      }
-    
-      let payload = new FormData()
-      Object.entries(params).forEach(
-        ([key, value]) => payload.append(key, value)
-      )
-      this.$axios.$patch(`/widgets/${this.$route.params.id}`, payload)
-        .then(() => {
-          this.$router.push(`/widgets/${this.$route.params.id}`)
-        })
-    },
-  }
-}
-</script>
-~
-```
-- `puravida pages/widgets/index.vue ~`
-```
-<template>
-  <main class="container">
-    <h1>Widgets</h1>
-    <NuxtLink to="/widgets/new" role="button">Add Widget</NuxtLink>
-    <WidgetSet />
-  </main>
-</template>
-<script>
-export default { middleware: 'currentOrAdmin-index' }
-</script>
-~
-```
-- `puravida pages/widgets/new.vue ~`
-```
-<template>
-  <main class="container">
-    <WidgetForm />
-  </main>
-</template>
-~
-```
-- `puravida pages/widgets/_id/index.vue ~`
-```
-<template>
-  <main class="container">
-    <section>
-      <WidgetCard :widget="widget" />
-    </section>
-  </main>
-</template>
-
-<script>
-export default {
-  middleware: 'currentOrAdmin-showEdit',
-  data: () => ({ widget: {} }),
-  async fetch() { this.widget = await this.$axios.$get(`widgets/${this.$route.params.id}`) },
-  methods: {
-    uploadImage: function() { this.image = this.$refs.inputFile.files[0] },
-    deleteWidget: function(id) {
-      this.$axios.$delete(`widgets/${this.$route.params.id}`)
-      this.$router.push('/widgets')
-    }
-  }
-}
-</script>
-~
-```
-- `puravida pages/widgets/_id/edit.vue ~`
-```
-<template>
-  <main class="container">
-    <WidgetForm />
-  </main>
-</template>
-
-<script>
-export default { middleware: 'currentOrAdmin-showEdit' }
-</script>
-~
-```
-
-### Subwidgets
-- `puravida components/subwidget/Card.vue ~`
-```
-<template>
-  <article>
-    <h2>
-      <NuxtLink :to="`/subwidgets/${subwidget.id}`">{{ subwidget.name }}</NuxtLink> 
-      <NuxtLink :to="`/subwidgets/${subwidget.id}/edit`"><font-awesome-icon icon="pencil" /></NuxtLink>
-      <a @click.prevent=deleteWidget(subwidget.id) href="#"><font-awesome-icon icon="trash" /></a>
-    </h2>
-    <p>id: {{ subwidget.id }}</p>
-    <p>description: {{ subwidget.description }}</p>
-    <p v-if="subwidget.image !== null" class="no-margin">image:</p>
-    <img v-if="subwidget.image !== null" :src="subwidget.image" />
-    <p>widget: <NuxtLink :to="`/widgets/${subwidget.widgetId}`">{{ subwidget.widgetName }} - {{ subwidget.widgetDescription }}</NuxtLink></p>
-  </article>
-</template>
-
-<script>
-import { mapGetters } from 'vuex'
-export default {
-  name: 'SubwidgetCard',
-  computed: { ...mapGetters(['isAdmin']) },
-  props: {
-    subwidget: {
-      type: Object,
-      default: () => ({}),
-    },
-    subwidgets: {
-      type: Array,
-      default: () => ([]),
-    },
-  },
-  methods: {
-    uploadImage: function() {
-      this.image = this.$refs.inputFile.files[0];
-    },
-    deleteSubwidget: function(id) {
-      this.$axios.$delete(`subwidgets/${id}`)
-      const index = this.subwidgets.findIndex((i) => { return i.id === id })
-      this.subwidgets.splice(index, 1);
-    }
-  }
-}
-</script>
-~
-```
-- `puravida components/subwidget/Set.vue ~`
-```
-<template>
-  <section>
-    <div v-for="subwidget in subwidgets" :key="subwidget.id">
-      <SubwidgetCard :subwidget="subwidget" :subwidgets= "subwidgets" />
-    </div>
-  </section>
-</template>
-
-<script>
-import { mapGetters } from 'vuex'
-export default {
-  computed: { ...mapGetters(['isAuthenticated', 'isAdmin', 'loggedInUser']) }, 
-  data: () => ({
-    subwidgets: []
-  }),
-async fetch() {
-    const query = this.$store.$auth.ctx.query
-    const adminQuery = query.admin
-    const idQuery = query.user_id
-    
-    if (this.isAdmin && adminQuery) {
-      this.subwidgets = await this.$axios.$get('subwidgets')
-    } else if (idQuery) {
-      this.subwidgets = await this.$axios.$get('subwidgets', {
-        params: { user_id: idQuery }
-      })
-    } else {
-      this.subwidgets = await this.$axios.$get('subwidgets', {
-        params: { user_id: this.loggedInUser.id }
-      })
-    }
-  }
-}
-</script>
-~
-```
-- `puravida components/subwidget/Form.vue ~`
-```
-<template>
-  <section>
-    <h1 v-if="editOrNew === 'edit'">Edit Subwidget</h1>
-    <h1 v-else-if="editOrNew === 'new'">Add Subwidget</h1>
-    <article>
-      <form enctype="multipart/form-data">
-        <p v-if="editOrNew === 'edit'">id: {{ $route.params.id }}</p>
-        <p>Name: </p><input v-model="name">
-        <p>Description: </p><input v-model="description">
-        <p class="no-margin">Image: </p>
-        <img v-if="!hideImage && editOrNew === 'edit'" :src="image" />    
-        <input type="file" ref="inputFile" @change=uploadImage()>
-        <p>Widget: </p>
-        <select v-if="editOrNew === 'new'" name="widget" @change="selectWidget($event)">
-          <option value=""></option>
-          <option v-for="widget in widgets" :key="widget.id" :value="widget.id">{{ widget.name }} - {{ widget.description }}</option>
-        </select>
-        <button v-if="editOrNew !== 'edit'" @click.prevent=createSubwidget>Create Subwidget</button>
-        <button v-else-if="editOrNew == 'edit'" @click.prevent=editSubwidget>Edit Subwidget</button>
-      </form>
-    </article>
-  </section>
-</template>
-
-<script>
-import { mapGetters } from 'vuex'
-export default {
-  data () {
-    return {
-      name: "",
-      description: "",
-      image: "",
-      editOrNew: "",
-      hideImage: false,
-      widgets: [],
-      widgetId: ""
-    }
-  },
-  mounted() {
-    const splitPath = $nuxt.$route.path.split('/')
-    this.editOrNew = splitPath[splitPath.length-1]
-  },
-  computed: {
-    ...mapGetters(['isAuthenticated', 'isAdmin', 'loggedInUser`']),
-  },
-  async fetch() {
-    const splitPath = $nuxt.$route.path.split('/')
-    this.editOrNew = $nuxt.$route.path.split('/')[$nuxt.$route.path.split('/').length-1]
-    if ($nuxt.$route.path.split('/')[$nuxt.$route.path.split('/').length-1]=='edit') {
-      const subwidget = await this.$axios.$get(`subwidgets/${this.$route.params.id}`)
-      this.name = subwidget.name
-      this.description = subwidget.description,
-      this.image = subwidget.image  
-    }
-    if (this.editOrNew == 'new') {
-      this.widgets = await this.$axios.$get('/widgets', {
-        params: { user_id: this.$auth.$state.user.id }
-      })
-    }
-  },
-  methods: {
-    uploadImage: function() {
-      this.image = this.$refs.inputFile.files[0]
-      this.hideImage = true
-    },
-    createSubwidget: function() {
-      const params = {
-        'name': this.name,
-        'description': this.description,
-        'image': this.image,
-        'widget_id': this.widgetId
-      }
-      let payload = new FormData()
-      Object.entries(params).forEach(
-        ([key, value]) => payload.append(key, value)
-      )
-      this.$axios.$post('subwidgets', payload)
-        .then((res) => {
-          const subwidgetId = res.id
-          this.$router.push(`/subwidgets/${subwidgetId}`)
-        })
-    },
-    editSubwidget: function() {
-      let params = {}
-      const filePickerFile = this.$refs.inputFile.files[0]
-      if (!filePickerFile) {
-        params = { 'name': this.name, 'description': this.description }
-      } else {
-        params = { 'name': this.name, 'description': this.description, 'image': this.image }
-      } 
-      let payload = new FormData()
-      Object.entries(params).forEach(
-        ([key, value]) => payload.append(key, value)
-      )
-      this.$axios.$patch(`/subwidgets/${this.$route.params.id}`, payload)
-        .then(() => {
-          this.$router.push(`/subwidgets/${this.$route.params.id}`)
-        })
-    },
-    selectWidget: function(event) {
-      this.widgetId = event.target.value
-    }
-  }
-}
-</script>
-~
-```
-- `puravida pages/subwidgets/index.vue ~`
-```
-<template>
-  <main class="container">
-    <h1>Subwidgets</h1>
-    <NuxtLink to="/subwidgets/new" role="button">Add Subwidget</NuxtLink>
-    <SubwidgetSet />
-  </main>
-</template>
-<script>
-export default { middleware: 'currentOrAdmin-index' }
-</script>
-~
-```
-- `puravida pages/subwidgets/new.vue ~`
-```
-<template>
-  <main class="container">
-    <SubwidgetForm />
-  </main>
-</template>
-~
-```
-- `puravida pages/subwidgets/_id/index.vue ~`
-```
-<template>
-  <main class="container">
-    <section>
-      <SubwidgetCard :subwidget="subwidget" />
-    </section>
-  </main>
-</template>
-
-<script>
-export default {
-  middleware: 'currentOrAdmin-showEdit',
-  data: () => ({ subwidget: {} }),
-  async fetch() { this.subwidget = await this.$axios.$get(`subwidgets/${this.$route.params.id}`) },
-  methods: {
-    uploadImage: function() { this.image = this.$refs.inputFile.files[0] },
-    deleteSubwidget: function(id) {
-      this.$axios.$delete(`subwidgets/${this.$route.params.id}`)
-      this.$router.push('/subwidgets')
-    }
-  }
-}
-</script>
-~
-```
-- `puravida pages/subwidgets/_id/edit.vue ~`
-```
-<template>
-  <main class="container">
-    <SubwidgetForm />
-  </main>
-</template>
-
-<script>
-export default { middleware: 'currentOrAdmin-showEdit' }
-</script>
-~
-```
-
-
-
-### Nav
-- `puravida components/nav/Brand.vue ~`
-```
-<template>
-  <span>
-    <font-awesome-icon icon="laptop-code" /> Ruxtmin
-  </span>
-</template>
-~
-```
-- `puravida components/nav/Default.vue ~`
-```
-<template>
-  <nav class="top-nav container-fluid">
-    <ul><li><strong><NuxtLink to="/"><NavBrand /></NuxtLink></strong></li></ul>
-    <input id="menu-toggle" type="checkbox" />
-    <label class='menu-button-container' for="menu-toggle">
-      <div class='menu-button'></div>
-    </label>
-    <ul class="menu">
-      <li v-if="!isAuthenticated"><strong><NuxtLink to="/log-in">Log In</NuxtLink></strong></li>
-      <li v-if="!isAuthenticated"><strong><NuxtLink to="/sign-up">Sign Up</NuxtLink></strong></li>
-      <li v-if="isAuthenticated"><strong><NuxtLink :to="`/widgets?user_id=${loggedInUser.id}`">Widgets</NuxtLink></strong></li>
-      <li v-if="isAuthenticated"><strong><NuxtLink :to="`/subwidgets?user_id=${loggedInUser.id}`">Subwidgets</NuxtLink></strong></li>
-      <li v-if="isAdmin"><strong><NuxtLink to="/admin">Admin</NuxtLink></strong></li>
-      <li v-if="isAuthenticated" class='dropdown'>
-        <details role="list" dir="rtl">
-          <summary class='summary' aria-haspopup="listbox" role="link">
-            <img v-if="loggedInUser.avatar" :src="loggedInUser.avatar" />
-            <font-awesome-icon v-else icon="circle-user" />
-          </summary>
-          <ul role="listbox">
-            <li><NuxtLink :to="`/users/${loggedInUser.id}`">Profile</NuxtLink></li>
-            <li><NuxtLink :to="`/users/${loggedInUser.id}/edit`">Settings</NuxtLink></li>
-            <li><a @click="logOut">Log Out</a></li>
-          </ul>
-        </details>
-      </li>
-      <!-- <li v-if="isAuthenticated"><strong><NuxtLink :to="`/users/${loggedInUser.id}`">Settings</NuxtLink></strong></li> -->
-      <li class="logout-desktop" v-if="isAuthenticated"><strong><a @click="logOut">Log Out</a></strong></li>
-    </ul>
-  </nav>
-</template>
-
-<script>
-import { mapGetters } from 'vuex'
-export default {
-  computed: { ...mapGetters(['isAuthenticated', 'isAdmin', 'loggedInUser']) }, 
-  methods: { logOut() { this.$auth.logout() } }
-}
+onMounted(fetchUser)
 </script>
 
-<style lang="sass" scoped>
-// css-only responsive nav
-// from https://codepen.io/alvarotrigo/pen/MWEJEWG (accessed 10/16/23, modified slightly)
-
-h2 
-  vertical-align: center
-  text-align: center
-
-html, body 
-  margin: 0
-  height: 100%
-
-.top-nav 
-  // display: flex
-  // flex-direction: row
-  // align-items: center
-  // justify-content: space-between
-  // background-color: #00BAF0
-  // background: linear-gradient(to left, #f46b45, #eea849)
-  /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
-  // color: #FFF
-  height: 50px
-  // padding: 1em
-
-.top-nav > ul 
-  margin-top: 15px
-
-.menu 
-  display: flex
-  flex-direction: row
-  list-style-type: none
-  margin: 0
-  padding: 0
-
-[type="checkbox"] ~ label.menu-button-container 
-  display: none
-  height: 100%
-  width: 30px
-  cursor: pointer
-  flex-direction: column
-  justify-content: center
-  align-items: center
-
-#menu-toggle 
-  display: none
-
-.menu-button,
-.menu-button::before,
-.menu-button::after 
-  display: block
-  background-color: #000
-  position: absolute
-  height: 4px
-  width: 30px
-  transition: transform 400ms cubic-bezier(0.23, 1, 0.32, 1)
-  border-radius: 2px
-
-.menu-button::before 
-  content: ''
-  margin-top: -8px
-
-.menu-button::after 
-  content: ''
-  margin-top: 8px
-
-#menu-toggle:checked + .menu-button-container .menu-button::before 
-  margin-top: 0px
-  transform: rotate(405deg)
-
-#menu-toggle:checked + .menu-button-container .menu-button 
-  background: rgba(255, 255, 255, 0)
-
-#menu-toggle:checked + .menu-button-container .menu-button::after 
-  margin-top: 0px
-  transform: rotate(-405deg)
-
-.menu 
-  > li 
-    overflow: visible
-
-  > li.dropdown
-    background: none
-
-    .summary
-      margin: 0
-      padding: 1rem 0
-      font-size: 1.5rem
-
-      &:focus
-        color: var(--color)
-        background: none
-
-      &:after
-        display: none
-
-    ul
-      padding-top: 0
-      margin-top: 0
-      right: -1rem
-
-  > li.logout-desktop
-    display: none
-
-@media (max-width: 991px) 
-  .menu 
-    
-    > li 
-      overflow: hidden
-    
-    > li.dropdown
-      display: none
-
-    > li.logout-desktop
-      display: flex
-
-  [type="checkbox"] ~ label.menu-button-container 
-    display: flex
-
-  .top-nav > ul.menu 
-    position: absolute
-    top: 0
-    margin-top: 50px
-    left: 0
-    flex-direction: column
-    width: 100%
-    justify-content: center
-    align-items: center
-
-  #menu-toggle ~ .menu li 
-    height: 0
-    margin: 0
-    padding: 0
-    border: 0
-    transition: height 400ms cubic-bezier(0.23, 1, 0.32, 1)
-
-  #menu-toggle:checked ~ .menu li 
-    border: 1px solid #333
-    height: 2.5em
-    padding: 0.5em
-    transition: height 400ms cubic-bezier(0.23, 1, 0.32, 1)
-
-  .menu > li 
-    display: flex
-    justify-content: center
-    margin: 0
-    padding: 0.5em 0
-    width: 100%
-    // color: white
-    background-color: #222
-
-  .menu > li:not(:last-child) 
-    border-bottom: 1px solid #444
-</style>
-~
-```
-
-- `puravida layouts/default.vue ~`
-```
 <template>
-  <div>
-    <NavDefault />
-    <Nuxt />
-  </div>
-</template>
-~
-```
-
-### Home
-- `puravida pages/index.vue ~`
-```
-<template>
-  <main class="container">
-    <h1>Rails 7 Nuxt 2 Admin Boilerplate</h1>
-    
-    <h2 class="small-bottom-margin">Features</h2>
-    <ul class="features">
-      <li>Admin dashboard</li>
-      <li>Placeholder users</li>
-      <li>Placeholder user item ("widget")</li>
-    </ul>
-
-    <h3 class="small-bottom-margin stack">Stack</h3>
-    <div class="aligned-columns">
-      <p><span>frontend:</span> Nuxt 2</p>
-      <p><span>backend API:</span> Rails 7</p>
-      <p><span>database:</span> Postgres</p>
-      <p><span>styles:</span> Sass</p>
-      <p><span>css framework:</span> Pico.css</p>
-      <p><span>e2e tests:</span> Cypress</p>
-      <p><span>api tests:</span> RSpec</p>
-    </div>
-
-    <h3 class="small-bottom-margin tools">Tools</h3>
-    <div class="aligned-columns">
-      <p><span>user avatars:</span> local active storage</p>
-      <p><span>backend auth:</span> bcrypt & jwt</p>
-      <p><span>frontend auth:</span> nuxt auth module</p>
-    </div>
-
-    <h3 class="small-bottom-margin">User Logins</h3>
-    <table class="half-width">
-      <tr><th>Email</th><th>Password</th><th>Notes</th></tr>
-      <tr><td>michaelscott@dundermifflin.com</td><td>password</td><td>(admin)</td></tr>
-      <tr><td>jimhalpert@dundermifflin.com</td><td>password</td><td></td></tr>
-      <tr><td>pambeesly@dundermifflin.com</td><td>password</td><td></td></tr>
-    </table>
-    
-    <p class="big-bottom-margin">
-      <NuxtLink to="/log-in" role="button" class="secondary">Log In</NuxtLink> 
-      <NuxtLink to="/sign-up" role="button" class="contrast outline">Sign Up</NuxtLink>
-    </p>    
-
-  </main>
-</template>
-
-<script>
-export default { auth: false }
-</script>
-~
-```
-- `puravida components/Notification.vue ~`
-```
-<template>
-  <div class="notification is-danger">
-    {{ message }}
-  </div>
-</template>
-
-<script>
-export default {
-  name: 'Notification',
-  props: ['message']
-}
-</script>
-~
-```
-
-### Login & Signup Pages
-- `puravida pages/log-in.vue ~`
-```
-<template>
-  <main class="container">
-    <h2>Log In</h2>
-    <Notification :message="error" v-if="error"/>
-    <form method="post" @submit.prevent="login">
+  <UiContainer class="relative flex flex-col py-10 lg:py-20">
+    <div
+      class="absolute inset-0 z-[-2] h-full w-full bg-transparent bg-[linear-gradient(to_right,_theme(colors.border)_1px,_transparent_1px),linear-gradient(to_bottom,_theme(colors.border)_1px,_transparent_1px)] bg-[size:80px_80px] [mask-image:radial-gradient(#000,_transparent_80%)]"
+    />
+    <div class="flex h-full lg:w-[768px]">
       <div>
-        <label>Email</label>
-        <div>
-          <input
-            type="email"
-            name="email"
-            v-model="email"
-          />
+        <h1 class="mb-4 text-4xl font-bold md:text-5xl lg:mb-6 lg:mt-5 xl:text-6xl">
+          User
+        </h1>
+        <div class="flex items-center justify-center">
+          <form @submit.prevent="saveUserChanges(user)">
+            <UiCard class="w-[360px] max-w-sm" :title="user.email">
+              <template #content>
+                <UiCardContent>
+                  <div class="grid w-full items-center gap-4">
+                    <div class="flex flex-col space-y-1.5">
+                      <UiLabel for="email">
+                        Email
+                      </UiLabel>
+                      <UiInput id="email" v-model="user.email" required />
+                    </div>
+                    <div class="flex flex-col space-y-1.5">
+                      <UiLabel for="uuid">
+                        UUID
+                      </UiLabel>
+                      <p class="text-sm">
+                        {{ user.uuid }}
+                      </p>
+                    </div>
+                    <div class="flex flex-col space-y-1.5">
+                      <UiLabel for="avatar">
+                        Avatar
+                      </UiLabel>
+                      <div v-if="user.avatar_url">
+                        <img :src="`${user.avatar_url}?${new Date().getTime()}`" alt="User Avatar" class="w-32 h-32 object-cover rounded-full">
+                      </div>
+                      <input type="file" @change="onFileChange">
+                    </div>
+                  </div>
+                </UiCardContent>
+              </template>
+              <template #footer>
+                <UiCardFooter class="flex justify-between">
+                  <UiButton variant="destructive" @click.prevent="deleteUser">
+                    <Icon name="lucide:trash" />
+                    Delete User
+                  </UiButton>
+                </UiCardFooter>
+              </template>
+            </UiCard>
+          </form>
         </div>
       </div>
-      <div>
-        <label>Password</label>
-        <div>
-          <input
-            type="password"
-            name="password"
-            v-model="password"
-          />
-        </div>
-      </div>
-      <div>
-        <button type="submit">Log In</button>
-      </div>
-    </form>
-    <div>
-      <p>
-        Don't have an account? <NuxtLink to="/sign-up">Sign up</NuxtLink>
-      </p>
     </div>
-  </main>
+  </UiContainer>
 </template>
-
-<script>
-import Notification from '~/components/Notification'
-export default {
-  auth: false,
-  components: {
-    Notification,
-  },
-  data() {
-    return {
-      email: '',
-      password: '',
-      error: null
-    }
-  },
-  methods: {
-    async login() {
-      this.$auth.loginWith('local', {
-        data: {
-          email: this.email,
-          password: this.password
-        }
-      }).then (() => {
-        const id = this.$auth.$state.user.id
-        this.$router.push(`/users/${id}`)
-      })
-    }
-  }
-}
-</script>
-~
-```
-- `puravida pages/sign-up.vue ~`
-```
-<template>
-  <main class="container">
-    <UserForm />      
-  </main>
-</template>
-
-<script>
-export default { auth: false }
-</script>
-~
-```
-- `puravida store/index.js ~`
-```
-export const getters = {
-  isAuthenticated(state) {
-    return state.auth.loggedIn
-  },
-
-  isAdmin(state) {
-    if (state.auth.user && state.auth.user.admin !== null && state.auth.user.admin == true) { 
-        return true
-    } else {
-      return false
-    } 
-  },
-
-  loggedInUser(state) {
-    return state.auth.user
-  }
-}
-~
-```
-~
-
-### Admin page
-- `puravida pages/admin/index.vue ~`
-```
-<template>
-  <main class="container">
-    <h1>Admin</h1>
-    <p>Number of users: {{ this.users.length }}</p>
-    <p>Number of admins: {{ (this.users.filter((obj) => obj.admin === true)).length }}</p>
-    <p><NuxtLink to="/users">Users</NuxtLink></p>
-    <p><NuxtLink to="/widgets?admin=true">Widgets</NuxtLink></p>
-  </main>
-</template>
-
-<script>
-export default { 
-  middleware: 'adminOnly',
-  layout: 'admin',
-  data: () => ({ users: [] }),
-  async fetch() { this.users = await this.$axios.$get('users') }
-}
-</script>
-~
 ```
 
-- `puravida pages/admin/widgets.vue ~`
-```
-<template>
-  <main class="container">
-    <h1>Widgets</h1>
-    <NuxtLink to="/users/new" role="button">Add Widgets</NuxtLink>
-    <WidgetSet />
-  </main>
-</template>
 
-<script>
-export default {
-  middleware: 'adminOnly'
-}
-</script>
-~
-```
-
-- `npm run dev`
-- you can now test the app locally at http://localhost:3001
-- kill both the frontend and backend servers by pressing `control + c` in their respective terminal tabs
-
-### Cypress
-- `cd ~/Desktop/front`
-- `npm install cypress --save-dev`
-- `npx cypress open`  
-  - `E2E Testing`
-  - `Continue`
-  - close the cypress UI window
-  - press `control + c`
-- close cypress UI
-- `puravida cypress/fixtures/images`
-- paste the `office-avatars` folder into `cypress/fixtures/images`
-- `puravida cypress/support/commands.js ~`
-```
-Cypress.Commands.add('login', () => { 
-  cy.visit('http://localhost:3001/log-in')
-  cy.get('input').eq(1).type('jimhalpert@dundermifflin.com')
-  cy.get('input').eq(2).type('password{enter}')
-})
-
-Cypress.Commands.add('loginNonAdmin', () => { 
-  cy.visit('http://localhost:3001/log-in')
-  cy.get('input').eq(1).type('jimhalpert@dundermifflin.com')
-  cy.get('input').eq(2).type('password{enter}')
-})
-
-Cypress.Commands.add('loginAdmin', () => { 
-  cy.visit('http://localhost:3001/log-in')
-  cy.get('input').eq(1).type('michaelscott@dundermifflin.com')
-  cy.get('input').eq(2).type('password{enter}')
-})
-
-Cypress.Commands.add('loginInvalid', () => { 
-  cy.visit('http://localhost:3001/log-in')
-  cy.get('input').eq(1).type('xyz@dundermifflin.com')
-  cy.get('input').eq(2).type('password{enter}')
-})
-
-Cypress.Commands.add('logoutNonAdmin', (admin) => { 
-  cy.logout(false);
-})
-
-Cypress.Commands.add('logoutAdmin', (admin) => { 
-  cy.logout(true);
-})
-
-Cypress.Commands.add('logout', (admin) => { 
-  const num = admin ? 3 : 2
-  cy.get('nav ul.menu').find('li').eq(num).click()
-    .then(() => { cy.get('nav details ul').find('li').eq(2).click() })
-})
-~
-```
-- `puravida cypress/e2e/logged-out-page-copy.cy.js ~`
-```
-/// <reference types="cypress" />
-
-// reset the db: db:drop db:create db:migrate db:seed RAILS_ENV=test
-// run dev server with test db: CYPRESS=1 bin/rails server -p 3000
-context('Logged Out', () => {
-  describe('Homepage Copy', () => {
-    it('should find page copy', () => {
-      cy.visit('http://localhost:3001/')
-      cy.get('main.container')
-        .should('contain', 'Rails 7 Nuxt 2 Admin Boilerplate')
-        .should('contain', 'Features')
-      cy.get('ul.features')
-        .within(() => {
-          cy.get('li').eq(0).contains('Admin dashboard')
-          cy.get('li').eq(1).contains('Placeholder users')
-          cy.get('li').eq(2).contains('Placeholder user item ("widget")')
-        })
-      cy.get('h3.stack')
-        .next('div.aligned-columns')
-          .within(() => {
-            cy.get('p').eq(0).contains('frontend:')
-            cy.get('p').eq(0).contains('Nuxt 2')
-            cy.get('p').eq(1).contains('backend API:')
-            cy.get('p').eq(1).contains('Rails 7')
-            cy.get('p').eq(2).contains('database:')
-            cy.get('p').eq(2).contains('Postgres')
-            cy.get('p').eq(3).contains('styles:')
-            cy.get('p').eq(3).contains('Sass')
-            cy.get('p').eq(4).contains('css framework:')
-            cy.get('p').eq(4).contains('Pico.css')
-            cy.get('p').eq(5).contains('e2e tests:')
-            cy.get('p').eq(5).contains('Cypress')
-            cy.get('p').eq(6).contains('api tests:')
-            cy.get('p').eq(6).contains('RSpec')      
-          })
-      cy.get('h3.tools')
-        .next('div.aligned-columns')
-          .within(() => {
-            cy.get('p').eq(0).contains('user avatars:')
-            cy.get('p').eq(0).contains('local active storage')
-            cy.get('p').eq(1).contains('backend auth:')
-            cy.get('p').eq(1).contains('bcrypt & jwt')
-            cy.get('p').eq(2).contains('frontend auth:')
-            cy.get('p').eq(2).contains('nuxt auth module')
-          }) 
-    })
-  })
-
-  describe('Log In Copy', () => {
-    it('should find page copy', () => {
-      cy.visit('http://localhost:3001/log-in')
-      cy.get('main.container')
-        .should('contain', 'Email')
-        .should('contain', 'Password')
-        .should('contain', 'Log In')
-        .should('contain', "Don't have an account")
-    })
-  })
-
-  describe('Sign Up Copy', () => {
-    it('should find page copy', () => {
-      cy.visit('http://localhost:3001/sign-up')
-      cy.get('main.container')
-        .should('contain', 'Name')
-        .should('contain', 'Email')
-        .should('contain', 'Avatar')
-        .should('contain', 'Password')
-        .should('contain', 'Create User')
-    })
-  })
-})
-~
-```
-
-- `puravida cypress/e2e/sign-up-flow.cy.js ~`
-```
-/// <reference types="cypress" />
-
-// reset the db: db:drop db:create db:migrate db:seed RAILS_ENV=test
-// run dev server with test db: CYPRESS=1 bin/rails server -p 3000
-describe('Sign Up Flow', () => {
-  it('Should redirect to user show page', () => {
-    cy.visit('http://localhost:3001/sign-up')
-    cy.get('p').contains('Name').next('input').type('name')
-    cy.get('p').contains('Email').next('input').type('test' + Math.random().toString(36).substring(2, 15) + '@mail.com')
-    cy.get('p').contains('Email').next('input').type('test' + Math.random().toString(36).substring(2, 15) + '@mail.com')
-    cy.get('input[type=file]').selectFile('cypress/fixtures/images/office-avatars/dwight-schrute.png')
-    cy.get('p').contains('Password').next('input').type('password')
-    cy.get('button').contains('Create User').click()
-    cy.url().should('match', /http:\/\/localhost:3001\/users\/\d+/)
-    cy.get('h2').should('contain', 'name')
-    // TODO: assert avatar presence
-    // cy.logout()
-  })
-})
-~
-```
-- `puravida cypress/e2e/log-in-flow.cy.js ~`
-```
-/// <reference types="cypress" />
-
-// reset the db: db:drop db:create db:migrate db:seed RAILS_ENV=test
-// run dev server with test db: CYPRESS=1 bin/rails server -p 3000
-
-describe('Manual Login', () => {
-  it('Should log in user', () => {
-    cy.intercept('POST', '/login').as('login')
-    cy.loginAdmin()
-    cy.wait('@login').then(({response}) => {
-      expect(response.statusCode).to.eq(200)
-    })
-    cy.url().should('eq', 'http://localhost:3001/users/1')
-    cy.get('h2').should('contain', 'Michael Scott')
-    cy.logoutAdmin()
-  })
-})
-
-context('Mocked Request Login', () => {
-  describe('Login with real email', () => {
-    it('Should get 200 response', () => {
-      cy.visit('http://localhost:3001/log-in')
-      cy.request(
-        { url: 'http://localhost:3000/login', method: 'POST', body: { email: 'michaelscott@dundermifflin.com', 
-        password: 'password' }, failOnStatusCode: false })
-        .its('status').should('equal', 200)
-      cy.get('h2').should('contain', 'Log In')
-      cy.url().should('include', '/log-in')
-    })
-  })
-
-  describe('Login with fake email', () => {
-    it('Should get 401 response', () => {
-      cy.visit('http://localhost:3001/log-in')
-      cy.request(
-        { url: 'http://localhost:3000/login', method: 'POST', body: { email: 'xyz@dundermifflin.com', 
-        password: 'password' }, failOnStatusCode: false })
-        .its('status').should('equal', 401)
-      cy.get('h2').should('contain', 'Log In')
-      cy.url().should('include', '/log-in')
-    })
-  })
-})
-~
-```
-- `puravida cypress/e2e/admin.cy.js ~`
-```
-/// <reference types="cypress" />
-
-// reset the db: rails db:drop db:create db:migrate db:seed RAILS_ENV=test
-// run dev server with test db: CYPRESS=1 bin/rails server -p 3000
-
-describe('Admin login', () => {
-  it('Should go to admin show page', () => {
-    cy.loginAdmin()
-    cy.url().should('match', /http:\/\/localhost:3001\/users\/1/)
-    cy.get('h2').should('contain', 'Michael Scott')
-    cy.get('p').should('contain', 'id: 1')
-    cy.get('p').should('contain', 'avatar:')
-    cy.get('p').contains('avatar:').next('img').should('have.attr', 'src').should('match', /http.*michael-scott.png/)
-    cy.get('p').should('contain', 'admin: true')
-    cy.logoutAdmin()
-  })
-  it('Should contain admin nav', () => {
-    cy.loginAdmin()
-    cy.get('nav ul.menu li a').should('contain', 'Admin')
-    cy.logoutAdmin()
-  })
-})
-
-describe('Admin nav', () => {
-  it('Should work', () => {
-    cy.loginAdmin()
-    cy.get('nav li a').contains('Admin').click()
-    cy.url().should('match', /http:\/\/localhost:3001\/admin/)
-    cy.logoutAdmin()
-  })
-})
-
-describe('Admin page', () => {
-  it('Should have correct copy', () => {
-    cy.loginAdmin()
-    cy.url().should('match', /http:\/\/localhost:3001\/users\/1/)
-    cy.visit('http://localhost:3001/admin')
-    cy.url().should('match', /http:\/\/localhost:3001\/admin/)
-    cy.get('p').eq(0).invoke('text').should('match', /Number of users: \d+/)
-    cy.get('p').eq(1).invoke('text').should('match', /Number of admins: \d+/)
-    cy.get('p').eq(2).contains('Users')
-    cy.get('p').eq(3).contains('Widgets')
-    cy.logoutAdmin()
-  })
-  it('Should have correct links', () => {
-    cy.loginAdmin()
-    cy.url().should('match', /http:\/\/localhost:3001\/users\/1/)
-    cy.visit('http://localhost:3001/admin')
-    cy.url().should('match', /http:\/\/localhost:3001\/admin/)
-    cy.get('p').contains('Users').should('have.attr', 'href', '/users')
-    cy.logoutAdmin()
-  })
-  it('Should have working links', () => {
-    cy.loginAdmin()
-    cy.url().should('match', /http:\/\/localhost:3001\/users\/1/)
-    cy.visit('http://localhost:3001/admin')
-    cy.url().should('match', /http:\/\/localhost:3001\/admin/)
-    cy.get('p a').contains('Users').click()
-    cy.url().should('match', /http:\/\/localhost:3001\/users/)
-    cy.logoutAdmin()
-  })
-})
-
-describe('Edit user as admin', () => {
-  it('Should be successful', () => {
-    cy.loginAdmin()
-    cy.url().should('match', /http:\/\/localhost:3001\/users\/1/)
-    cy.get('h2').children().eq(1).click()
-    cy.url().should('match', /http:\/\/localhost:3001\/users\/1\/edit/)
-    cy.get('p').contains('Name').next('input').clear()
-    cy.get('p').contains('Name').next('input').type('name')
-    cy.get('p').contains('Email').next('input').clear()
-    cy.get('p').contains('Email').next('input').type('name@mail.com')
-    cy.get('input[type=file]').selectFile('cypress/fixtures/images/office-avatars/dwight-schrute.png')
-    cy.get('button').click()
-    cy.url().should('match', /http:\/\/localhost:3001\/users\/1/)
-    cy.get('h2').should('contain', 'name')
-    cy.get('p').contains('email').should('contain', 'name@mail.com')
-    cy.get('p').contains('avatar:').next('img').should('have.attr', 'src').should('match', /http.*dwight-schrute.png/)
-    cy.get('p').should('contain', 'admin: true')
-    cy.get('h2').children().eq(1).click()
-    cy.url().should('match', /http:\/\/localhost:3001\/users\/1\/edit/)
-    cy.get('p').contains('Name').next('input').clear()
-    cy.get('p').contains('Name').next('input').type('Michael Scott')
-    cy.get('p').contains('Email').next('input').clear()
-    cy.get('p').contains('Email').next('input').type('michaelscott@dundermifflin.com')
-    cy.get('input[type=file]').selectFile('cypress/fixtures/images/office-avatars/michael-scott.png')
-    cy.get('button').click()
-    cy.url().should('match', /http:\/\/localhost:3001\/users\/1/)
-    cy.get('h2').should('contain', 'Michael Scott')
-    cy.get('p').contains('email').should('contain', 'michaelscott@dundermifflin.com')
-    cy.get('p').contains('avatar:').next('img').should('have.attr', 'src').should('match', /http.*michael-scott.png/)
-    cy.get('p').should('contain', 'admin: true')
-    cy.logoutAdmin()
-  })
-})
-
-describe('Admin /users page', () => {
-  it('Should show three users', () => {
-    cy.loginAdmin()
-    cy.url().should('match', /http:\/\/localhost:3001\/users\/1/)
-    cy.visit('http://localhost:3001/users')
-    cy.url().should('match', /http:\/\/localhost:3001\/users/)
-    cy.get('section').children('div').should('have.length', 3)
-    cy.logoutAdmin()
-  })
-})
-
-describe('Admin visiting /widgets', () => {
-
-  context('No query string', () => {
-    it("Should show admin's two widgets", () => {
-      cy.loginAdmin()
-      cy.url().should('match', /http:\/\/localhost:3001\/users\/1/)
-      cy.visit('http://localhost:3001/widgets')
-      cy.url().should('match', /http:\/\/localhost:3001\/widgets/)
-      cy.get('section').children('div').should('have.length', 2)
-      cy.get('article').eq(0).find('h2').should('contain', 'Wrenches')
-      cy.get('article').eq(0).should('contain', "Michael's wrench")
-      cy.get('article').eq(1).find('h2').should('contain', 'Bolts')
-      cy.get('article').eq(1).should('contain', "Michael's bolt")
-      cy.logoutAdmin()
-    })
-  })
-
-
-  context('?admin=true query string', () => {
-    it("Should show all widgets", () => {
-      cy.loginAdmin()
-      cy.url().should('match', /http:\/\/localhost:3001\/users\/1/)
-      cy.visit('http://localhost:3001/widgets?admin=true')
-      cy.url().should('match', /http:\/\/localhost:3001\/widgets\?admin=true/)
-      cy.get('section').children('div').should('have.length', 7)
-      cy.logoutAdmin()
-    })
-  })
-
-  context('user_id=1 query string', () => {
-    it("Should show user one's two widgets", () => {
-      cy.loginAdmin()
-      cy.url().should('match', /http:\/\/localhost:3001\/users\/1/)
-      cy.visit('http://localhost:3001/widgets?user_id=1')
-      cy.url().should('match', /http:\/\/localhost:3001\/widgets\?user_id=1/)
-      cy.get('section').children('div').should('have.length', 2)
-      cy.get('article').eq(0).should('contain', "Michael's wrench")
-      cy.get('article').eq(1).should('contain', "Michael's bolt")
-      cy.logoutAdmin()
-    })
-  })
-
-  context('user_id=2 query string', () => {
-    it("Should show user two's three widgets", () => {
-      cy.loginAdmin()
-      cy.url().should('match', /http:\/\/localhost:3001\/users\/1/)
-      cy.visit('http://localhost:3001/widgets?user_id=2')
-      cy.url().should('match', /http:\/\/localhost:3001\/widgets\?user_id=2/)
-      cy.get('section').children('div').should('have.length', 3)
-      cy.get('article').eq(0).should('contain', "Jim's bracket")
-      cy.get('article').eq(1).should('contain', "Jim's nut")
-      cy.get('article').eq(2).should('contain', "Jim's pipe")
-      cy.logoutAdmin()
-    })
-  })
-  
-})
-~
-```
-- `puravida cypress/e2e/non-admin.cy.js ~`
-```
-/// <reference types="cypress" />
-
-// reset the db: rails db:drop db:create db:migrate db:seed RAILS_ENV=test
-// run dev server with test db: CYPRESS=1 bin/rails server -p 3000
-
-describe('Non-admin login', () => {
-  it('Should go to non-admin show page', () => {
-    cy.loginNonAdmin()
-    cy.url().should('match', /http:\/\/localhost:3001\/users\/2/)
-    cy.get('h2').should('contain', 'Jim Halpert')
-    cy.get('p').should('contain', 'id: 2')
-    cy.get('p').should('contain', 'avatar:')
-    cy.get('p').contains('avatar:').next('img').should('have.attr', 'src').should('match', /http.*jim-halpert.png/)
-    cy.get('p').contains('admin').should('not.exist')
-    cy.logoutNonAdmin()
-  })
-  it('Should not contain admin nav', () => {
-    cy.loginNonAdmin()
-    cy.url().should('match', /http:\/\/localhost:3001\/users\/2/)
-    cy.get('nav ul.menu li a').contains('Admin').should('not.exist')
-    cy.logoutNonAdmin()
-  })
-})
-
-describe('Accessing /users as non-admin', () => {
-  it('Should redirect to home', () => {
-    cy.loginNonAdmin()
-    cy.url().should('match', /http:\/\/localhost:3001\/users\/2/)
-    cy.visit('http://localhost:3001/users', { failOnStatusCode: false } )
-    cy.url().should('match', /^http:\/\/localhost:3001\/$/)
-    cy.logoutNonAdmin()
-  })
-})
-
-describe('Accessing /users/1 as non-admin', () => {
-  it('Should go to non-admin show page', () => {
-    cy.loginNonAdmin()
-    cy.url().should('match', /http:\/\/localhost:3001\/users\/2/)
-    cy.visit('http://localhost:3001/users/1', { failOnStatusCode: false } )
-    cy.url().should('match', /^http:\/\/localhost:3001\/$/)
-    cy.logoutNonAdmin()
-  })
-})
-
-describe('Accessing /users/2 as non-admin user 2', () => {
-  it('Should go to user show page', () => {
-    cy.loginNonAdmin()
-    cy.url().should('match', /http:\/\/localhost:3001\/users\/2/)
-    cy.visit('http://localhost:3001/users/2', { failOnStatusCode: false } )
-    cy.url().should('match', /^http:\/\/localhost:3001\/users\/2$/)
-    cy.logoutNonAdmin()
-  })
-})
-
-describe('Accessing /users/3 as non-admin user 2', () => {
-  it('Should go to home', () => {
-    cy.loginNonAdmin()
-    cy.url().should('match', /http:\/\/localhost:3001\/users\/2/)
-    cy.visit('http://localhost:3001/users/3', { failOnStatusCode: false } )
-    cy.url().should('match', /^http:\/\/localhost:3001\/$/)
-    cy.logoutNonAdmin()
-  })
-})
-
-describe('Accessing /users/1/edit as non-admin', () => {
-  it('Should go to non-admin show page', () => {
-    cy.loginNonAdmin()
-    cy.url().should('match', /http:\/\/localhost:3001\/users\/2/)
-    cy.visit('http://localhost:3001/users/1/edit', { failOnStatusCode: false } )
-    cy.url().should('match', /^http:\/\/localhost:3001\/$/)
-    cy.logoutNonAdmin()
-  })
-})
-
-describe('Accessing /users/3/edit as non-admin', () => {
-  it('Should go to non-admin show page', () => {
-    cy.loginNonAdmin()
-    cy.url().should('match', /http:\/\/localhost:3001\/users\/2/)
-    cy.visit('http://localhost:3001/users/3/edit', { failOnStatusCode: false } )
-    cy.url().should('match', /^http:\/\/localhost:3001\/$/)
-    cy.logoutNonAdmin()
-  })
-})
-
-describe('Edit self as non-admin', () => {
-  it('Edit should be successful', () => {
-    cy.loginNonAdmin()
-    cy.url().should('match', /http:\/\/localhost:3001\/users\/2/)
-    cy.get('h2').contains('Jim Halpert').next('a').click()
-    cy.url().should('match', /http:\/\/localhost:3001\/users\/2\/edit/)
-    cy.get('p').contains('Name').next('input').clear()
-    cy.get('p').contains('Name').next('input').type('name')
-    cy.get('p').contains('Email').next('input').clear()
-    cy.get('p').contains('Email').next('input').type('name@mail.com')
-    cy.get('input[type=file]').selectFile('cypress/fixtures/images/office-avatars/dwight-schrute.png')
-    cy.get('button').click()
-    cy.url().should('match', /http:\/\/localhost:3001\/users\/2/)
-    cy.get('h2').should('contain', 'name')
-    cy.get('p').contains('email').should('contain', 'name@mail.com')
-    cy.get('p').contains('avatar:').next('img').should('have.attr', 'src').should('match', /http.*dwight-schrute.png/)
-    cy.get('p').contains('admin').should('not.exist')
-    cy.get('h2').children().eq(1).click()
-    cy.url().should('match', /http:\/\/localhost:3001\/users\/2\/edit/)
-    cy.get('p').contains('Name').next('input').clear()
-    cy.get('p').contains('Name').next('input').type('Jim Halpert')
-    cy.get('p').contains('Email').next('input').clear()
-    cy.get('p').contains('Email').next('input').type('jimhalpert@dundermifflin.com')
-    cy.get('input[type=file]').selectFile('cypress/fixtures/images/office-avatars/jim-halpert.png')
-    cy.get('button').click()
-    cy.url().should('match', /http:\/\/localhost:3001\/users\/2/)
-    cy.get('h2').should('contain', 'Jim Halpert')
-    cy.get('p').contains('email').should('contain', 'jimhalpert@dundermifflin.com')
-    cy.get('p').contains('avatar:').next('img').should('have.attr', 'src').should('match', /http.*jim-halpert.png/)
-    cy.get('p').contains('admin').should('not.exist')
-    cy.logoutNonAdmin()
-  })
-})
-
-describe('Non-admin visiting /widgets', () => {
-  context('No query string', () => {
-    it("Should redirect to home", () => {
-      cy.loginNonAdmin()
-      cy.url().should('match', /http:\/\/localhost:3001\/users\/2/)
-      cy.visit('http://localhost:3001/widgets')
-      cy.url().should('match', /http:\/\/localhost:3001\//)
-      cy.logoutNonAdmin()
-    })
-  })
-  context('?admin=true query string', () => {
-    it("Should redirect to home", () => {
-      cy.loginNonAdmin()
-      cy.url().should('match', /http:\/\/localhost:3001\/users\/2/)
-      cy.visit('http://localhost:3001/widgets?admin=true')
-      cy.url().should('match', /http:\/\/localhost:3001\//)
-      cy.logoutNonAdmin()
-    })
-  })
-  context('?user_id=1 query string', () => {
-    it("Should redirect to to ?user_id=2", () => {
-      cy.loginNonAdmin()
-      cy.url().should('match', /http:\/\/localhost:3001\/users\/2/)
-      cy.visit('http://localhost:3001/widgets?user_id=1')
-      cy.url().should('match', /http:\/\/localhost:3001\/widgets\?user_id=2/)
-      cy.get('article').should('have.length', 3)
-      cy.get('article').eq(0).should('contain', "Jim's bracket")
-      cy.get('article').eq(1).should('contain', "Jim's nut")
-      cy.get('article').eq(2).should('contain', "Jim's pipe")
-      cy.logoutNonAdmin()
-    })
-  })
-  context('?user_id=2 query string', () => {
-    it("Should show user's three widgets", () => {
-      cy.loginNonAdmin()
-      cy.url().should('match', /http:\/\/localhost:3001\/users\/2/)
-      cy.visit('http://localhost:3001/widgets?user_id=2')
-      cy.url().should('match', /http:\/\/localhost:3001\/widgets\?user_id=2/)
-      cy.get('article').should('have.length', 3)
-      cy.get('article').eq(0).should('contain', "Jim's bracket")
-      cy.get('article').eq(1).should('contain', "Jim's nut")
-      cy.get('article').eq(2).should('contain', "Jim's pipe")
-      cy.logoutNonAdmin()
-    })
-  })
-  context('?user_id=3 query string', () => {
-    it("Should redirect to to ?user_id=2", () => {
-      cy.loginNonAdmin()
-      cy.url().should('match', /http:\/\/localhost:3001\/users\/2/)
-      cy.visit('http://localhost:3001/widgets?user_id=3')
-      cy.url().should('match', /http:\/\/localhost:3001\/widgets\?user_id=2/)
-      cy.get('article').should('have.length', 3)
-      cy.get('article').eq(0).should('contain', "Jim's bracket")
-      cy.get('article').eq(1).should('contain', "Jim's nut")
-      cy.get('article').eq(2).should('contain', "Jim's pipe")
-      cy.logoutNonAdmin()
-    })
-  })
-})
-~
-```
-- run backend for cypress: `CYPRESS=1 bin/rails server -p 3000`
-- run frontend: `npm run dev`
-- open cypress: `npx cypress run`
-
-
-### DEPLOY TO FLY.IO
-
-### Deploy Backend
-- `cd ~/Desktop/back`
-- `puravida fly.toml ~`
-```
-app = "ruxtmin-back"
-primary_region = "dfw"
-console_command = "/rails/bin/rails console"
-
-[build]
-
-[env]
-  RAILS_STORAGE = "/data"
-
-[[mounts]]
-  source = "ruxtmin_data"
-  destination = "/data"
-
-[http_service]
-  internal_port = 3000
-  force_https = true
-  auto_stop_machines = false
-  auto_start_machines = true
-  min_machines_running = 0
-  processes = ["app"]
-
-[[statics]]
-  guest_path = "/rails/public"
-  url_prefix = "/"
-~
-```
-- `puravida config/storage.yml ~`
-```
-test:
-  service: Disk
-  root: <%= Rails.root.join("tmp/storage") %>
-
-test_fixtures:
-  service: Disk
-  root: <%= Rails.root.join("tmp/storage_fixtures") %>
-
-local:
-  service: Disk
-  root: <%= Rails.root.join("storage") %>
-
-production:
-  service: Disk
-  root: /data
-~
-```
-- `puravida config/environments/production.rb ~`
-```
-require "active_support/core_ext/integer/time"
-Rails.application.configure do
-  config.cache_classes = true
-  config.eager_load = true
-  config.consider_all_requests_local       = false
-  config.public_file_server.enabled = ENV["RAILS_SERVE_STATIC_FILES"].present?
-  config.active_storage.service = :production
-  config.log_level = :info
-  config.log_tags = [ :request_id ]
-  config.action_mailer.perform_caching = false
-  config.i18n.fallbacks = true
-  config.active_support.report_deprecations = false
-  config.log_formatter = ::Logger::Formatter.new
-  if ENV["RAILS_LOG_TO_STDOUT"].present?
-    logger           = ActiveSupport::Logger.new(STDOUT)
-    logger.formatter = config.log_formatter
-    config.logger    = ActiveSupport::TaggedLogging.new(logger)
-  end
-  config.active_record.dump_schema_after_migration = false
-end
-~
-```
-- `fly launch --copy-config --name ruxtmin-back --region dfw --yes`
-  - "Would you like to set up a Postgresql database now?": `Yes`
-  - "Select configuration: Production (High Availability)": `3 nodes, 4x shared CPUs, 8GB RAM, 80GB disk`
-  - wait a bit
-  - "Would you like to set up an Upstash Redis database now? (y/N)": `N`
-- `fly deploy`
-- seed prod users:
-  - `fly ssh console`
-  - `bin/rails db:seed`
-  - `exit`
-
-### Deploy Frontend
-- `cd ~/Desktop/front`
-- `npm run build`
-- `fly launch --name ruxtmin-front --region dfw --yes`
-- `fly deploy`
 
 ## Sources
-- https://suchdevblog.com/tutorials/UploadFilesFromVueToRails.html#our-vue-js-form-component
-- https://edgeguides.rubyonrails.org/active_storage_overview.html
-- https://stackoverflow.com/questions/76049560/how-to-attach-image-url-in-seed-file-with-rails-active-storage
-- https://itecnote.com/tecnote/ruby-on-rails-how-to-get-url-of-the-attachment-stored-in-active-storage-in-the-rails-controller/
-- https://stackoverflow.com/questions/50424251/how-can-i-get-url-of-my-attachment-stored-in-active-storage-in-my-rails-controll
-- https://stackoverflow.com/questions/5576550/in-rails-how-to-get-current-url-but-no-paths
-
-## Puravida
-This readme uses a small custom bash command called [puravida](https://github.com/mark-mcdermott/puravida) - it's just a simple one-liner I wrote to replace `mkdir` and `touch`. Instead of `mkdir folder && touch file.txt`, you can do `puravida folder/file.txt`. It's also a cleaner replacement for multiline text insertion. Instead of doing:
-```
-mkdir folder
-cat >> folder/file.txt << 'END'
-first text line
-second text line
-END
-```
-you can just do
-```
-puravida folder/file.txt ~
-first text line
-second text line
-~
-```
-If you don't feel like downloading my `puravida` script and putting it in your system path, feel free to substitute the instances of `puravida` below with the commands it's replacing.
-
-![Ruxt Wolf Mech](https://github.com/mark-mcdermott/ruxtmin/blob/main/assets/images/mechs/wolf-mech.png)
+- Nuxt https://nuxt.com (visited 7/4/24)
+- Antfu ESLint Config https://github.com/antfu/eslint-config (visited 7/4/24)
+- Picocss https://picocss.com (visited 7/4/24)
+- Picocss Examples https://picocss.com/examples (visited 7/4/24)
+- Picocss Classless Example https://x4qtf8.csb.app (visited 7/4/24)
+- Devise For API-Only Rails https://dakotaleemartinez.com/tutorials/devise-jwt-api-only-mode-for-authentication/ (visited 7/18/24)
+- Uploading to AWS S3 using VueJS + Nuxt, Dropzone and a Node API https://loadpixels.com/2018/11/22/uploading-to-aws-s3-using-vuejs-nuxt-dropzone-and-a-node-api/ (visited 7/19/24)
+- How to Upload Files to Amazon S3 with React and AWS SDK https://dev.to/aws-builders/how-to-upload-files-to-amazon-s3-with-react-and-aws-sdk-b0n (visited 7/19/24)
